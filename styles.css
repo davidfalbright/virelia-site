@@ -83,6 +83,7 @@ body{
   border: 1px solid var(--border, #222b36);
   border-radius: 14px;
   overflow: hidden;
+  aspect-ratio: 2 / 3;
 }
 
 /* The area that holds all slides. 
@@ -223,6 +224,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
