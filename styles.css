@@ -7,7 +7,7 @@
   --accent:#6fb2ff;
   --accent-2:#9ef7d0;
   --border:#1f2633;
-  --slider-min: 60px;   /* never smaller than this */
+  --slider-min: 30px;   /* never smaller than this */
   --slider-max: 385px;   /* never larger than this (desktop target) */
   --slider-vw: 26vw;     /* how quickly it grows with viewport */
 }
@@ -228,6 +228,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
