@@ -82,6 +82,7 @@ body{
 /* Fixed aspect for the viewport of the slideshow */
 .slides{
   position: relative;
+  width: 100%;            /* fills the slider width */
   aspect-ratio: 16 / 10;       /* keeps a constant frame shape */
   background: #0b0d10;
 }
@@ -194,6 +195,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
