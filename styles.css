@@ -65,72 +65,119 @@ body{
 }
 
 /* ---------------------- */
-/* ——— HERO SLIDER ——— */
-/* The frame adapts to the current slide’s aspect ratio via a CSS var */
-.slider{
-  --ar: 2 / 3;               /* default/fallback aspect ratio */
-  aspect-ratio: var(--ar);   /* frame keeps a fixed ratio */
-  width: min(680px, 92vw);   /* responsive width cap */
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  overflow: hidden;          /* prevent bleed */
-  margin: 0 auto;
-}
+/* =========================
+   Virelia – Slider styles
+   Drop‑in replacement
+   ========================= */
 
-/* Make the slides stack on top of each other, sized by .slider */
-.slides{ position: relative; width: 100%; height: 100%; }
-.slide{
-  position: absolute; inset: 0;
-  opacity: 0; transition: opacity .45s ease;
-  display: grid; place-items: center;
-  background: #0d1117;
-}
-.slide.active{ opacity: 1; }
-
-/* Contain and center the image inside the frame */
-.slide img{
+/* --- Frame sizing (desktop + responsive) --- */
+.slider {
+  /* Never overflow parent */
   max-width: 100%;
-  max-height: 100%;
-  width: auto;               /* let intrinsic aspect win */
-  height: auto;
-  object-fit: contain;       /* show the whole image */
-  object-position: center center;
+
+  /* Target desktop size (what you asked to return to) */
+  width: 582px;
+
+  margin: 0 auto;                 /* center on page */
+  position: relative;
+
+  /* Optional frame chrome – keep if you like your current look */
+  background: var(--card, #0d1117);
+  border: 1px solid var(--border, #222b36);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* The area that holds all slides. 
+   We use an aspect-ratio that matches your portrait images (2:3). */
+.slides {
+  position: relative;
+  aspect-ratio: 2 / 3;            /* width : height (e.g., 582 x ~873) */
+  background: #0b0d10;
+}
+
+/* Each slide is layered on top of the others for a cross‑fade effect. */
+.slide {
+  position: absolute;
+  inset: 0;                       /* fill the .slides box */
+  opacity: 0;
+  transition: opacity .45s ease;  /* fade */
+  display: grid;
+  place-items: center;            /* center image inside */
+  background: #0d1117;            /* subtle matte behind images */
+}
+.slide.active { opacity: 1; }
+
+/* The image is fully contained in the frame (no overflow, no cropping). */
+.slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;            /* show entire image inside the frame */
+  object-position: center;        /* center the image */
   display: block;
 }
 
-/* Caption overlay */
-.slide figcaption{
-  position: absolute; inset: auto 0 0 0;
+/* Caption strip (optional). Stays inside the frame. */
+.slide figcaption {
+  position: absolute;
+  inset: auto 0 0 0;              /* bottom:0; left:0; right:0 */
   padding: .85rem 1rem;
-  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.6) 70%);
-  font-size: .9rem; color: #d9e8f7;
+  font-size: .9rem;
+  color: #d9e8f7;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.65) 72%);
 }
 
-/* Nav buttons & dots (unchanged from your file) */
-.slide-btn{
-  position: absolute; top: 50%; transform: translateY(-50%);
-  background: rgba(12,15,20,.6); border: 1px solid var(--border);
-  color: #d0e8ff; width: 40px; height: 40px; border-radius: 50%;
+/* --- Navigation dots (if present) --- */
+.dots {
+  display: flex;
+  gap: .5rem;
+  justify-content: center;
+  align-items: center;
+  margin: .75rem 0 0;             /* a bit of space under the frame */
+}
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #243140;
+  transition: transform .15s ease, background-color .15s ease;
+}
+.dot.active {
+  background: #6aa9ff;
+  transform: scale(1.1);
+}
+
+/* --- Prev/Next buttons (if present) --- */
+.slider .nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.2);
+  background: rgba(0,0,0,.35);
+  color: #e6eef8;
+  display: grid;
+  place-items: center;
   cursor: pointer;
+  user-select: none;
 }
-.slide-btn:hover{ background: rgba(12,15,20,.85); }
-.prev{ left: 10px; } .next{ right: 10px; }
+.slider .nav:hover { background: rgba(0,0,0,.5); }
+.slider .prev { left: 8px; }
+.slider .next { right: 8px; }
 
-.dots{
-  position: absolute; bottom: 10px; width: 100%;
-  display: flex; gap: .4rem; justify-content: center;
+/* --- Responsive: gracefully shrink on small screens --- */
+@media (max-width: 600px) {
+  .slider {
+    width: 90%;                   /* proportional shrink */
+  }
+  .slide figcaption {
+    font-size: .85rem;
+    padding: .7rem .9rem;
+  }
 }
-.dot{
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #53657a; border: 1px solid #7087a1; opacity: .8;
-}
-.dot.active{ background: var(--accent); opacity: 1; }
 
-/* Mobile tweak */
-@media (max-width: 600px){
-  .slider{ width: 90%; }
-}
 
 /* ---------------------- */
 .hero-copy h1{margin:.25rem 0 0}
@@ -181,6 +228,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
