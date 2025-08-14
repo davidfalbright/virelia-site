@@ -111,6 +111,7 @@ body{
   object-fit: contain;
   object-position: center;
   display: block;
+  aspect-ratio: 2 / 3;
 }
 
 /* Caption strip (optional). Stays inside the frame. */
@@ -224,6 +225,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
