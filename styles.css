@@ -82,7 +82,7 @@ body{
   background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.6) 70%);
   font-size:.9rem; color:#d9e8f7;
 }
-*/
+
 //-----------------------
 /* Outer container */
 .slider {
@@ -142,8 +142,68 @@ body{
   /* optional: prevent captions from blocking clicks */
   /* pointer-events: none; */
 }
+*/
+//-----------------------
+/* Frame */
+.slider{
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;            /* hard clip to the frame */
+}
 
-//---------
+/* Fixed aspect for the viewport of the slideshow */
+.slides{
+  position: relative;
+  aspect-ratio: 16 / 10;       /* keeps a constant frame shape */
+  background: #0b0d10;
+}
+
+/* Each slide fills the frame and acts as a constraint box */
+.slide{
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity .5s ease;
+  display: flex;               /* center the image within */
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;            /* clip any accidental overflow */
+  background: #0d1117;
+}
+.slide.active{ opacity: 1; }
+
+/* IMPORTANT: let the image size itself; never force both width and height */
+.slide img{
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;         /* show full image inside the frame */
+}
+
+/* Caption doesn’t affect layout of the frame */
+.slide figcaption{
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: .85rem 1rem;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.6) 70%);
+  font-size: .9rem;
+  color: #d9e8f7;
+}
+
+/* Remove default figure gap just in case */
+.slide figure{ margin: 0; height: 100%; width: 100%; }
+
+
+
+
+
+//-----------------------
+
+
 .slide-btn{
   position:absolute; top:50%; transform:translateY(-50%);
   background:rgba(12,15,20,.6); border:1px solid var(--border);
@@ -208,5 +268,6 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
