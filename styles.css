@@ -97,6 +97,7 @@ body{
    We use an aspect-ratio that matches your portrait images (2:3). */
 .slides {
   position: relative;
+  object-fit: contain;
   aspect-ratio: 2 / 3;            /* width : height (e.g., 582 x ~873) */
   background: #0b0d10;
 }
@@ -108,6 +109,7 @@ body{
   opacity: 0;
   transition: opacity .45s ease;  /* fade */
   display: grid;
+  object-fit: contain;
   place-items: center;            /* center image inside */
   background: #0d1117;            /* subtle matte behind images */
 }
@@ -233,6 +235,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
