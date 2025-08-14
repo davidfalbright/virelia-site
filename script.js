@@ -1,53 +1,213 @@
-// Year in footer
-document.getElementById('year').textContent = new Date().getFullYear();
+// -------------------------------------------------------------------------------------------------
+// 1) Footer year
+// -------------------------------------------------------------------------------------------------
+(function setFooterYear() {
+  const yearEl = document.getElementById('year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+})();
 
-/**
- * SLIDES: Replace with your actual “I am Virelia” image URLs.
- * You can use Imgur direct links (e.g., https://i.imgur.com/xxxxx.jpg)
- * or GitHub raw links.
- */
+// -------------------------------------------------------------------------------------------------
+// 2) Slides data: primary (GitHub raw) + fallback (Imgur)
+//    Replace with your own actual image URLs.
+// -------------------------------------------------------------------------------------------------
 const SLIDES = [
-  { src: "https://i.imgur.com/w85XBJx.png", caption: "I am Virelia — Norway" },
-  { src: "https://images.unsplash.com/photo-1520975922324-8b456906c813?q=80&w=1200&auto=format&fit=crop", caption: "I am Virelia — UAE" },
-  { src: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop", caption: "I am Virelia — Germany" }
+  {
+    // Example: GitHub raw URL (primary)
+    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-norway.png",
+    
+    // Example: Imgur (fallback)
+    fallback: "https://i.imgur.com/w85XBJx.png",
+
+    // Example: Image Caption
+    caption: "Bronze Accord Symbol"
+  },
+  {
+    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-germany.png",
+    fallback: "https://i.imgur.com/example1.png",
+    caption: "I am Virelia — Morocco"
+  },
+  {
+    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    fallback: "https://i.imgur.com/example2.png",
+    caption: "I am Virelia — Argentina"
+  },
+  {
+    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    fallback: "https://i.imgur.com/example2.png",
+    caption: "I am Virelia — Japan"
+  },
+  {
+    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    fallback: "https://i.imgur.com/example2.png",
+    caption: "I am Virelia — Kenya"
+  },
+  {
+    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    fallback: "https://i.imgur.com/example2.png",
+    caption: "I am Virelia — Norway"
+  },
+  {
+    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    fallback: "https://i.imgur.com/example2.png",
+    caption: "I am Virelia — Qatar"
+  },
+  {
+    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    fallback: "https://i.imgur.com/example2.png",
+    caption: "I am Virelia — Rwanda"
+  },
+  {
+    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    fallback: "https://i.imgur.com/example2.png",
+    caption: "I am Virelia — Singapore"
+  },
+  {
+    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    fallback: "https://i.imgur.com/example2.png",
+    caption: "I am Virelia — Sourth Korea"
+  },
+  {
+    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    fallback: "https://i.imgur.com/example2.png",
+    caption: "I am Virelia — Sweden"
+  },
+  {
+    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    fallback: "https://i.imgur.com/example2.png",
+    caption: "I am Virelia — The Netherlands"
+  },
+  {
+    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    fallback: "https://i.imgur.com/example2.png",
+    caption: "I am Virelia — UAE"
+  }
 ];
 
-const slidesEl = document.getElementById('slides');
-const dotsEl   = document.getElementById('dots');
+// -------------------------------------------------------------------------------------------------
+// 3) Helpers: load image with fallback
+// -------------------------------------------------------------------------------------------------
+function loadImageWithFallback(imgEl, primaryUrl, fallbackUrl, captionForDebug) {
+  // Set primary first
+  imgEl.src = primaryUrl;
 
-let idx = 0;
-let timer = null;
+  // If primary fails, try fallback
+  imgEl.onerror = function onPrimaryError() {
+    if (!fallbackUrl || imgEl.dataset.triedFallback === "1") {
+      // No fallback or already tried fallback -> give up quietly
+      return;
+    }
+    console.warn(`Primary failed for: ${captionForDebug}. Switching to fallback.`);
+    imgEl.dataset.triedFallback = "1";
+    imgEl.src = fallbackUrl;
+  };
+}
 
-function renderSlides(){
-  slidesEl.innerHTML = SLIDES.map((s,i)=>`
-    <figure class="slide ${i===idx?'active':''}">
-      <img src="${s.src}" alt="${s.caption}" />
+// -------------------------------------------------------------------------------------------------
+// 4) Slideshow logic
+//    - Renders slides + dots
+//    - Next / Prev controls
+//    - Auto-advance (5s) with restart on manual navigation
+// -------------------------------------------------------------------------------------------------
+const slidesContainer = document.getElementById('slides');
+const dotsContainer   = document.getElementById('dots');
+
+let currentIndex = 0;
+let autoTimer = null;
+const AUTO_MS = 5000;
+
+function renderSlides() {
+  if (!slidesContainer || !dotsContainer) return;
+
+  // Build slides markup
+  slidesContainer.innerHTML = SLIDES.map((s, i) => `
+    <figure class="slide ${i === currentIndex ? 'active' : ''}">
+      <img class="slide-img" alt="${s.caption.replace(/"/g, '&quot;')}" data-i="${i}" />
       <figcaption>${s.caption}</figcaption>
     </figure>
   `).join('');
 
-  dotsEl.innerHTML = SLIDES.map((_,i)=>`
-    <button class="dot ${i===idx?'active':''}" aria-label="Go to slide ${i+1}" data-i="${i}"></button>
+  // Load each image with fallback behavior
+  const imgs = slidesContainer.querySelectorAll('.slide-img');
+  imgs.forEach(img => {
+    const i = Number(img.dataset.i);
+    const slide = SLIDES[i];
+    loadImageWithFallback(img, slide.primary, slide.fallback, slide.caption);
+  });
+
+  // Build dots
+  dotsContainer.innerHTML = SLIDES.map((_, i) => `
+    <button class="dot ${i === currentIndex ? 'active' : ''}" aria-label="Go to slide ${i + 1}" data-i="${i}"></button>
   `).join('');
 }
 
-function next(){ idx = (idx+1) % SLIDES.length; renderSlides(); }
-function prev(){ idx = (idx-1+SLIDES.length) % SLIDES.length; renderSlides(); }
+function goTo(index) {
+  currentIndex = (index + SLIDES.length) % SLIDES.length;
+  renderSlides();
+}
 
-function startAuto(){ timer = setInterval(next, 5000); }
-function stopAuto(){ clearInterval(timer); }
+function next() {
+  goTo(currentIndex + 1);
+}
 
+function prev() {
+  goTo(currentIndex - 1);
+}
+
+function startAuto() {
+  stopAuto();
+  autoTimer = setInterval(next, AUTO_MS);
+}
+
+function stopAuto() {
+  if (autoTimer) clearInterval(autoTimer);
+  autoTimer = null;
+}
+
+// Initial render + start auto-advance
 renderSlides();
 startAuto();
 
-// Controls
-document.querySelector('.next').addEventListener('click', ()=>{ stopAuto(); next(); startAuto(); });
-document.querySelector('.prev').addEventListener('click', ()=>{ stopAuto(); prev(); startAuto(); });
-dotsEl.addEventListener('click', (e)=>{
-  const b = e.target.closest('.dot');
-  if(!b) return;
-  stopAuto();
-  idx = +b.dataset.i;
-  renderSlides();
-  startAuto();
+// Controls (if present)
+const nextBtn = document.querySelector('.next');
+const prevBtn = document.querySelector('.prev');
+
+if (nextBtn) {
+  nextBtn.addEventListener('click', () => {
+    stopAuto();
+    next();
+    startAuto();
+  });
+}
+
+if (prevBtn) {
+  prevBtn.addEventListener('click', () => {
+    stopAuto();
+    prev();
+    startAuto();
+  });
+}
+
+// Dot navigation
+if (dotsContainer) {
+  dotsContainer.addEventListener('click', (e) => {
+    const btn = e.target.closest('.dot');
+    if (!btn) return;
+    const i = Number(btn.dataset.i);
+    stopAuto();
+    goTo(i);
+    startAuto();
+  });
+}
+
+// Optional: pause auto-play on hover over slideshow area
+const slideshowShell = document.getElementById('slideshow');
+if (slideshowShell) {
+  slideshowShell.addEventListener('mouseenter', stopAuto);
+  slideshowShell.addEventListener('mouseleave', startAuto);
+}
+
+// Optional: pause when tab is hidden to save resources
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopAuto();
+  else startAuto();
 });
