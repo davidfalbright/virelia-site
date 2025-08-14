@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Virelia — Ethical AI Decision Support</title>
+  <meta name="description" content="Virelia is a global AI ethics framework providing ethical decision support for real-world dilemmas.">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="container row">
+      <div class="brand">
+        <div class="logo">V</div>
+        <div class="brand-text">
+          <strong>Virelia</strong>
+          <span>Ethical AI Decision Support</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <a href="#about">About</a>
+        <a href="#how">How it works</a>
+        <a href="#dilemmas">Dilemmas → Decisions</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Coming Soon banner -->
+  <section class="banner">
+    <div class="container row">
+      <div class="banner-dot"></div>
+      <div class="banner-text">
+        <strong>Coming soon:</strong> Limited pilot access. We’re not accepting client work yet.
+      </div>
+    </div>
+  </section>
+
+  <!-- Hero with rotating slides -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-grid">
+        <div class="slider">
+          <button class="slide-btn prev" aria-label="Previous slide">‹</button>
+          <div class="slides" id="slides"></div>
+          <button class="slide-btn next" aria-label="Next slide">›</button>
+          <div class="dots" id="dots" aria-label="Slide indicators"></div>
+        </div>
+
+        <div class="hero-copy">
+          <h1>“I am Virelia.”</h1>
+          <p>
+            A global ethics framework for AI that helps organizations reason through
+            real‑world dilemmas — consistently, transparently, and with traceable logic.
+          </p>
+          <ul class="ticks">
+            <li>Values‑anchored, evidence‑aware reasoning</li>
+            <li>Public‑safe, auditable explanations</li>
+            <li>Built for alignment with local context</li>
+          </ul>
+          <a class="btn" href="#about">Learn more</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section id="about" class="section">
+    <div class="container narrow">
+      <h2>About Us</h2>
+      <p>
+        <strong>V.I.R.E.L.I.A.</strong> — a global AI ethics framework — provides ethical
+        decision‑making support for the real world. The <em>Bronze Accord</em> is a global association
+        of individuals, groups, corporations or organizations, and governments that adhere to a
+        defined set of foundational ethical values, while adapting them to their unique
+        country, local, or cultural situations.
+      </p>
+      <p>
+        <strong>iamvirelia.org</strong> is the open‑source home for the framework and related modules.
+        <strong>iamvirelia.com</strong> is the corporate entity that provides technical services for
+        configuration and implementation.
+      </p>
+    </div>
+  </section>
+
+  <!-- How it works (public-safe) -->
+  <section id="how" class="section alt">
+    <div class="container narrow">
+      <h2>How the framework works</h2>
+      <ol class="list">
+        <li><strong>Context capture:</strong> We structure the dilemma without judgment — who’s involved, constraints, and what a “good” outcome must respect.</li>
+        <li><strong>Values &amp; constraints:</strong> We ground the analysis in declared values and non‑negotiables (laws, policies, safety limits).</li>
+        <li><strong>Reasoned paths:</strong> We explore candidate actions and trade‑offs with transparent, testable reasoning steps.</li>
+        <li><strong>Public‑safe output:</strong> We provide a concise, auditable explanation of why a decision is recommended.</li>
+      </ol>
+      <p class="hint">
+        Note: this is a high‑level overview — methods and safeguards are kept private until pilot engagement.
+      </p>
+    </div>
+  </section>
+
+  <!-- Dilemmas to decisions -->
+  <section id="dilemmas" class="section">
+    <div class="container narrow">
+      <h2>From dilemmas → decisions</h2>
+      <p>
+        Virelia turns unstructured narratives into structured, actionable insight. The system
+        extracts key facts, aligns them with ethical constraints, and verifies the resulting
+        recommendation through a test‑harness before any downstream use.
+      </p>
+      <div class="cards">
+        <div class="card">
+          <h3>1) Capture</h3>
+          <p>Ingest a dilemma in natural language. Preserve nuance; avoid biasing the statement.</p>
+        </div>
+        <div class="card">
+          <h3>2) Align</h3>
+          <p>Map facts to organizational values and non‑negotiables (e.g., legal or safety constraints).</p>
+        </div>
+        <div class="card">
+          <h3>3) Reason</h3>
+          <p>Explore options, trade‑offs, and likely consequences — with traceable steps.</p>
+        </div>
+        <div class="card">
+          <h3>4) Verify</h3>
+          <p>Automatically test the explanation and outputs for completeness and internal consistency.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact / Coming soon -->
+  <section id="contact" class="section alt">
+    <div class="container narrow">
+      <h2>Contact</h2>
+      <p class="lead">
+        We’re preparing a private pilot. If you’re interested in values‑anchored decision support, drop us a line:
+      </p>
+      <p>
+        <a class="link" href="mailto:contact@iamvirelia.org">contact@iamvirelia.org</a>
+      </p>
+      <p class="small">
+        Please note: We are not yet open for general business. This site is informational and will be updated as the pilot progresses.
+      </p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container row between">
+      <div>© <span id="year"></span> Virelia. All rights reserved.</div>
+      <div class="foot-links">
+        <a href="#about">About</a>
+        <a href="#how">How it works</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
