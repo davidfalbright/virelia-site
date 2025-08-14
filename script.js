@@ -12,14 +12,8 @@
 // -------------------------------------------------------------------------------------------------
 const SLIDES = [
   {
-    // Example: GitHub raw URL (primary)
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord.png",
-    
-    // Example: Imgur (fallback)
-    //fallback: "https://i.imgur.com/w85XBJx.png",
     fallback: "https://imgur.com/a/fTkq8Ak",
-
-    // Example: Image Caption
     caption: "Bronze Accord Symbol"
   },
   {
@@ -85,29 +79,62 @@ const SLIDES = [
 ];
 
 // -------------------------------------------------------------------------------------------------
-// 3) Helpers: load image with fallback
+// 3) Helpers
 // -------------------------------------------------------------------------------------------------
 function loadImageWithFallback(imgEl, primaryUrl, fallbackUrl, captionForDebug) {
-  // Set primary first
   imgEl.src = primaryUrl;
 
-  // If primary fails, try fallback
   imgEl.onerror = function onPrimaryError() {
-    if (!fallbackUrl || imgEl.dataset.triedFallback === "1") {
-      // No fallback or already tried fallback -> give up quietly
-      return;
-    }
+    if (!fallbackUrl || imgEl.dataset.triedFallback === "1") return;
     console.warn(`Primary failed for: ${captionForDebug}. Switching to fallback.`);
     imgEl.dataset.triedFallback = "1";
     imgEl.src = fallbackUrl;
   };
 }
 
+/**
+ * Center image with equal side letterboxing and no vertical overflow.
+ * Works for both portrait and landscape assets.
+ */
+function centerImageInSlider(imgEl) {
+  const figure = imgEl.closest('.slide');
+  if (!figure) return;
+
+  const container = figure.querySelector('.slide-viewport') || figure; // viewport if present
+  const cW = container.clientWidth;
+  const cH = container.clientHeight;
+  if (!cW || !cH) return;
+
+  const imgW = imgEl.naturalWidth;
+  const imgH = imgEl.naturalHeight;
+  if (!imgW || !imgH) return;
+
+  const imgRatio = imgW / imgH;
+  const boxRatio = cW / cH;
+
+  // Reset any previous inline sizing
+  imgEl.style.width = '';
+  imgEl.style.height = '';
+  imgEl.style.maxWidth = '100%';
+  imgEl.style.maxHeight = '100%';
+  imgEl.style.objectFit = 'contain';    // safety
+  imgEl.style.objectPosition = 'center'; // ensure centered
+
+  // If image is comparatively wider than the box, constrain by width;
+  // if it’s taller (portrait vs box), constrain by height.
+  if (imgRatio >= boxRatio) {
+    // Wider relative to container → width fits, vertical centers
+    imgEl.style.width = '100%';
+    imgEl.style.height = 'auto';
+  } else {
+    // Taller relative to container → height fits, horizontal centers
+    imgEl.style.width = 'auto';
+    imgEl.style.height = '100%';
+  }
+}
+
 // -------------------------------------------------------------------------------------------------
 // 4) Slideshow logic
-//    - Renders slides + dots
-//    - Next / Prev controls
-//    - Auto-advance (5s) with restart on manual navigation
 // -------------------------------------------------------------------------------------------------
 const slidesContainer = document.getElementById('slides');
 const dotsContainer   = document.getElementById('dots');
@@ -116,22 +143,37 @@ let currentIndex = 0;
 let autoTimer = null;
 const AUTO_MS = 5000;
 
+function slideMarkup(s, i, isActive) {
+  // Add a viewport wrapper so we have a stable box to measure
+  return `
+    <figure class="slide ${isActive ? 'active' : ''}">
+      <div class="slide-viewport">
+        <img class="slide-img" alt="${s.caption.replace(/"/g, '&quot;')}" data-i="${i}" />
+      </div>
+      <figcaption>${s.caption}</figcaption>
+    </figure>
+  `;
+}
+
 function renderSlides() {
   if (!slidesContainer || !dotsContainer) return;
 
-  // Build slides markup
-  slidesContainer.innerHTML = SLIDES.map((s, i) => `
-    <figure class="slide ${i === currentIndex ? 'active' : ''}">
-      <img class="slide-img" alt="${s.caption.replace(/"/g, '&quot;')}" data-i="${i}" />
-      <figcaption>${s.caption}</figcaption>
-    </figure>
-  `).join('');
+  // Build slides
+  slidesContainer.innerHTML = SLIDES
+    .map((s, i) => slideMarkup(s, i, i === currentIndex))
+    .join('');
 
-  // Load each image with fallback behavior
+  // Load each image with fallback + post-load centering
   const imgs = slidesContainer.querySelectorAll('.slide-img');
   imgs.forEach(img => {
     const i = Number(img.dataset.i);
     const slide = SLIDES[i];
+
+    // When image (either primary or fallback) finishes loading, center it
+    img.addEventListener('load', () => centerImageInSlider(img), { once: false });
+    // Also re-center on window resize
+    window.addEventListener('resize', () => centerImageInSlider(img));
+
     loadImageWithFallback(img, slide.primary, slide.fallback, slide.caption);
   });
 
@@ -164,7 +206,7 @@ function stopAuto() {
   autoTimer = null;
 }
 
-// Initial render + start auto-advance
+// Initial render + auto-advance
 renderSlides();
 startAuto();
 
@@ -200,19 +242,15 @@ if (dotsContainer) {
   });
 }
 
-// Optional: pause auto-play on hover over slideshow area
+// Pause on hover over slideshow area
 const slideshowShell = document.getElementById('slideshow');
 if (slideshowShell) {
   slideshowShell.addEventListener('mouseenter', stopAuto);
   slideshowShell.addEventListener('mouseleave', startAuto);
 }
 
-// Optional: pause when tab is hidden to save resources
+// Pause when tab is hidden
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopAuto();
   else startAuto();
 });
-
-
-
-
