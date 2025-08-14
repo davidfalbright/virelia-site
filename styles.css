@@ -64,90 +64,75 @@ body{
   .hero-grid{grid-template-columns:1fr}
 }
 
-//-----------------------
+/* ---------------------- */
+/* ——— HERO SLIDER ——— */
 /* The frame adapts to the current slide’s aspect ratio via a CSS var */
 .slider{
-  --ar: 2 / 3;                 /* default/fallback aspect ratio */
-  aspect-ratio: var(--ar);     /* ← magic: frame matches the current image */
-  width: min(680px, 92vw);     /* responsive max width; adjust to taste */
+  --ar: 2 / 3;               /* default/fallback aspect ratio */
+  aspect-ratio: var(--ar);   /* frame keeps a fixed ratio */
+  width: min(680px, 92vw);   /* responsive width cap */
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 14px;
-  overflow: hidden;
+  overflow: hidden;          /* prevent bleed */
   margin: 0 auto;
-  object-fit: contain;
 }
 
-.slides,
-.slide{ width: 100%; height: 100%; position: relative; }
-
+/* Make the slides stack on top of each other, sized by .slider */
+.slides{ position: relative; width: 100%; height: 100%; }
 .slide{
-  position:absolute; inset:0; opacity:0; transition:opacity .45s ease;
-  display:grid; place-items:center; background:#0d1117; /* blend with site */
+  position: absolute; inset: 0;
+  opacity: 0; transition: opacity .45s ease;
+  display: grid; place-items: center;
+  background: #0d1117;
 }
-.slide.active{ opacity:1; }
+.slide.active{ opacity: 1; }
 
-/* Ensure a stable measuring box for the JS centering logic */
-.slide-viewport {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;   /* center img box */
-  overflow: hidden;      /* no bleed */
-}
-/* These match what we set inline in JS, but they’re nice defaults */
-.slide-img {
+/* Contain and center the image inside the frame */
+.slide img{
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain;
-  object-position: center;
+  width: auto;               /* let intrinsic aspect win */
+  height: auto;
+  object-fit: contain;       /* show the whole image */
+  object-position: center center;
+  display: block;
 }
 
-.slide img{
-  width: 100%;
-  height: 100%;
-  object-fit: contain;          /* show 100% of the image */
-  object-position:center center;
-  background: #0d1117;          /* hide subtle rounding gaps */
-}
-
-
-.slide figcaption {
-  position: absolute;
-  inset: auto 0 0 0;
+/* Caption overlay */
+.slide figcaption{
+  position: absolute; inset: auto 0 0 0;
   padding: .85rem 1rem;
   background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.6) 70%);
-  font-size: .9rem;
-  color: #d9e8f7;
+  font-size: .9rem; color: #d9e8f7;
 }
 
-/* Mobile adjustments */
-@media (max-width: 600px) {
-  .slider {
-    width: 90%;          /* Shrink on smaller screens */
-  }
-}
-
-//-----------------------
-
-
+/* Nav buttons & dots (unchanged from your file) */
 .slide-btn{
-  position:absolute; top:50%; transform:translateY(-50%);
-  background:rgba(12,15,20,.6); border:1px solid var(--border);
-  color:#d0e8ff; width:40px; height:40px; border-radius:50%;
-  cursor:pointer;
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(12,15,20,.6); border: 1px solid var(--border);
+  color: #d0e8ff; width: 40px; height: 40px; border-radius: 50%;
+  cursor: pointer;
 }
-.slide-btn:hover{background:rgba(12,15,20,.85)}
-.prev{left:10px} .next{right:10px}
+.slide-btn:hover{ background: rgba(12,15,20,.85); }
+.prev{ left: 10px; } .next{ right: 10px; }
 
-.dots{position:absolute; bottom:10px; width:100%; display:flex; gap:.4rem; justify-content:center}
+.dots{
+  position: absolute; bottom: 10px; width: 100%;
+  display: flex; gap: .4rem; justify-content: center;
+}
 .dot{
-  width:8px; height:8px; border-radius:50%;
-  background:#53657a; border:1px solid #7087a1; opacity:.8;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #53657a; border: 1px solid #7087a1; opacity: .8;
 }
-.dot.active{background:var(--accent); opacity:1}
+.dot.active{ background: var(--accent); opacity: 1; }
 
+/* Mobile tweak */
+@media (max-width: 600px){
+  .slider{ width: 90%; }
+}
+
+/* ---------------------- */
 .hero-copy h1{margin:.25rem 0 0}
 .hero-copy p{color:var(--muted); line-height:1.6}
 .ticks{margin:.75rem 0 1.25rem; padding-left:1.1rem}
@@ -196,6 +181,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
