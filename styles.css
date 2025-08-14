@@ -72,6 +72,11 @@ body{
   border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;            /* hard clip to the frame */
+
+  /* Control width */
+  max-width: 600px;       /* set to match your desired image width */
+  margin: 0 auto;         /* center it horizontally */
+
 }
 
 /* Fixed aspect for the viewport of the slideshow */
@@ -134,7 +139,7 @@ body{
 .slide-btn:hover{background:rgba(12,15,20,.85)}
 .prev{left:10px} .next{right:10px}
 
-.dots{position:absolute; bottom:10px; width:100%; display:flex; gap:.4rem; justify-content:left}
+.dots{position:absolute; bottom:10px; width:100%; display:flex; gap:.4rem; justify-content:center}
 .dot{
   width:8px; height:8px; border-radius:50%;
   background:#53657a; border:1px solid #7087a1; opacity:.8;
@@ -189,6 +194,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
