@@ -65,68 +65,64 @@ body{
 }
 
 //-----------------------
-/* Frame */
-.slider{
+.slider {
   position: relative;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 14px;
-  overflow: hidden;            /* hard clip to the frame */
+  overflow: hidden;
 
-  /* Control width */
-  max-width: 600px;       /* set to match your desired image width */
-  margin: 0 auto;         /* center it horizontally */
+  /* Sizing */
+  max-width: 100%;       /* Never overflow container */
+  width: 582px;          /* Default desktop width */
+  aspect-ratio: 2 / 3;   /* Portrait image ratio (width : height) */
 
+  margin: 0 auto;        /* Center horizontally */
 }
 
-/* Fixed aspect for the viewport of the slideshow */
-.slides{
+.slides {
   position: relative;
-  width: 100%;            /* fills the slider width */
-  aspect-ratio: 16 / 10;       /* keeps a constant frame shape */
+  width: 100%;
+  height: 100%;
   background: #0b0d10;
 }
 
-/* Each slide fills the frame and acts as a constraint box */
-.slide{
+.slide {
   position: absolute;
   inset: 0;
   opacity: 0;
   transition: opacity .5s ease;
-  display: flex;               /* center the image within */
-  align-items: center;
+  display: flex;
   justify-content: center;
-  overflow: hidden;            /* clip any accidental overflow */
+  align-items: center;
   background: #0d1117;
 }
-.slide.active{ opacity: 1; }
 
-/* IMPORTANT: let the image size itself; never force both width and height */
-.slide img{
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;         /* show full image inside the frame */
+.slide.active {
+  opacity: 1;
 }
 
-/* Caption doesn’t affect layout of the frame */
-.slide figcaption{
+.slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;   /* Show entire image without cropping */
+}
+
+.slide figcaption {
   position: absolute;
-  left: 0; right: 0; bottom: 0;
+  inset: auto 0 0 0;
   padding: .85rem 1rem;
   background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.6) 70%);
   font-size: .9rem;
   color: #d9e8f7;
 }
 
-/* Remove default figure gap just in case */
-.slide figure{ margin: 0; height: 100%; width: 100%; }
-
-
-
-
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .slider {
+    width: 90%;          /* Shrink on smaller screens */
+  }
+}
 
 //-----------------------
 
@@ -195,6 +191,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
