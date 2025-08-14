@@ -65,16 +65,23 @@ body{
 }
 //---------------------
 /* 
+// 1
 .slider{
   position:relative; background:var(--card);
   border:1px solid var(--border); border-radius:14px; overflow:hidden;
   min-height:320px;
 }
+
+// 2
 .slides{position:relative; aspect-ratio:16/10; background:#0b0d10}
+
+// 3
 .slide{
   position:absolute; inset:0; opacity:0; transition:opacity .5s ease;
   display:grid; place-items:center; background:#0d1117;
 }
+
+// 4
 .slide.active{opacity:1}
 .slide img{width:100%; height:100%; object-fit:contain}
 .slide figcaption{
@@ -84,7 +91,8 @@ body{
 }
 
 //-----------------------
-/* Outer container */
+// /* 
+// Outer container // */
 .slider {
   position: relative;
   background: var(--card);
@@ -92,23 +100,23 @@ body{
   border-radius: 14px;
   overflow: hidden;
 
-  /* Optional framing */
+ // /* Optional framing // */
   max-width: 980px;
   margin: 0 auto;
 
-  /* Keep or remove; it can fight aspect-ratio if too large */
+ // /* Keep or remove; it can fight aspect-ratio if too large // */
   min-height: 320px;
 }
 
-/* The fixed-ratio viewport */
+// /* The fixed-ratio viewport // */
 .slides {
   position: relative;
-  width: 100%;              /* ensure aspect-ratio applies */
-  aspect-ratio: 16 / 10;    /* adjust to taste (e.g., 16/9, 4/3) */
-  background: #0b0d10;      /* letterbox/background color */
+  width: 100%;            //  /* ensure aspect-ratio applies */
+  aspect-ratio: 16 / 10;  //  /* adjust to taste (e.g., 16/9, 4/3) */
+  background: #0b0d10;   //   /* letterbox/background color */
 }
 
-/* Each slide fills the viewport */
+// /* Each slide fills the viewport // */
 .slide {
   position: absolute;
   inset: 0;
@@ -116,22 +124,22 @@ body{
   transition: opacity .5s ease;
   display: grid;
   place-items: center;
-  background: #0d1117;      /* behind the image, if needed */
+  background: #0d1117;   //   /* behind the image, if needed */
 }
 
 .slide.active { opacity: 1; }
 
-/* The image shows fully inside the frame */
+// /* The image shows fully inside the frame //*/
 .slide img {
   width: 100%;
   height: 100%;
-  object-fit: contain;       /* <-- full image, letterboxed */
+  object-fit: contain;    //   /* <-- full image, letterboxed */
   object-position: center;
   display: block;
-  background: #0b0d10;      /* optional: same as .slides for clean bars */
+  background: #0b0d10;    //  /* optional: same as .slides for clean bars */
 }
 
-/* Caption overlay */
+// /* Caption overlay// */
 .slide figcaption {
   position: absolute;
   inset: auto 0 0 0;
@@ -139,8 +147,8 @@ body{
   background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.6) 70%);
   font-size: .9rem;
   color: #d9e8f7;
-  /* optional: prevent captions from blocking clicks */
-  /* pointer-events: none; */
+ //  /* optional: prevent captions from blocking clicks // */
+//   /* pointer-events: none;// */
 }
 */
 //-----------------------
@@ -268,6 +276,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
