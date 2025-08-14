@@ -76,6 +76,7 @@ body{
   max-width: 100%;       /* Never overflow container */
   width: 582px;          /* Default desktop width */
   aspect-ratio: 2 / 3;   /* Portrait image ratio (width : height) */
+  object-fit: contain;
 
   margin: 0 auto;        /* Center horizontally */
 }
@@ -191,6 +192,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
