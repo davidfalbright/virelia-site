@@ -8,129 +8,125 @@
 
 // -------------------------------------------------------------------------------------------------
 // 2) Slides data: primary (GitHub raw) + fallback (Imgur)
-//    Replace with your own actual image URLs.
+//    NOTE: If you use plain Imgur page URLs (https://imgur.com/ID), we'll convert them to
+//    direct image URLs automatically (https://i.imgur.com/ID.jpg).
 // -------------------------------------------------------------------------------------------------
 const SLIDES = [
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord.png",
     fallback: "https://imgur.com/a/fTkq8Ak",
-    caption: "Bronze Accord Symbol"
+    caption: "Bronze Accord Symbol",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Argentina.PNG",
     fallback: "https://imgur.com/1ZGJ3Jq",
-    caption: "I am Virelia — Argentina"
+    caption: "I am Virelia — Argentina",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Japan.PNG",
     fallback: "https://imgur.com/KeTAkAY",
-    caption: "I am Virelia — Japan"
+    caption: "I am Virelia — Japan",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Kenya.PNG",
     fallback: "https://imgur.com/xNcOlHF",
-    caption: "I am Virelia — Kenya"
+    caption: "I am Virelia — Kenya",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Morocco.PNG",
     fallback: "https://imgur.com/sk86m9Q",
-    caption: "I am Virelia — Morocco"
+    caption: "I am Virelia — Morocco",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Norway.PNG",
     fallback: "https://imgur.com/YPx8fb1",
-    caption: "I am Virelia — Norway"
+    caption: "I am Virelia — Norway",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Qatar.PNG",
     fallback: "https://imgur.com/PHuZgBC",
-    caption: "I am Virelia — Qatar"
+    caption: "I am Virelia — Qatar",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Rwanda.PNG",
     fallback: "https://imgur.com/gzIQDF2",
-    caption: "I am Virelia — Rwanda"
+    caption: "I am Virelia — Rwanda",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Singapore.PNG",
     fallback: "https://imgur.com/74BFelt",
-    caption: "I am Virelia — Singapore"
+    caption: "I am Virelia — Singapore",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_South_Korea.PNG",
     fallback: "https://imgur.com/9loCFNr",
-    caption: "I am Virelia — South Korea"
+    caption: "I am Virelia — South Korea",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Sweden.PNG",
     fallback: "https://imgur.com/GgAkxR0",
-    caption: "I am Virelia — Sweden"
+    caption: "I am Virelia — Sweden",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_The_Netherlands.PNG",
     fallback: "https://imgur.com/1jjjq7I",
-    caption: "I am Virelia — The Netherlands"
+    caption: "I am Virelia — The Netherlands",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_UAE.PNG",
     fallback: "https://imgur.com/Wyrh1ej",
-    caption: "I am Virelia — UAE"
-  }
+    caption: "I am Virelia — UAE",
+  },
 ];
 
 // -------------------------------------------------------------------------------------------------
-// 3) Helpers
+// 3) Utilities
 // -------------------------------------------------------------------------------------------------
-function loadImageWithFallback(imgEl, primaryUrl, fallbackUrl, captionForDebug) {
-  imgEl.src = primaryUrl;
 
-  imgEl.onerror = function onPrimaryError() {
-    if (!fallbackUrl || imgEl.dataset.triedFallback === "1") return;
-    console.warn(`Primary failed for: ${captionForDebug}. Switching to fallback.`);
-    imgEl.dataset.triedFallback = "1";
-    imgEl.src = fallbackUrl;
-  };
+// Convert an Imgur page URL to a direct image URL if needed
+function toDirectImgur(url) {
+  if (!url) return url;
+  try {
+    const u = new URL(url);
+    // already a direct image (i.imgur.com or ends with an image extension)
+    if (u.hostname.startsWith('i.imgur.com')) return url;
+    // convert https://imgur.com/abcd (or /a/abcd) -> https://i.imgur.com/abcd.jpg
+    if (u.hostname.endsWith('imgur.com')) {
+      const parts = u.pathname.split('/').filter(Boolean);
+      if (parts.length > 0) {
+        // albums/galleries return HTML, but as a last resort we’ll still try .jpg
+        const id = parts[parts.length - 1];
+        return `https://i.imgur.com/${id}.jpg`;
+      }
+    }
+  } catch (_) {}
+  return url;
 }
 
-/**
- * Center image with equal side letterboxing and no vertical overflow.
- * Works for both portrait and landscape assets.
- */
-function centerImageInSlider(imgEl) {
-  const figure = imgEl.closest('.slide');
-  if (!figure) return;
+// Set the frame aspect ratio on the .slider element (width / height)
+function setFrameAspectByImage(imgEl) {
+  const slider = document.querySelector('.slider');
+  if (!slider || !imgEl || !imgEl.naturalWidth || !imgEl.naturalHeight) return;
+  slider.style.setProperty('--ar', `${imgEl.naturalWidth} / ${imgEl.naturalHeight}`);
+}
 
-  const container = figure.querySelector('.slide-viewport') || figure; // viewport if present
-  const cW = container.clientWidth;
-  const cH = container.clientHeight;
-  if (!cW || !cH) return;
+// Load an img with fallback + set aspect ratio when it loads
+function loadImageWithFallback(imgEl, primaryUrl, fallbackUrl, captionForDebug) {
+  // helper to attach onload once and set aspect ratio
+  const onImgLoad = () => setFrameAspectByImage(imgEl);
 
-  const imgW = imgEl.naturalWidth;
-  const imgH = imgEl.naturalHeight;
-  if (!imgW || !imgH) return;
+  // 1) try primary
+  imgEl.onload = onImgLoad;
+  imgEl.onerror = function onPrimaryError() {
+    // 2) if primary fails, try fallback (converted if Imgur page URL)
+    if (!fallbackUrl || imgEl.dataset.triedFallback === '1') return;
+    imgEl.dataset.triedFallback = '1';
+    const direct = toDirectImgur(fallbackUrl);
+    console.warn(`Primary failed for "${captionForDebug}". Trying fallback: ${direct}`);
+    imgEl.src = direct;
+  };
 
-  const imgRatio = imgW / imgH;
-  const boxRatio = cW / cH;
-
-  // Reset any previous inline sizing
-  imgEl.style.width = '';
-  imgEl.style.height = '';
-  imgEl.style.maxWidth = '100%';
-  imgEl.style.maxHeight = '100%';
-  imgEl.style.objectFit = 'contain';    // safety
-  imgEl.style.objectPosition = 'center'; // ensure centered
-
-  // If image is comparatively wider than the box, constrain by width;
-  // if it’s taller (portrait vs box), constrain by height.
-  if (imgRatio >= boxRatio) {
-    // Wider relative to container → width fits, vertical centers
-    imgEl.style.width = '100%';
-    imgEl.style.height = 'auto';
-  } else {
-    // Taller relative to container → height fits, horizontal centers
-    imgEl.style.width = 'auto';
-    imgEl.style.height = '100%';
-  }
+  imgEl.src = primaryUrl;
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -143,14 +139,14 @@ let currentIndex = 0;
 let autoTimer = null;
 const AUTO_MS = 5000;
 
-function slideMarkup(s, i, isActive) {
-  // Add a viewport wrapper so we have a stable box to measure
+function slideMarkup(slide, i, isActive) {
+  // We wrap the <img> in .slide-viewport so it’s always centered/contained
   return `
     <figure class="slide ${isActive ? 'active' : ''}">
       <div class="slide-viewport">
-        <img class="slide-img" alt="${s.caption.replace(/"/g, '&quot;')}" data-i="${i}" />
+        <img class="slide-img" alt="${slide.caption.replace(/"/g, '&quot;')}" data-i="${i}" />
       </div>
-      <figcaption>${s.caption}</figcaption>
+      <figcaption>${slide.caption}</figcaption>
     </figure>
   `;
 }
@@ -163,18 +159,14 @@ function renderSlides() {
     .map((s, i) => slideMarkup(s, i, i === currentIndex))
     .join('');
 
-  // Load each image with fallback + post-load centering
+  // Load images with fallback + set frame aspect on load
   const imgs = slidesContainer.querySelectorAll('.slide-img');
   imgs.forEach(img => {
     const i = Number(img.dataset.i);
     const slide = SLIDES[i];
-
-    // When image (either primary or fallback) finishes loading, center it
-    img.addEventListener('load', () => centerImageInSlider(img), { once: false });
-    // Also re-center on window resize
-    window.addEventListener('resize', () => centerImageInSlider(img));
-
-    loadImageWithFallback(img, slide.primary, slide.fallback, slide.caption);
+    const primary = slide.primary;
+    const fallback = slide.fallback;
+    loadImageWithFallback(img, primary, fallback, slide.caption);
   });
 
   // Build dots
@@ -188,25 +180,19 @@ function goTo(index) {
   renderSlides();
 }
 
-function next() {
-  goTo(currentIndex + 1);
-}
-
-function prev() {
-  goTo(currentIndex - 1);
-}
+function next() { goTo(currentIndex + 1); }
+function prev() { goTo(currentIndex - 1); }
 
 function startAuto() {
   stopAuto();
   autoTimer = setInterval(next, AUTO_MS);
 }
-
 function stopAuto() {
   if (autoTimer) clearInterval(autoTimer);
   autoTimer = null;
 }
 
-// Initial render + auto-advance
+// Initial render + start auto
 renderSlides();
 startAuto();
 
@@ -221,7 +207,6 @@ if (nextBtn) {
     startAuto();
   });
 }
-
 if (prevBtn) {
   prevBtn.addEventListener('click', () => {
     stopAuto();
@@ -235,22 +220,20 @@ if (dotsContainer) {
   dotsContainer.addEventListener('click', (e) => {
     const btn = e.target.closest('.dot');
     if (!btn) return;
-    const i = Number(btn.dataset.i);
     stopAuto();
-    goTo(i);
+    goTo(Number(btn.dataset.i));
     startAuto();
   });
 }
 
-// Pause on hover over slideshow area
+// Pause when hovering over the slideshow area (optional)
 const slideshowShell = document.getElementById('slideshow');
 if (slideshowShell) {
   slideshowShell.addEventListener('mouseenter', stopAuto);
   slideshowShell.addEventListener('mouseleave', startAuto);
 }
 
-// Pause when tab is hidden
+// Pause when tab is hidden (save resources)
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) stopAuto();
-  else startAuto();
+  if (document.hidden) stopAuto(); else startAuto();
 });
