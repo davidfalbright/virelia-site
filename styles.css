@@ -61,7 +61,7 @@ body{
 .hero{padding:3.25rem 0 2rem}
 .hero-grid{
   display:grid; gap:1rem;
-  grid-template-columns:  .5fr 1.1fr;
+  grid-template-columns:  .6fr 1.1fr;
 }
 @media (max-width:960px){
   .hero-grid{grid-template-columns:1fr}
@@ -77,7 +77,7 @@ body{
 .slider {
   width: clamp(var(--slider-min), var(--slider-vw), var(--slider-max));
   max-width: 100%;
-  height: 
+  height: 100% ;
   margin: 0 auto;
   position: relative;
   background: var(--card, #0d1117);
@@ -228,6 +228,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
