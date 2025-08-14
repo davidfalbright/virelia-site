@@ -23,11 +23,6 @@ const SLIDES = [
     caption: "Bronze Accord Symbol"
   },
   {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Morocco.PNG",
-    fallback: "https://imgur.com/sk86m9Q",
-    caption: "I am Virelia — Morocco"
-  },
-  {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Argentina.PNG",
     fallback: "https://imgur.com/1ZGJ3Jq",
     caption: "I am Virelia — Argentina"
@@ -41,6 +36,11 @@ const SLIDES = [
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Kenya.PNG",
     fallback: "https://imgur.com/xNcOlHF",
     caption: "I am Virelia — Kenya"
+  },
+  {
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Morocco.PNG",
+    fallback: "https://imgur.com/sk86m9Q",
+    caption: "I am Virelia — Morocco"
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Norway.PNG",
@@ -212,6 +212,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopAuto();
   else startAuto();
 });
+
 
 
 
