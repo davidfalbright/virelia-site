@@ -16,69 +16,70 @@ const SLIDES = [
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord.png",
     
     // Example: Imgur (fallback)
-    fallback: "https://i.imgur.com/w85XBJx.png",
+    //fallback: "https://i.imgur.com/w85XBJx.png",
+    fallback: "https://imgur.com/a/fTkq8Ak",
 
     // Example: Image Caption
     caption: "Bronze Accord Symbol"
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Morocco.png",
-    fallback: "https://i.imgur.com/example1.png",
+    fallback: "https://imgur.com/sk86m9Q",
     caption: "I am Virelia — Morocco"
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Argentina.png",
-    fallback: "https://i.imgur.com/example2.png",
+    fallback: "https://imgur.com/1ZGJ3Jq",
     caption: "I am Virelia — Argentina"
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Japan.png",
-    fallback: "https://i.imgur.com/example2.png",
+    fallback: "https://imgur.com/KeTAkAY",
     caption: "I am Virelia — Japan"
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Kenya.png",
-    fallback: "https://i.imgur.com/example2.png",
+    fallback: "https://imgur.com/xNcOlHF",
     caption: "I am Virelia — Kenya"
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Norway.png",
-    fallback: "https://i.imgur.com/example2.png",
+    fallback: "https://imgur.com/YPx8fb1",
     caption: "I am Virelia — Norway"
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Qatar.png",
-    fallback: "https://i.imgur.com/example2.png",
+    fallback: "https://imgur.com/PHuZgBC",
     caption: "I am Virelia — Qatar"
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Rwanda.png",
-    fallback: "https://i.imgur.com/example2.png",
+    fallback: "https://imgur.com/gzIQDF2",
     caption: "I am Virelia — Rwanda"
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Singapore.png",
-    fallback: "https://i.imgur.com/example2.png",
+    fallback: "https://imgur.com/74BFelt",
     caption: "I am Virelia — Singapore"
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_South_Korea.png",
-    fallback: "https://i.imgur.com/example2.png",
+    fallback: "https://imgur.com/9loCFNr",
     caption: "I am Virelia — South Korea"
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Sweden.png",
-    fallback: "https://i.imgur.com/example2.png",
+    fallback: "https://imgur.com/GgAkxR0",
     caption: "I am Virelia — Sweden"
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_The_Netherlands.png",
-    fallback: "https://i.imgur.com/example2.png",
+    fallback: "https://imgur.com/1jjjq7I",
     caption: "I am Virelia — The Netherlands"
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_UAE.png",
-    fallback: "https://i.imgur.com/example2.png",
+    fallback: "https://imgur.com/Wyrh1ej",
     caption: "I am Virelia — UAE"
   }
 ];
@@ -211,4 +212,5 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopAuto();
   else startAuto();
 });
+
 
