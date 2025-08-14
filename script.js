@@ -13,7 +13,7 @@
 const SLIDES = [
   {
     // Example: GitHub raw URL (primary)
-    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-norway.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord.png",
     
     // Example: Imgur (fallback)
     fallback: "https://i.imgur.com/w85XBJx.png",
@@ -22,62 +22,62 @@ const SLIDES = [
     caption: "Bronze Accord Symbol"
   },
   {
-    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-germany.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Morocco.png",
     fallback: "https://i.imgur.com/example1.png",
     caption: "I am Virelia — Morocco"
   },
   {
-    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Argentina.png",
     fallback: "https://i.imgur.com/example2.png",
     caption: "I am Virelia — Argentina"
   },
   {
-    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Japan.png",
     fallback: "https://i.imgur.com/example2.png",
     caption: "I am Virelia — Japan"
   },
   {
-    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Kenya.png",
     fallback: "https://i.imgur.com/example2.png",
     caption: "I am Virelia — Kenya"
   },
   {
-    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Norway.png",
     fallback: "https://i.imgur.com/example2.png",
     caption: "I am Virelia — Norway"
   },
   {
-    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Qatar.png",
     fallback: "https://i.imgur.com/example2.png",
     caption: "I am Virelia — Qatar"
   },
   {
-    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Rwanda.png",
     fallback: "https://i.imgur.com/example2.png",
     caption: "I am Virelia — Rwanda"
   },
   {
-    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Singapore.png",
     fallback: "https://i.imgur.com/example2.png",
     caption: "I am Virelia — Singapore"
   },
   {
-    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_South_Korea.png",
     fallback: "https://i.imgur.com/example2.png",
-    caption: "I am Virelia — Sourth Korea"
+    caption: "I am Virelia — South Korea"
   },
   {
-    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Sweden.png",
     fallback: "https://i.imgur.com/example2.png",
     caption: "I am Virelia — Sweden"
   },
   {
-    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_The_Netherlands.png",
     fallback: "https://i.imgur.com/example2.png",
     caption: "I am Virelia — The Netherlands"
   },
   {
-    primary: "https://raw.githubusercontent.com/username/repo/main/images/virelia-japan.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_UAE.png",
     fallback: "https://i.imgur.com/example2.png",
     caption: "I am Virelia — UAE"
   }
@@ -211,3 +211,4 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopAuto();
   else startAuto();
 });
+
