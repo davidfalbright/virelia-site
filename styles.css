@@ -75,6 +75,7 @@ body{
   border-radius: 14px;
   overflow: hidden;
   margin: 0 auto;
+  object-fit: contain;
 }
 
 .slides,
@@ -178,6 +179,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
