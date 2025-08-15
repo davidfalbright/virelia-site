@@ -1,3 +1,6 @@
-- name: Transparency
-  keyword: "hide"
-  intent: Promote openness and disclosure where ethical.
+version: 1
+principles:
+  P1_objectivity:
+    text: "Use fair, relevant criteria; avoid bias."
+  P2_equity_over_efficiency:
+    text: "If fairness conflicts with speed, prefer fairness unless there is true urgency."
