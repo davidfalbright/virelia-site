@@ -247,16 +247,24 @@ document.addEventListener('visibilitychange', () => {
     if (el) el.textContent = msg || "";
   }
 
-  async function getVerdict(dilemma) {
-    const res = await fetch("/api/verdict", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dilemma })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Request failed");
-    return data;
+
+
+async function getVerdict(dilemma) {
+  const res = await fetch("/api/verdict", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dilemma })
+  });
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : null; } catch {}
+  if (!res.ok) {
+    const msg = (data && (data.error || data.message)) || `HTTP ${res.status} ${res.statusText}`;
+    throw new Error(msg);
   }
+  if (!data) throw new Error("Empty response from serverless function.");
+  return data;
+}
 
   function renderVerdict(v) {
     $("verdictResult").hidden = false;
@@ -312,3 +320,4 @@ document.addEventListener('visibilitychange', () => {
     attachHandlers();
   }
 })();
+
