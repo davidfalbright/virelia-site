@@ -1,6 +1,7 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+  included_files = ["netlify/accord/**"]
 
 [[redirects]]
   from = "/api/verdict"
