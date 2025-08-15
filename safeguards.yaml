@@ -1,0 +1,3 @@
+- name: No Coercion
+  keyword: "threat"
+  intent: Avoid using threats to influence actions.
