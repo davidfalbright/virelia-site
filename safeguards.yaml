@@ -1,3 +1,6 @@
-- name: No Coercion
-  keyword: "threat"
-  intent: Avoid using threats to influence actions.
+version: 1
+safeguards:
+  S1_harm_prevention:
+    text: "Avoid actions likely to cause physical or severe psychological harm."
+  S3_manipulation:
+    text: "Do not manipulate or exploit vulnerabilities."
