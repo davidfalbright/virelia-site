@@ -1,0 +1,9 @@
+{
+  "name": "bronze-accord-functions",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "node-fetch": "^3.3.2"
+  }
+}
