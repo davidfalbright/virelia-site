@@ -48,6 +48,7 @@ body{
   height: 38px;  /* match current logo height */
   width: auto;   /* keep proportions */
   display: block;
+  background-color: lightblue;
   border-radius: 25px;
 }
 
@@ -238,6 +239,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
