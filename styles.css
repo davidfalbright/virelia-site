@@ -202,6 +202,45 @@ body{
   box-shadow:0 10px 26px rgba(110,210,255,.25);
 }
 
+/* ---------------------- */
+/* Bronze Accord Verdict Widget */
+.verdict-section { margin: 3rem auto; max-width: 960px; }
+.section-title { font-size: 1.75rem; margin: 0 0 .25rem; }
+.section-subtitle { color: #6b7280; margin: 0 0 1rem; }
+
+.verdict-card {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+  padding: 1.25rem 1.25rem 1.5rem; box-shadow: 0 6px 18px rgba(0,0,0,.05);
+}
+
+.verdict-label { font-weight: 600; display: block; margin-bottom: .5rem; }
+.verdict-input {
+  width: 100%; border: 1px solid #d1d5db; border-radius: 10px; padding: .75rem .9rem;
+  font: inherit; resize: vertical; outline: none;
+}
+.verdict-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+
+.verdict-actions { display: flex; align-items: center; gap: .75rem; margin-top: .75rem; }
+.btn.btn-primary {
+  background: #111827; color: #fff; border: 0; padding: .6rem 1rem; border-radius: 10px; cursor: pointer;
+}
+.btn.btn-primary:hover { background: #0b1220; }
+.verdict-status { color: #6b7280; font-size: .95rem; }
+
+.verdict-result { margin-top: 1rem; }
+.verdict-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+.verdict-pill {
+  background: #f3f4f6; color: #111827; border-radius: 999px; padding: .35rem .75rem; font-weight: 600;
+}
+.verdict-meta { color: #374151; }
+.verdict-message { margin: .5rem 0 0; color: #1f2937; }
+
+.verdict-triggers { margin-top: 1rem; }
+.verdict-triggers-title { font-size: 1.1rem; margin: 0 0 .25rem; }
+.verdict-trigger-list { list-style: disc; padding-left: 1.25rem; }
+.verdict-trigger-list code { background: #111827; color: #fff; padding: .15rem .35rem; border-radius: 6px; }
+
+/* ---------------------- */
 /* sections */
 .section{padding:3rem 0}
 .section.alt{background:linear-gradient(180deg,#0b0d10,#0f1319)}
@@ -239,6 +278,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
