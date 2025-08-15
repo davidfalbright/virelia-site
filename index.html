@@ -76,6 +76,36 @@
       </div>
     </div>
   </section>
+  
+<!-- START: Bronze Accord Verdict Widget -->
+<section class="container verdict-section" id="verdict">
+  <h2 class="section-title">Get an Ethics Verdict</h2>
+  <p class="section-subtitle">Describe the dilemma in plain language. We’ll return a decision route and explain which beliefs were triggered.</p>
+
+  <div class="verdict-card">
+    <label for="dilemmaInput" class="verdict-label">Your dilemma</label>
+    <textarea id="dilemmaInput" class="verdict-input" rows="6" placeholder="e.g., Can I bump another patient to get an earlier appointment?"></textarea>
+
+    <div class="verdict-actions">
+      <button id="getVerdictBtn" class="btn btn-primary">Get Verdict</button>
+      <span id="verdictStatus" class="verdict-status" aria-live="polite"></span>
+    </div>
+
+    <div id="verdictResult" class="verdict-result" hidden>
+      <div class="verdict-row">
+        <div class="verdict-pill" id="verdictRoute">Route: —</div>
+        <div class="verdict-meta"><strong>Risk:</strong> <span id="verdictRisk">—</span> • <strong>Urgency:</strong> <span id="verdictUrgency">—</span></div>
+      </div>
+      <p id="verdictMessage" class="verdict-message"></p>
+
+      <div id="verdictTriggersWrap" class="verdict-triggers" hidden>
+        <h3 class="verdict-triggers-title">Triggered Items</h3>
+        <ul id="verdictTriggers" class="verdict-trigger-list"></ul>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- END: Bronze Accord Verdict Widget -->
 
   <!-- About -->
   <section id="about" class="section">
@@ -168,10 +198,11 @@
       </div>
     </div>
   </footer>
+  <script src="script.js" defer></script>
 
-  <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
