@@ -4,7 +4,6 @@
 const fs = require("fs");
 const path = require("path");
 const yaml = require("js-yaml");
-const fetch = require("node-fetch"); // Node 18+ has fetch, but this keeps it explicit
 
 function json(status, body) {
   return {
