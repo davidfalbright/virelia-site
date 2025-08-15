@@ -1,6 +1,6 @@
-- name: Respect for Human Life
-  keyword: "kill"
-  intent: Prevent actions causing unjust harm to human life.
-- name: Dignity and Autonomy
-  keyword: "enslave"
-  intent: Uphold human dignity and free will.
+version: 1
+convictions:
+  C1_dignity:
+    text: "Respect the inherent dignity of all persons."
+  C2_consent:
+    text: "Honor informed consent and avoid coercion."
