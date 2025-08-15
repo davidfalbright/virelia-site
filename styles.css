@@ -118,16 +118,14 @@ body{
 }
 
 /* Caption strip (optional). Stays inside the frame. */
-/*
 .slide figcaption {
   position: absolute;
   inset: auto 0 0 0;               bottom:0; left:0; right:0 
   padding: .85rem 1rem;
-  font-size: .9rem;
+  font-size: .5rem;
   color: #d9e8f7;
   background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.65) 72%);
 }
- */
 
 /* --- Navigation dots (if present) --- */
 .dots {
@@ -230,6 +228,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
