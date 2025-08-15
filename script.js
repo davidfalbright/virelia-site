@@ -237,3 +237,78 @@ if (slideshowShell) {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopAuto(); else startAuto();
 });
+
+// Bronze Accord Verdict Widget wiring
+(function () {
+  function $(id) { return document.getElementById(id); }
+
+  function setStatus(msg) {
+    const el = $("verdictStatus");
+    if (el) el.textContent = msg || "";
+  }
+
+  async function getVerdict(dilemma) {
+    const res = await fetch("/api/verdict", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dilemma })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Request failed");
+    return data;
+  }
+
+  function renderVerdict(v) {
+    $("verdictResult").hidden = false;
+    $("verdictRoute").textContent = `Route: ${v.route}`;
+    $("verdictRisk").textContent = v?.composite?.risk ?? "—";
+    $("verdictUrgency").textContent = v?.composite?.urgency ?? "—";
+    $("verdictMessage").textContent = v.message || "";
+
+    const wrap = $("verdictTriggersWrap");
+    const list = $("verdictTriggers");
+    list.innerHTML = "";
+
+    if (Array.isArray(v.triggers) && v.triggers.length) {
+      wrap.hidden = false;
+      v.triggers.forEach(t => {
+        const li = document.createElement("li");
+        li.innerHTML = `<code>${t.type}:${t.code || t.name || "—"}</code> — ${t.text || t.intent || ""}`;
+        list.appendChild(li);
+      });
+    } else {
+      wrap.hidden = true;
+    }
+  }
+
+  function attachHandlers() {
+    const btn = $("getVerdictBtn");
+    const input = $("dilemmaInput");
+    if (!btn || !input) return;
+
+    btn.addEventListener("click", async () => {
+      const dilemma = (input.value || "").trim();
+      if (dilemma.length < 10) {
+        setStatus("Please enter at least 10 characters.");
+        return;
+      }
+      setStatus("Evaluating…");
+      $("verdictResult").hidden = true;
+
+      try {
+        const verdict = await getVerdict(dilemma);
+        renderVerdict(verdict);
+        setStatus("");
+      } catch (err) {
+        setStatus("");
+        alert(`Error: ${err.message}`);
+      }
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", attachHandlers);
+  } else {
+    attachHandlers();
+  }
+})();
