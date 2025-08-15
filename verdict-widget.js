@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const dilemma = document.getElementById("dilemmaInput").value.trim();
     if (!dilemma) return alert("Please enter a dilemma.");
 
-    const res = await fetch("/.netlify/verdict", {
+    const res = await fetch("verdict", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dilemma })
