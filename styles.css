@@ -132,7 +132,7 @@ body{
 /* --- Navigation dots (if present) --- */
 .dots {
   display: flex;
-  gap: .5rem;
+  gap: .25rem;
   justify-content: center;
   align-items: center;
   margin: .75rem 0 0;             /* a bit of space under the frame */
@@ -230,6 +230,7 @@ a.link{color:var(--accent)}
 a.link:hover{opacity:.85}
 .small{color:#99aec2; font-size:.95rem}
 .lead{font-size:1.05rem}
+
 
 
 
