@@ -1,0 +1,8 @@
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/verdict"
+  to = "/.netlify/functions/verdict"
+  status = 200
