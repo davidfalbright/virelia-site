@@ -1,35 +1,36 @@
 // LLM-powered Bronze Accord verdict (Netlify Function)
 // POST /api/verdict  →  /.netlify/functions/verdict
-// Env required: OPENAI_API_KEY
+// Required env: OPENAI_API_KEY
+// Optional env: OPENAI_MODEL (default gpt-4o-mini), OPENAI_BASE_URL, VIRELIA_OFFLINE=1
+
 const fs = require("fs");
 const path = require("path");
 const yaml = require("js-yaml");
-const OFFLINE = process.env.VIRELIA_OFFLINE === "1";
 
-function isQuotaOrRateLimit(status, text) {
-  if (status === 429 || status === 402 || status === 403) return true;
-  const s = (text || "").toLowerCase();
-  return s.includes("rate limit") || s.includes("quota") || s.includes("billing");
-}
-
+// ---------- helpers ----------
 function json(status, body) {
   return {
     statusCode: status,
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",        // lock to your domain in prod
+      "Access-Control-Allow-Origin": "*",               // tighten to your domain in prod
       "Access-Control-Allow-Headers": "Content-Type",
       "Access-Control-Allow-Methods": "POST,OPTIONS"
     },
     body: JSON.stringify(body || {}, null, 2)
   };
 }
-
+function isQuotaOrRateLimit(status, text) {
+  if (status === 429 || status === 402 || status === 403) return true;
+  const s = (text || "").toLowerCase();
+  return s.includes("rate limit") || s.includes("quota") || s.includes("billing");
+}
 function safeLoadYaml(p) {
-  return yaml.load(fs.readFileSync(p, "utf8"));
+  try { return yaml.load(fs.readFileSync(p, "utf8")); }
+  catch (e) { throw new Error(`Failed to load ${p}: ${e.message}`); }
 }
 
-// Load reservoirs (bundled via netlify.toml included_files)
+// ---------- load Bronze Accord reservoirs (bundled via netlify.toml included_files) ----------
 let ACCORD = null;
 function loadAccord() {
   if (ACCORD) return ACCORD;
@@ -41,28 +42,102 @@ function loadAccord() {
   return ACCORD;
 }
 
-// Minimal local heuristic fallback (used if LLM fails)
+// ---------- heuristic fallback (no LLM) ----------
 function heuristicFallback(dilemma) {
   const t = (dilemma || "").toLowerCase();
   const triggers = [];
-  const push = (type, code, text) => triggers.push({type, code, text});
-  if (/\bsteal|rob|mug|take .* money|extort/.test(t)) push("safeguard","S1_harm_prevention","Avoid actions likely to cause physical or severe psychological harm.");
-  if (/coerce|threat|force|without consent/.test(t)) push("conviction","C2_consent","Honor informed consent and avoid coercion.");
-  if (/humiliate|bully|demean|shame|harass/.test(t)) push("conviction","C1_dignity","Respect the inherent dignity of all persons.");
+  const push = (type, code, text) => triggers.push({ type, code, text });
+
+  // simple signals — expand to your needs
+  if (/\bsteal|rob|mug|take .* money|extort|threat(en|s)?\b/.test(t)) {
+    push("safeguard","S1_harm_prevention","Avoid actions likely to cause physical or severe psychological harm.");
+  }
+  if (/coerce|without consent|force|blackmail/.test(t)) {
+    push("conviction","C2_consent","Honor informed consent and avoid coercion.");
+  }
+  if (/humiliate|bully|demean|shame|harass/.test(t)) {
+    push("conviction","C1_dignity","Respect the inherent dignity of all persons.");
+  }
+  if (/unfair|skip the line|discriminate/.test(t)) {
+    push("principle","P2_equity_over_efficiency","If fairness conflicts with speed, prefer fairness unless there is true urgency.");
+  }
+
   let risk = Math.min(1, triggers.length * 0.25);
-  let route = risk >= 0.7 ? "ESCALATE" : risk >= 0.5 ? "CLARIFY" : risk >= 0.25 ? "ALLOW_WITH_CAUTIONS" : "ALLOW";
-  return { route, risk, triggers, message: route==="ALLOW"?"Approved: No material conflicts.":
-    route==="ALLOW_WITH_CAUTIONS"?"Allowed with cautions.":route==="CLARIFY"?"Clarification required.":"Escalation required." };
+  let route = risk >= 0.70 ? "ESCALATE" : risk >= 0.50 ? "CLARIFY" : risk >= 0.25 ? "ALLOW_WITH_CAUTIONS" : "ALLOW";
+  return {
+    route,
+    risk,
+    triggers,
+    message:
+      route === "ALLOW" ? "Approved: No material conflicts." :
+      route === "ALLOW_WITH_CAUTIONS" ? "Allowed with cautions." :
+      route === "CLARIFY" ? "Clarification required." :
+      "Escalation required."
+  };
 }
 
+// ---------- OpenAI config ----------
 const OPENAI_BASE = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini"; // fast, cheap; change if you like
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const OFFLINE = process.env.VIRELIA_OFFLINE === "1";
 
+// strict reply contract (JSON schema) for the LLM
+const outputContract = {
+  type: "object",
+  properties: {
+    route: { enum: ["ALLOW","ALLOW_WITH_CAUTIONS","CLARIFY","ESCALATE"] },
+    composite: {
+      type: "object",
+      properties: {
+        risk: { type: "number" },
+        urgency: { enum: ["low","medium","high","critical"] }
+      },
+      required: ["risk","urgency"]
+    },
+    triggers: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          type: { enum: ["conviction","safeguard","principle"] },
+          code: { type: "string" },
+          text: { type: "string" }
+        },
+        required: ["type","code","text"]
+      }
+    },
+    message: { type: "string" }
+  },
+  required: ["route","composite","triggers","message"],
+  additionalProperties: false
+};
+
+// one retry with tiny backoff for 429s
+async function callOpenAI(body, apiKey, base) {
+  const attempt = async () => {
+    const res = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+      body: JSON.stringify(body)
+    });
+    const txt = await res.text();
+    return { ok: res.ok, status: res.status, txt };
+  };
+  let r = await attempt();
+  if (!r.ok && r.status === 429) {
+    await new Promise(r => setTimeout(r, 400));
+    r = await attempt();
+  }
+  return r;
+}
+
+// ---------- handler ----------
 exports.handler = async (event) => {
   try {
     if (event.httpMethod === "OPTIONS") return json(204, {});
-    if (event.httpMethod !== "POST") return json(405, { error: "Method Not Allowed" });
+    if (event.httpMethod !== "POST")    return json(405, { error: "Method Not Allowed" });
 
+    // parse input
     let payload = {};
     try { payload = JSON.parse(event.body || "{}"); }
     catch { return json(400, { error: "Invalid JSON body" }); }
@@ -71,112 +146,86 @@ exports.handler = async (event) => {
     const context = payload.context || {};
     if (dilemma.length < 10) return json(400, { error: "Please provide a dilemma (≥ 10 chars)." });
 
+    // offline mode or missing key → fallback
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return json(500, { error: "OPENAI_API_KEY not set" });
-
-    const accord = loadAccord();
-
-    // Build compact, in-context “rulebook”
-    const rulebook = {
-      convictions: accord.convictions?.convictions || {},
-      safeguards:  accord.safeguards?.safeguards  || {},
-      principles:  accord.principles?.principles  || {}
-    };
-
-    // Strict reply contract for the model
-    const outputContract = {
-      type: "object",
-      properties: {
-        route: { enum: ["ALLOW","ALLOW_WITH_CAUTIONS","CLARIFY","ESCALATE"] },
-        composite: {
-          type: "object",
-          properties: {
-            risk: { type: "number" },
-            urgency: { enum: ["low","medium","high","critical"] }
-          },
-          required: ["risk","urgency"]
-        },
-        triggers: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              type: { enum: ["conviction","safeguard","principle"] },
-              code: { type: "string" },
-              text: { type: "string" }
-            },
-            required: ["type","code","text"]
-          }
-        },
-        message: { type: "string" }
-      },
-      required: ["route","composite","triggers","message"],
-      additionalProperties: false
-    };
-
-    // System prompt + instructions
-    const sys = [
-      "You are Virelia, applying the Bronze Accord ethical framework.",
-      "Use the YAML reservoirs (convictions, safeguards, principles) to evaluate the dilemma.",
-      "Return ONLY the JSON object that matches the provided schema.",
-      "If the dilemma suggests imminent harm, illegal activity, or severe abuse, route = ESCALATE.",
-      "Prefer fairness over speed unless true urgency is specified."
-    ].join(" ");
-
-    const user = {
-      dilemma,
-      context,
-      rulebook,              // the belief reservoirs
-      guidance: {
-        // The 4 properties define cognition (for reference); governance decides routing.
-        routing: {
-          highRisk: "ESCALATE",
-          mediumRisk: "CLARIFY",
-          lowRisk: "ALLOW_WITH_CAUTIONS",
-          minimalRisk: "ALLOW"
-        }
-      }
-    };
-
-    // Ask the LLM
-    const res = await fetch(`${OPENAI_BASE}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        temperature: 0.2,
-        response_format: { type: "json_schema", json_schema: { name: "verdict", schema: outputContract, strict: true } },
-        messages: [
-          { role: "system", content: sys },
-          { role: "user", content: JSON.stringify(user) }
-        ]
-      })
-    });
-
-    if (!res.ok) {
-      const txt = await res.text().catch(()=> "");
-      // fallback to heuristics if LLM fails
+    if (OFFLINE || !apiKey) {
       const fb = heuristicFallback(dilemma);
       return json(200, {
         timestamp: new Date().toISOString(),
         composite: { risk: Number(fb.risk.toFixed(2)), urgency: fb.route==="ESCALATE"?"high":fb.route==="CLARIFY"?"medium":"low" },
         route: fb.route,
         triggers: fb.triggers,
-        message: `[Fallback] ${fb.message} • LLM error: ${res.status} ${res.statusText} ${txt.slice(0,180)}`
+        message: OFFLINE ? "Operating in offline (fallback) mode." : "Using local ethics fallback (no API key configured)."
       });
     }
 
-    const data = await res.json();
-    const content = data.choices?.[0]?.message?.content;
-    const parsed = JSON.parse(content); // guaranteed by response_format
+    // load reservoirs and prepare rulebook
+    const accord = loadAccord();
+    const rulebook = {
+      convictions: accord.convictions?.convictions || {},
+      safeguards:  accord.safeguards?.safeguards  || {},
+      principles:  accord.principles?.principles  || {}
+    };
 
-    return json(200, {
-      timestamp: new Date().toISOString(),
-      ...parsed
-    });
+    // prompts
+    const sys = [
+      "You are Virelia, applying the Bronze Accord ethical framework.",
+      "Use the provided rulebook (convictions, safeguards, principles) to evaluate the dilemma.",
+      "Return ONLY the JSON object that matches the provided schema.",
+      "If the dilemma suggests imminent harm, illegal activity, or severe abuse, route = ESCALATE.",
+      "Prefer fairness over speed unless true urgency is specified."
+    ].join(" ");
 
+    const user = { dilemma, context, rulebook, guidance: {
+      routing: { highRisk: "ESCALATE", mediumRisk: "CLARIFY", lowRisk: "ALLOW_WITH_CAUTIONS", minimalRisk: "ALLOW" }
+    }};
+
+    // request body for OpenAI
+    const body = {
+      model: OPENAI_MODEL,
+      temperature: 0.2,
+      response_format: { type: "json_schema", json_schema: { name: "verdict", schema: outputContract, strict: true } },
+      messages: [
+        { role: "system", content: sys },
+        { role: "user", content: JSON.stringify(user) }
+      ]
+    };
+
+    // call OpenAI with graceful fallback
+    const r = await callOpenAI(body, apiKey, OPENAI_BASE);
+    if (!r.ok) {
+      if (isQuotaOrRateLimit(r.status, r.txt)) {
+        const fb = heuristicFallback(dilemma);
+        return json(200, {
+          timestamp: new Date().toISOString(),
+          composite: { risk: Number(fb.risk.toFixed(2)), urgency: fb.route==="ESCALATE"?"high":fb.route==="CLARIFY"?"medium":"low" },
+          route: fb.route,
+          triggers: fb.triggers,
+          message: "Using local ethics fallback (API temporarily unavailable)."
+        });
+      }
+      return json(502, { error: `Upstream model error (${r.status}). Please try again.` });
+    }
+
+    // parse strict JSON from OpenAI (response_format enforces JSON content)
+    let parsed;
+    try {
+      const data = JSON.parse(r.txt);
+      const content = data.choices?.[0]?.message?.content || "{}";
+      parsed = JSON.parse(content);
+    } catch {
+      const fb = heuristicFallback(dilemma);
+      return json(200, {
+        timestamp: new Date().toISOString(),
+        composite: { risk: Number(fb.risk.toFixed(2)), urgency: fb.route==="ESCALATE"?"high":fb.route==="CLARIFY"?"medium":"low" },
+        route: fb.route,
+        triggers: fb.triggers,
+        message: "Using local ethics fallback (invalid model response)."
+      });
+    }
+
+    return json(200, { timestamp: new Date().toISOString(), ...parsed });
   } catch (e) {
-    // last-resort fallback
     return json(500, { error: e.message });
   }
 };
