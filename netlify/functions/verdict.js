@@ -4,6 +4,13 @@
 const fs = require("fs");
 const path = require("path");
 const yaml = require("js-yaml");
+const OFFLINE = process.env.VIRELIA_OFFLINE === "1";
+
+function isQuotaOrRateLimit(status, text) {
+  if (status === 429 || status === 402 || status === 403) return true;
+  const s = (text || "").toLowerCase();
+  return s.includes("rate limit") || s.includes("quota") || s.includes("billing");
+}
 
 function json(status, body) {
   return {
