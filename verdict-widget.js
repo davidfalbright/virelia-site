@@ -4,7 +4,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   container.innerHTML = `
     <textarea id="dilemmaInput" placeholder="Enter your dilemma..."></textarea>
+    <textarea id="dilemmaInput" placeholder="Virelia is temporarily offline — API not connected.."></textarea>
+    dilemmaInput.disabled = true;
+    
     <button id="getVerdictBtn">Get Verdict</button>
+    button.disabled = true;
+    
     <pre id="verdictOutput"></pre>
   `;
 
