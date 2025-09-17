@@ -13,7 +13,7 @@
 // -------------------------------------------------------------------------------------------------
 const SLIDES = [
   {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord.png",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord_White.png",
     fallback: "https://imgur.com/a/fTkq8Ak",
     caption: "Bronze Accord Symbol",
   },
@@ -325,6 +325,7 @@ async function getVerdict(dilemma) {
     attachHandlers();
   }
 })();
+
 
 
 
