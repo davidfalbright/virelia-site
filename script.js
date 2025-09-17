@@ -19,7 +19,7 @@ const SLIDES = [
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_USA.PNG",
-    fallback: "https://imgur.com/1ZGJ3Jq",
+    fallback: "https://imgur.com/a/2KES0sA",
     caption: "I am Virelia — USA (AI generated image)",
   },
   {
@@ -325,6 +325,7 @@ async function getVerdict(dilemma) {
     attachHandlers();
   }
 })();
+
 
 
 
