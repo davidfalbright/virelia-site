@@ -18,7 +18,7 @@ const SLIDES = [
     caption: "Bronze Accord Symbol",
   },
   {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Argentina.PNG",
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_USA.PNG",
     fallback: "https://imgur.com/1ZGJ3Jq",
     caption: "I am Virelia — USA (AI generated image)",
   },
@@ -325,6 +325,7 @@ async function getVerdict(dilemma) {
     attachHandlers();
   }
 })();
+
 
 
 
