@@ -280,22 +280,29 @@ a.link:hover{opacity:.85}
 .lead{font-size:1.05rem}
 
 
+/* ---------------------------------------------------------------------------- */
+/* NAV: smaller text + tighter spacing */
+.nav a{
+  font-size: .90rem;     /* try .85rem if you need more room */
+  margin-left: .6rem;    /* was 1rem */
+  padding: 0;            /* make sure no extra padding inflates width */
+}
 
+/* Optional: slightly reduce brand gap so the left block is tighter */
+.brand{ gap: .5rem; }    /* was .75rem */
 
+/* Optional: keep the long VIRELIA tagline on a single line on wide screens */
+@media (min-width: 1024px){
+  .brand-text{ white-space: nowrap; }
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+/* Responsive: compress nav more as the screen narrows */
+@media (max-width: 1200px){
+  .nav a{ font-size: .85rem; margin-left: .5rem; }
+}
+@media (max-width: 980px){
+  .brand-text span{ display:none; } /* hide tagline on small screens */
+}
 
 
 
