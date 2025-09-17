@@ -89,7 +89,175 @@
 
   </section>
 </div>
-  
+  <!-- Virelia Delivery Models: SaaS vs Hybrid vs On-Prem -->
+<section id="delivery-models" class="section">
+  <div class="container narrow">
+    <h2>Delivery Models</h2>
+    <p class="lead">Choose the security and deployment model that fits your budget, risk posture, and regulatory needs.</p>
+
+    <style>
+      /* Scoped styles so they don't clash with your site */
+      #delivery-models .tbl { width:100%; border-collapse: collapse; font-size: .95rem; }
+      #delivery-models .tbl th, #delivery-models .tbl td { border:1px solid #e6e6e6; padding:.8rem .75rem; vertical-align: top; }
+      #delivery-models .tbl th { background:#f7f7f9; text-align:left; font-weight:600; }
+      #delivery-models .badge { display:inline-block; padding:.15rem .5rem; border:1px solid #ddd; border-radius:999px; background:#fff; font-size:.8rem; margin-right:.25rem; }
+      #delivery-models .plan { font-weight:700; font-size:1.05rem; }
+      #delivery-models .ok { color:#0a7b34; font-weight:600; }
+      #delivery-models .warn { color:#8a5b00; font-weight:600; }
+      #delivery-models .hi { color:#1f3a8a; font-weight:600; }
+      #delivery-models .cta { text-decoration:none; display:inline-block; margin-top:.5rem; padding:.45rem .7rem; border-radius:8px; border:1px solid #1f2937; color:#1f2937; }
+      #delivery-models .cta:hover { background:#1f2937; color:#fff; }
+
+      /* Mobile: hide table and show cards */
+      #delivery-models .cards { display:none; }
+      @media (max-width: 800px){
+        #delivery-models .tbl-wrap { display:none; }
+        #delivery-models .cards { display:grid; grid-template-columns: 1fr; gap: .9rem; }
+        #delivery-models .card {
+          border:1px solid #e6e6e6; border-radius:12px; padding:1rem; background:#fff;
+        }
+        #delivery-models .card h3 { margin:.2rem 0 .4rem; }
+        #delivery-models .card dl { margin:0; }
+        #delivery-models .card dt { font-weight:600; margin-top:.5rem; }
+        #delivery-models .card dd { margin: .1rem 0 .35rem; }
+      }
+    </style>
+
+    <!-- Desktop Table -->
+    <div class="tbl-wrap" aria-label="Deployment comparison table">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>SaaS / Portal<br><span class="plan">Cloud-Hosted by Virelia</span></th>
+            <th>Hybrid / Managed<br><span class="plan">Private Tenant in Client Cloud</span></th>
+            <th>On-Prem / Air-Gapped<br><span class="plan">Self-Hosted by Client</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Best for</strong></td>
+            <td>Startups, SMEs, NGOs, universities; quick pilots & grants</td>
+            <td>Mid-large enterprises with compliance needs</td>
+            <td>Defense, government, critical infrastructure</td>
+          </tr>
+          <tr>
+            <td><strong>Security posture</strong></td>
+            <td><span class="ok">Good</span> — Virelia-secured tenant; no production data required for trials</td>
+            <td><span class="hi">High</span> — isolated tenant in client’s cloud (AWS/Azure/GCP)</td>
+            <td><span class="hi">Highest</span> — fully contained in client network (optionally air-gapped)</td>
+          </tr>
+          <tr>
+            <td><strong>Data residency</strong></td>
+            <td>Virelia cloud (trial data only; synthetic/limited PII recommended)</td>
+            <td>Client controls region & storage in their account</td>
+            <td>Client datacenter / on-prem systems</td>
+          </tr>
+          <tr>
+            <td><strong>Setup time</strong></td>
+            <td>Hours–Days (fastest)</td>
+            <td>Days–Weeks</td>
+            <td>Weeks–Months</td>
+          </tr>
+          <tr>
+            <td><strong>Belief Reservoir authoring</strong></td>
+            <td>Portal editor; versioned; export YAML bundles</td>
+            <td>Same editor in private tenant; export & CI/CD hooks</td>
+            <td>Local editor; export & internal CI/CD</td>
+          </tr>
+          <tr>
+            <td><strong>Testing sandbox</strong></td>
+            <td>Included (safe, lower cost; no need to build ethics backend)</td>
+            <td>Included (runs in client cloud)</td>
+            <td>Included (runs on client hardware)</td>
+          </tr>
+          <tr>
+            <td><strong>Integrations</strong></td>
+            <td>API + YAML export to client hosts (HF, Together, Anthropic, etc.)</td>
+            <td>Direct VPC peering / private endpoints</td>
+            <td>Internal service mesh / mainframe adapters</td>
+          </tr>
+          <tr>
+            <td><strong>Pricing model</strong></td>
+            <td>Subscription (tiered seats/usage) + optional onboarding</td>
+            <td>Setup fee + managed service retainer</td>
+            <td>License + support/maintenance contract</td>
+          </tr>
+          <tr>
+            <td><strong>Example use</strong></td>
+            <td>Pilot HIPAA beliefs; generate audit logs for board/regulators</td>
+            <td>Banking GDPR/AI-Act tenant; integrate with internal IAM</td>
+            <td>DoD/utility air-gapped deployment; strict change-control</td>
+          </tr>
+          <tr>
+            <td><strong>Migration path</strong></td>
+            <td>One-click export → Hybrid or On-Prem</td>
+            <td>Upgradeable to On-Prem if policy requires</td>
+            <td>N/A (stays self-hosted; Virelia supplies updates)</td>
+          </tr>
+          <tr>
+            <td><strong>Getting started</strong></td>
+            <td><a class="cta" href="#contact">Start a SaaS pilot</a></td>
+            <td><a class="cta" href="#contact">Request a private tenant</a></td>
+            <td><a class="cta" href="#contact">Discuss on-prem options</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Cards -->
+    <div class="cards" aria-label="Deployment comparison cards">
+      <article class="card">
+        <h3>SaaS / Portal</h3>
+        <p class="plan">Cloud-Hosted by Virelia</p>
+        <dl>
+          <dt>Best for</dt><dd>Startups, SMEs, NGOs, universities</dd>
+          <dt>Security</dt><dd><span class="ok">Good</span>; trial data only</dd>
+          <dt>Setup</dt><dd>Hours–Days</dd>
+          <dt>Authoring</dt><dd>Portal editor; export YAML</dd>
+          <dt>Testing</dt><dd>Included sandbox</dd>
+          <dt>Integrations</dt><dd>API + YAML to client hosts</dd>
+          <dt>Pricing</dt><dd>Subscription + onboarding</dd>
+          <dt>Example</dt><dd>HIPAA pilot; board-ready logs</dd>
+          <dt>Next step</dt><dd><a class="cta" href="#contact">Start a SaaS pilot</a></dd>
+        </dl>
+      </article>
+
+      <article class="card">
+        <h3>Hybrid / Managed</h3>
+        <p class="plan">Private Tenant in Client Cloud</p>
+        <dl>
+          <dt>Best for</dt><dd>Enterprises with compliance needs</dd>
+          <dt>Security</dt><dd><span class="hi">High</span>; client-controlled</dd>
+          <dt>Setup</dt><dd>Days–Weeks</dd>
+          <dt>Authoring</dt><dd>Private tenant editor; CI/CD</dd>
+        <dt>Testing</dt><dd>Included; runs in client cloud</dd>
+          <dt>Integrations</dt><dd>VPC peering / private endpoints</dd>
+          <dt>Pricing</dt><dd>Setup + managed retainer</dd>
+          <dt>Example</dt><dd>GDPR/AI-Act tenant for banking</dd>
+          <dt>Next step</dt><dd><a class="cta" href="#contact">Request a private tenant</a></dd>
+        </dl>
+      </article>
+
+      <article class="card">
+        <h3>On-Prem / Air-Gapped</h3>
+        <p class="plan">Self-Hosted by Client</p>
+        <dl>
+          <dt>Best for</dt><dd>Defense, government, critical infra</dd>
+          <dt>Security</dt><dd><span class="hi">Highest</span>; full isolation</dd>
+          <dt>Setup</dt><dd>Weeks–Months</dd>
+          <dt>Authoring</dt><dd>Local editor; internal CI/CD</dd>
+          <dt>Testing</dt><dd>Included; on client hardware</dd>
+          <dt>Integrations</dt><dd>Service mesh / mainframe adapters</dd>
+          <dt>Pricing</dt><dd>License + support/maintenance</dd>
+          <dt>Example</dt><dd>DoD air-gapped deployment</dd>
+          <dt>Next step</dt><dd><a class="cta" href="#contact">Discuss on-prem options</a></dd>
+        </dl>
+      </article>
+    </div>
+  </div>
+</section>
+
   
 </div>
 
