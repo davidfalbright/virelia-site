@@ -20,62 +20,67 @@ const SLIDES = [
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Argentina.PNG",
     fallback: "https://imgur.com/1ZGJ3Jq",
-    caption: "I am Virelia — Argentina",
+    caption: "I am Virelia — USA (AI generated image)",
+  },
+  {
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Argentina.PNG",
+    fallback: "https://imgur.com/1ZGJ3Jq",
+    caption: "I am Virelia — Argentina (AI generated image)",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Japan.PNG",
     fallback: "https://imgur.com/KeTAkAY",
-    caption: "I am Virelia — Japan",
+    caption: "I am Virelia — Japan (AI generated image)",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Kenya.PNG",
     fallback: "https://imgur.com/xNcOlHF",
-    caption: "I am Virelia — Kenya",
+    caption: "I am Virelia — Kenya (AI generated image)",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Morocco.PNG",
     fallback: "https://imgur.com/sk86m9Q",
-    caption: "I am Virelia — Morocco",
+    caption: "I am Virelia — Morocco (AI generated image)",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Norway.PNG",
     fallback: "https://imgur.com/YPx8fb1",
-    caption: "I am Virelia — Norway",
+    caption: "I am Virelia — Norway (AI generated image)",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Qatar.PNG",
     fallback: "https://imgur.com/PHuZgBC",
-    caption: "I am Virelia — Qatar",
+    caption: "I am Virelia — Qatar (AI generated image)",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Rwanda.PNG",
     fallback: "https://imgur.com/gzIQDF2",
-    caption: "I am Virelia — Rwanda",
+    caption: "I am Virelia — Rwanda (AI generated image)",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Singapore.PNG",
     fallback: "https://imgur.com/74BFelt",
-    caption: "I am Virelia — Singapore",
+    caption: "I am Virelia — Singapore (AI generated image)",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_South_Korea.PNG",
     fallback: "https://imgur.com/9loCFNr",
-    caption: "I am Virelia — South Korea",
+    caption: "I am Virelia — South Korea (AI generated image)",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Sweden.PNG",
     fallback: "https://imgur.com/GgAkxR0",
-    caption: "I am Virelia — Sweden",
+    caption: "I am Virelia — Sweden (AI generated image)",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_The_Netherlands.PNG",
     fallback: "https://imgur.com/1jjjq7I",
-    caption: "I am Virelia — The Netherlands",
+    caption: "I am Virelia — The Netherlands (AI generated image)",
   },
   {
     primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_UAE.PNG",
     fallback: "https://imgur.com/Wyrh1ej",
-    caption: "I am Virelia — UAE",
+    caption: "I am Virelia — UA (AI generated image)E",
   },
 ];
 
@@ -320,4 +325,5 @@ async function getVerdict(dilemma) {
     attachHandlers();
   }
 })();
+
 
