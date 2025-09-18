@@ -305,6 +305,35 @@ a.link:hover{opacity:.85}
 }
 
 
+/* ---------------------- */
+/* Style for expandable sections */
+details {
+  background-color: #000;   /* Keep background black */
+  color: #fff;              /* Make all text inside white */
+  border: 1px solid #333;   /* Optional subtle border */
+  padding: 1rem;            /* Add some spacing inside */
+  border-radius: 5px;       /* Rounded corners */
+}
+
+/* Ensure summary text is white */
+details summary {
+  color: #fff;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Ensure list items inside stay white */
+details ul li {
+  color: #fff;
+}
+
+/* Ensure tags at the bottom stay styled correctly */
+details .tag {
+  background: #111;   /* dark pill background */
+  color: #fff;        /* white text */
+  border: 1px solid #555;
+}
+
 
 
 
