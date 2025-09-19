@@ -1,0 +1,157 @@
+<!-- Virelia: Positioning & Training Pipeline (drop-in block) -->
+<section id="virelia-positioning" class="section">
+  <div class="container narrow">
+    <h2>Where the Braided Chain Framework Works Best</h2>
+    <p class="lead">Two roles, two moments: as a <strong>gatekeeper</strong> in production and as a <strong>teacher</strong> during training. The biggest impact comes when it shapes training data and reward signals.</p>
+
+    <style>
+      /* Scoped styles */
+      #virelia-positioning { --ink:#111; --bg:#fff; --muted:#666; --line:#e6e6e6; --card:#f9f9fb; }
+      @media (prefers-color-scheme: dark){
+        #virelia-positioning { --ink:#f5f5f7; --bg:#0b0b0b; --muted:#a6a6ad; --line:#2a2a2a; --card:#121217; }
+      }
+      #virelia-positioning{color:var(--ink); background:transparent;}
+      #virelia-positioning .grid{display:grid; gap:1rem; grid-template-columns: repeat(2, 1fr);}
+      #virelia-positioning .card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:1rem 1.1rem;}
+      #virelia-positioning .card h3{margin:.1rem 0 .4rem;}
+      #virelia-positioning .pill{display:inline-block; border:1px solid var(--line); border-radius:999px; padding:.15rem .55rem; font-size:.85rem; margin-right:.35rem;}
+      #virelia-positioning .list{margin:.35rem 0 0; padding-left:1.1rem;}
+      #virelia-positioning .muted{color:var(--muted);}
+      #virelia-positioning .leg{display:flex; gap:.5rem; flex-wrap:wrap; margin:.6rem 0 .1rem;}
+      #virelia-positioning .legend{display:inline-flex; align-items:center; gap:.35rem; font-size:.85rem;}
+      #virelia-positioning .dot{width:.7rem; height:.7rem; border-radius:50%;}
+      #virelia-positioning .svgwrap{border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--card); margin-top:1rem;}
+      #virelia-positioning svg{max-width:100%; height:auto; display:block;}
+      #virelia-positioning .two-col{display:grid; gap:1rem; grid-template-columns:1fr 1fr; margin-top:1rem;}
+      #virelia-positioning .note{font-size:.92rem; margin-top:.65rem;}
+      @media (max-width: 900px){
+        #virelia-positioning .grid, #virelia-positioning .two-col{grid-template-columns:1fr;}
+      }
+    </style>
+
+    <!-- Roles -->
+    <div class="two-col">
+      <div class="card">
+        <h3>Production Role → <span class="pill">Gatekeeper</span></h3>
+        <p class="muted">Sits around the model at run-time, enforcing convictions, safeguards, and refusals. No weight changes.</p>
+        <ul class="list">
+          <li>Blocks/flags harmful or policy-violating outputs</li>
+          <li>Explains verdicts and logs them (“verifiable by design”)</li>
+          <li>Great for audits, compliance, and measurable governance</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Pre-Production Role → <span class="pill">Teacher</span></h3>
+        <p class="muted">Shapes training data and reward signals so the model learns aligned behavior. Weights can shift.</p>
+        <ul class="list">
+          <li>Filters & generates demonstrations for SFT (clean “teacher” data)</li>
+          <li>Supplies structured reward signals in RLHF/RLAIF (“RLEF”)</li>
+          <li>Continual fine-tuning from post-deployment logs</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Best/Worst Positioning -->
+    <h3 style="margin-top:1.2rem;">Best / Good / Limited / Not Suited</h3>
+    <div class="grid">
+      <div class="card">
+        <h3>Best</h3>
+        <ul class="list">
+          <li><strong>Supervised Fine-Tuning (SFT)</strong> – only include outputs that pass the framework</li>
+          <li><strong>RLHF / RLAIF</strong> – use framework verdicts as structured rewards (“ethical feedback”)</li>
+          <li><strong>Continuous fine-tuning</strong> – learn from production verdicts & appeals</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Good</h3>
+        <ul class="list">
+          <li><strong>Production policy layer</strong> – enforce, log, explain</li>
+          <li><strong>Adversarial evals</strong> – red-team packs + cultural fit checks</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Limited</h3>
+        <ul class="list">
+          <li><strong>Base pretraining</strong> – too large/noisy to filter at web-scale</li>
+          <li><strong>Frozen inference only</strong> – no weight change (still valuable for guardrails)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Not Suited</h3>
+        <ul class="list">
+          <li><strong>Opaque objectives with deception incentives</strong> – require upstream changes</li>
+          <li><strong>Hidden tool use without logging</strong> – can’t verify or attribute behavior</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Pipeline Diagram (Inline SVG) -->
+    <h3 style="margin-top:1.2rem;">Training & Deployment Pipeline</h3>
+    <p class="muted">Braided Chain adds the most leverage in SFT and RLHF/RLAIF. In production, it enforces and logs.</p>
+    <div class="svgwrap">
+      <svg viewBox="0 0 1080 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AI training pipeline with Braided Chain touchpoints">
+        <defs>
+          <style>
+            .b{fill:none;stroke:#9aa0a6;stroke-width:2}
+            .t{font: 14px Inter, Arial, sans-serif; fill:#ddd}
+            .h{font: 16px Inter, Arial, sans-serif; font-weight:700; fill:#fff}
+            .box{fill:#1c1e22;stroke:#2a2f36;stroke-width:1}
+            .bc{fill:#2b4c7e;stroke:#3e6bb0}
+            .ok{fill:#1e7f4d;stroke:#2aa96b}
+            .warn{fill:#7f5b1e;stroke:#b8862b}
+          </style>
+        </defs>
+
+        <!-- Stages -->
+        <rect x="20"  y="50" width="220" height="90" rx="10" class="box"/>
+        <text x="35" y="75" class="h">Pretraining</text>
+        <text x="35" y="98" class="t">Massive web/corpora</text>
+        <text x="35" y="118" class="t">Not filtered by BC (limited)</text>
+
+        <line x1="240" y1="95" x2="300" y2="95" class="b"/>
+
+        <rect x="300" y="50" width="220" height="90" rx="10" class="box"/>
+        <text x="315" y="75" class="h">SFT</text>
+        <text x="315" y="98" class="t">Curated demonstrations</text>
+        <text x="315" y="118" class="t">BC filters/generates “good” data</text>
+
+        <line x1="520" y1="95" x2="580" y2="95" class="b"/>
+
+        <rect x="580" y="50" width="220" height="90" rx="10" class="box"/>
+        <text x="595" y="75" class="h">RLHF / RLAIF</text>
+        <text x="595" y="98" class="t">Human/AI feedback loop</text>
+        <text x="595" y="118" class="t">BC provides structured rewards</text>
+
+        <line x1="800" y1="95" x2="860" y2="95" class="b"/>
+
+        <rect x="860" y="50" width="200" height="90" rx="10" class="box"/>
+        <text x="875" y="75" class="h">Deployment</text>
+        <text x="875" y="98" class="t">Production inference</text>
+        <text x="875" y="118" class="t">BC enforces & logs</text>
+
+        <!-- Braided Chain touchpoints -->
+        <rect x="320" y="170" width="180" height="70" rx="10" class="bc"/>
+        <text x="335" y="195" class="h">BC @ SFT</text>
+        <text x="335" y="215" class="t">Filter/author demos</text>
+
+        <rect x="600" y="170" width="180" height="70" rx="10" class="bc"/>
+        <text x="615" y="195" class="h">BC @ RLHF/RLAIF</text>
+        <text x="615" y="215" class="t">Ethical rewards</text>
+
+        <rect x="880" y="170" width="160" height="70" rx="10" class="bc"/>
+        <text x="895" y="195" class="h">BC @ Production</text>
+        <text x="895" y="215" class="t">Policy + logs</text>
+
+        <!-- Legend -->
+        <circle cx="40" cy="290" r="6" class="bc"/><text x="55" y="295" class="t">Braided Chain placement</text>
+        <rect x="280" y="277" width="16" height="16" class="box"/><text x="303" y="290" class="t">Core training/deploy stage</text>
+      </svg>
+    </div>
+
+    <!-- Summary notes -->
+    <p class="note">
+      <strong>Key takeaway:</strong> The framework is most powerful when it <em>teaches</em> during <strong>SFT</strong> and <strong>RLHF/RLAIF</strong>
+      (shaping data and rewards). In production it <em>enforces</em> and <em>documents</em> behavior, providing auditability and guardrails.
+    </p>
+  </div>
+</section>
