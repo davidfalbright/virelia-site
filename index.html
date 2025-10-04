@@ -24,175 +24,92 @@
         </div>
       </div>
       
-<!-- 
-      <nav class="nav">
-        <a href="about_us.html">About Us</a>
-        <a href="#how">How it works</a>
-        <a href="impact.html">Impact & Benefits</a>
-        <a href="differentiation.html">Market Differentiation</a>
-        <a href="implementation.html">Implementation</a>
-        <a href="solutions.html">Delivery Models</a>
-        <a href="#contact">Contact</a>
-      </nav>
-    </div>
-  </header>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login / Sign-up</title>
+  <style>
+    :root { --fg:#111827; --muted:#6b7280; --ok:#065f46; --err:#b91c1c; --border:#e5e7eb; }
+    body { font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; margin:0; padding:2rem; color:var(--fg); }
+    .card { max-width: 520px; margin: 0 auto; padding: 1.25rem; border: 1px solid var(--border); border-radius: 12px; }
+    h2 { margin-top:0; }
+    label { font-weight:600; display:block; margin:.5rem 0 .25rem; }
+    input { width:100%; padding:.7rem; border:1px solid #cbd5e1; border-radius:10px; font-size:1rem; }
+    button { margin-top:.9rem; width:100%; padding:.8rem; border:0; border-radius:10px; background:#111827; color:#fff; font-weight:600; cursor:pointer; }
+    small { color:var(--muted); }
+    .msg { margin-top:.6rem; font-size:.95rem; }
+    .ok { color:var(--ok); } .err { color:var(--err); }
+    .hidden { display:none; }
+    .row { display:flex; gap:.75rem; }
+    .row > * { flex:1; }
+    a { color:#1f2937; }
+  </style>
+</head>
+<body>
+  <section class="card">
+    <h2>Welcome</h2>
+    <p><small>After you submit your email, we’ll send (1) a code like <code>BAV-REK</code> and (2) a <strong>Confirm</strong> link. You must click the link <em>and</em> enter the code.</small></p>
 
-  <!-- Coming Soon banner 
-  <section class="banner">
-    <div class="container row">
-      <div class="banner-dot"></div>
-      <div class="banner-text">
-        <strong>Coming soon:</strong> Limited pilot access. We’re not accepting client work yet.
-      </div>
-    </div>
-  </section>
-      
-<!-- 
-  <!-- Hero with rotating slides 
-  <section class="hero">
-    <div class="container">
-      <div class="hero-grid">
-        <div class="slider" id="slideshow">
-          <button class="slide-btn prev" aria-label="Previous slide">‹</button>
-          <div class="slides" id="slides"></div>
-          <button class="slide-btn next" aria-label="Next slide">›</button>
-          <div class="dots" id="dots" aria-label="Slide indicators"></div>
-        </div>
+    <!-- Step 1: request code -->
+    <form id="requestForm" novalidate>
+      <label for="email">Email address</label>
+      <input id="email" name="email" type="email" placeholder="you@example.com" required />
+      <button id="requestBtn" type="submit">Email me the code + link</button>
+      <div id="msg1" class="msg" role="status" aria-live="polite"></div>
+    </form>
 
-        <div class="hero-copy">
-          <h1>“I am Virelia.”</h1>
-          <p>
-            A global ethics framework for AI that helps organizations reason through
-            real‑world dilemmas — consistently, transparently, and with traceable logic.
-          </p>
-          <ul class="ticks">
-            <li>Values‑anchored, evidence‑aware reasoning</li>
-            <li>Public‑safe, auditable explanations</li>
-            <li>Built for alignment with local context</li>
-          </ul>
-          <a class="btn" href="#about">Learn more</a>
+    <!-- Step 2: verify code -->
+    <form id="verifyForm" class="hidden" novalidate>
+      <label for="code">Enter the 6-character code</label>
+      <input id="code" name="code" type="text" placeholder="ABC-DEF" maxlength="7" required />
+      <button id="verifyBtn" type="submit">Verify code</button>
+      <div id="msg2" class="msg" role="status" aria-live="polite"></div>
+      <p style="margin-top:.5rem">
+        <small>Didn’t get it? Check spam or <a href="#" id="resendLink">resend</a>.
+        <br />Already clicked the email’s Confirm link? <a href="#" id="refreshLink">Refresh status</a>.</small>
+      </p>
+    </form>
+
+    <!-- Step 3A: create credentials (new users) -->
+    <form id="createCredsForm" class="hidden" novalidate>
+      <h3>Create your credentials</h3>
+      <div class="row">
+        <div>
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" placeholder="yourname" required />
+        </div>
+        <div>
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="••••••••" required />
         </div>
       </div>
-    </div>
+      <button id="createBtn" type="submit">Create account</button>
+      <div id="msg3" class="msg" role="status" aria-live="polite"></div>
+      <p style="margin-top:.5rem"><small>Already have credentials? <a href="#" id="showLoginLink">Go to login</a>.</small></p>
+    </form>
+
+    <!-- Step 3B: login (existing users) -->
+    <form id="loginForm" class="hidden" novalidate>
+      <h3>Log in</h3>
+      <label for="loginId">Username or Email</label>
+      <input id="loginId" name="loginId" type="text" placeholder="yourname or you@example.com" required />
+      <label for="loginPwd">Password</label>
+      <input id="loginPwd" name="loginPwd" type="password" placeholder="••••••••" required />
+      <button id="loginBtn" type="submit">Log in</button>
+      <div id="msg4" class="msg" role="status" aria-live="polite"></div>
+    </form>
+
+    <pre id="sessionOut" class="hidden" style="margin-top:1rem;white-space:pre-wrap;background:#f9fafb;padding:.75rem;border-radius:10px;border:1px solid #e5e7eb"></pre>
   </section>
+
  
-<!-- START: Bronze Accord Verdict Widget 
-<section class="container verdict-section" id="verdict">
-  <h2 class="section-title">Ask Virelia:</h2>
-  <p class="section-subtitle">Describe your dilemma in plain language. I’ll return a decision route and explain which beliefs were triggered.</p>
-
-  <div class="verdict-card">
-    <label for="dilemmaInput" class="verdict-label">Your dilemma</label>
-    <textarea id="dilemmaInput" class="verdict-input" rows="6" placeholder="Virelia is temporarily offline — API not connected." disabled=tru></textarea>
-    
-    <div class="verdict-actions">
-      <button id="getVerdictBtn" class="btn btn-primary" disabled=true>Get Verdict</button>
-      
-      <span id="verdictStatus" class="verdict-status" aria-live="polite"></span>
-    </div>
-
-    <div id="verdictResult" class="verdict-result" hidden>
-      <div class="verdict-row">
-        <div class="verdict-pill" id="verdictRoute">Route: —</div>
-        <div class="verdict-meta"><strong>Risk:</strong> <span id="verdictRisk">—</span> • <strong>Urgency:</strong> <span id="verdictUrgency">—</span></div>
-      </div>
-      <p id="verdictMessage" class="verdict-message"></p>
-
-      <div id="verdictTriggersWrap" class="verdict-triggers" hidden>
-        <h3 class="verdict-triggers-title">Triggered Items</h3>
-        <ul id="verdictTriggers" class="verdict-trigger-list"></ul>
-      </div>
-    </div>
-  </div>
-</section>
-<!-- END: Bronze Accord Verdict Widget 
-
-  <!-- How it works (public-safe) 
-  <section id="how" class="section alt">
-    <div class="container narrow">
-      <h2>How the framework works</h2>
-      <ol class="list">
-        <li><strong>Context capture:</strong> We capture and parse the provided full context scenario.</li>
-        <li><strong>Evaluation:</strong> We then assess this scenario alongside the ethical framework.</li>
-        <li><strong>Reasoned paths:</strong> We explore potential actions and trade‑offs with transparent and testable reasoning steps.</li>
-        <li><strong>Verdict output:</strong> We provide a concise and auditable explanation of why a decision is recommended.</li>
-      </ol>
-      <p class="hint">
-        Note: this is a high‑level overview — methods and safeguards are kept private until pilot engagement.
-      </p>
-    </div>
-  </section>
-
-  <!-- Dilemmas to decisions 
-  <section id="dilemmas" class="section">
-    <div class="container narrow">
-      <h2>From dilemmas → decisions</h2>
-      <p>
-        Virelia turns unstructured narratives into structured, actionable insight. The system
-        extracts key facts, aligns them with ethical constraints, and verifies the resulting
-        recommendation through a test‑harness before any downstream use.
-      </p>
-      <div class="cards">
-        <div class="card">
-          <h3>1) Capture</h3>
-          <p>Ingest a dilemma in natural language. Preserve nuance; avoid biasing the statement.</p>
-        </div>
-        <div class="card">
-          <h3>2) Align</h3>
-          <p>Map facts to organizational values and non‑negotiables (e.g., legal or safety constraints).</p>
-        </div>
-        <div class="card">
-          <h3>3) Reason</h3>
-          <p>Explore options, trade‑offs, and likely consequences — with traceable steps.</p>
-        </div>
-        <div class="card">
-          <h3>4) Verify</h3>
-          <p>Automatically test the explanation and outputs for completeness and internal consistency.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Contact / Coming soon 
-  <section id="contact" class="section alt">
-    <div class="container narrow">
-      <h2>Contact</h2>
-      <p class="lead">
-       <!--  We’re preparing a private pilot. If you’re interested in values‑anchored decision support, drop us a line: 
-      </p>
-      
-      <p>
-       <!--   <a class="link" href="mailto:contact@iamvirelia.org">contact@iamvirelia.org</a> 
-           
-      <div style="margin-top:1rem;">
-        <span style="margin-left:.5rem;">Email: <a class="link" href="mailto:info@iamvirelia.org">info@iamvirelia.org</a></span>
-      </div>
-  
-      </p>
-      
-      <p class="small">
-        Please note: We are not yet open for general business. This site is informational and will be updated as the pilot progresses.
-      </p>
-    </div>
-  </section>
-
-  <footer class="footer">
-    <div class="container row between">
-      <div>© <span id="year"></span> Virelia. All rights reserved.</div>
-      <div class="foot-links">
-        <a href="about_us.html">About Us</a>
-        <a href="#how">How it works</a>
-        <a href="#contact">Contact</a>
-        <a href="impact.html">Impact & Benefits</a>
-      </div>
-    </div>
-  </footer>
- -->
-      
-  <script src="script.js" defer></script>
+  <script src="script_index.js" defer></script>
 
 </body>
 </html>
+
 
 
 
