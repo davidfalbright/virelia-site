@@ -2,27 +2,71 @@
 import { getStore } from '@netlify/blobs';
 
 export const handler = async (event) => {
-  if (event.httpMethod !== 'POST') return json(405, { error: 'Method Not Allowed' });
   try {
-    const { email } = JSON.parse(event.body || '{}');
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(400, { error: 'Invalid email' });
+    if (event.httpMethod === 'OPTIONS') {
+      return ok({}); // CORS preflight, if you ever need it
+    }
 
-    const key = email.toLowerCase();
-    const verified = getStore({ name: 'verified_emails' });
-    const v = JSON.parse((await verified.get(key)) || 'null');
-    if (!v) return json(200, { verified:false, confirmed:false, hasCredentials:false });
+    if (event.httpMethod === 'GET') {
+      // Allow quick browser checks: optional ?email=...
+      const email = (event.queryStringParameters?.email || '').trim();
+      if (!email) return ok({ ok: true, method: 'GET', message: 'Functions are live' });
 
-    const emailIndex = getStore({ name: 'email_index' });
-    const uname = await emailIndex.get(key);
+      const out = await lookup(email);
+      return ok({ ok: true, method: 'GET', ...out });
+    }
 
-    return json(200, {
-      verified: !!v.verified,
-      confirmed: !!v.confirmed,
-      hasCredentials: !!uname
-    });
-  } catch {
-    return json(500, { error: 'Unexpected server error' });
+    if (event.httpMethod === 'POST') {
+      const { email } = JSON.parse(event.body || '{}');
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return bad(400, { error: 'Invalid email' });
+      }
+      const out = await lookup(email);
+      return ok({ ok: true, method: 'POST', ...out });
+    }
+
+    return bad(405, { error: 'Method Not Allowed' });
+  } catch (e) {
+    return bad(500, { error: 'Unexpected server error' });
   }
 };
 
-function json(statusCode,obj){ return { statusCode, headers:{'Content-Type':'application/json','Cache-Control':'no-store'}, body: JSON.stringify(obj)}; }
+async function lookup(email) {
+  const key = email.toLowerCase();
+  const verified = getStore({ name: 'verified_emails' });
+  const v = JSON.parse((await verified.get(key)) || 'null');
+
+  const emailIndex = getStore({ name: 'email_index' });
+  const uname = await emailIndex.get(key);
+
+  return {
+    email: key,
+    verified: !!(v && v.verified),
+    confirmed: !!(v && v.confirmed),
+    hasCredentials: !!uname
+  };
+}
+
+function ok(body) {
+  return {
+    statusCode: 200,
+    headers: cors(),
+    body: JSON.stringify(body)
+  };
+}
+function bad(code, body) {
+  return {
+    statusCode: code,
+    headers: cors(),
+    body: JSON.stringify(body)
+  };
+}
+function cors() {
+  return {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type'
+  };
+}
