@@ -1,9 +1,10 @@
 {
   "name": "bronze-accord-functions",
   "private": true,
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "js-yaml": "^4.1.0",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "@netlify/blobs": "^6.0.0"
   }
 }
