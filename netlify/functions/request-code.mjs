@@ -1,9 +1,9 @@
 // netlify/functions/request-code.mjs
-import crypto from "node:crypto";
-import dns from "node:dns/promises";
+import crypto from "crypto";
+import dns from "dns/promises";
 import { getStore } from "@netlify/blobs";
 
-export async function handler(event) {
+export const handler = async (event, context) => {
   if (event.httpMethod !== "POST") {
     return json(405, { error: "Method Not Allowed" });
   }
@@ -14,16 +14,17 @@ export async function handler(event) {
       return json(400, { error: "Invalid or missing email" });
     }
 
-    // Optional MX check (set STRICT_MX=true in env to enable)
+    // Optional MX check
     const STRICT_MX = (process.env.STRICT_MX || "false").toLowerCase() === "true";
     if (STRICT_MX && !(await hasMx(email).catch(() => false))) {
       return json(400, { error: "Email domain has no MX records" });
     }
 
-    // Generate code and compute hash (store only the hash)
-    const code = genCvc(); // e.g. ABC-DEF
+    // Generate a new code and hash
+    const code = genCvc();                               // e.g., BAV-REK
     const codeHash = sha256(code.toUpperCase());
-    const exp = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const exp = Date.now() + 10 * 60 * 1000;             // 10 minutes
+    const issuedAt = Date.now();
 
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
     const FROM_EMAIL = process.env.FROM_EMAIL;
@@ -37,19 +38,18 @@ export async function handler(event) {
       { email, exp: Date.now() + 30 * 60 * 1000, purpose: "confirm" },
       CODE_SIGNING_SECRET
     );
-    const confirmLink = `${base}/.netlify/functions/confirm-email?token=${encodeURIComponent(
-      confirmToken
-    )}`;
+    const confirmLink = `${base}/.netlify/functions/confirm-email?token=${encodeURIComponent(confirmToken)}`;
 
+    // Send email (Resend)
     const html = `
-<div style="font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
-  <p>Your verification code:</p>
-  <p style="font-size:24px;font-weight:700;letter-spacing:.08em">${code}</p>
-  <p><a href="${confirmLink}">Click here to Confirm your email</a></p>
-  <p style="color:#4b5563">The code expires in 10 minutes.</p>
-</div>`.trim();
+      <div style="font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+        <p>Your verification code:</p>
+        <p style="font-size:24px;font-weight:700;letter-spacing:.08em">${code}</p>
+        <p><a href="${confirmLink}">Click here to Confirm your email</a></p>
+        <p style="color:#4b5563">The code expires in 10 minutes.</p>
+      </div>
+    `.trim();
 
-    // Send email via Resend
     const emailRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -73,48 +73,19 @@ export async function handler(event) {
       return json(502, { error: "Email provider error", detail });
     }
 
-    // Store (overwrite) the code hash for this email
-    const key = (email || "").trim().toLowerCase();
-    const issuedAt = Date.now();
+    // ✅ Store/overwrite under the same key (lowercased email)
+    const store = getStore("email_codes", { context });     // <-- context passed here
+    const key = email.trim().toLowerCase();
+    await store.set(key, JSON.stringify({ codeHash, exp, issuedAt }));
 
-    let stored = true;
-    let storeError = null;
-    try {
-      const codes = getCodesStore(); // robust getter
-      await codes.set(key, JSON.stringify({ codeHash, exp, issuedAt }));
-      // Optional echo for logs:
-      // const echo = await codes.get(key);
-      // console.log("BLOB_WRITE_OK", key, echo);
-    } catch (e) {
-      stored = false;
-      storeError = e?.message || String(e);
-      console.error("request-code: failed to store code", e);
-      // We still return 200 because the email was sent successfully.
-    }
-
-    return json(200, { ok: true, stored, storeError, storedKey: key, issuedAt });
+    return json(200, { ok: true, storedKey: key, issuedAt });
   } catch (err) {
     console.error("request-code error:", err);
     return json(500, { error: "Unexpected server error" });
   }
-}
+};
 
 /* -------------------- helpers -------------------- */
-
-// Try Netlify-injected context first (prod / `netlify dev`), then optional env fallback.
-function getCodesStore() {
-  try {
-    return getStore("email_codes"); // production and `netlify dev` require no credentials
-  } catch {
-    const { NETLIFY_SITE_ID, NETLIFY_BLOBS_TOKEN } = process.env;
-    if (NETLIFY_SITE_ID && NETLIFY_BLOBS_TOKEN) {
-      return getStore("email_codes", { siteID: NETLIFY_SITE_ID, token: NETLIFY_BLOBS_TOKEN });
-    }
-    throw new Error(
-      "Netlify Blobs not configured (no runtime context and no NETLIFY_SITE_ID/NETLIFY_BLOBS_TOKEN)."
-    );
-  }
-}
 
 function genCvc() {
   const C = "BCDFGHJKMNPQRSTVWXYZ";
