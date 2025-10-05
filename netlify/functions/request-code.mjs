@@ -76,10 +76,22 @@ export const handler = async (event) => {
     }
 
     // Store code hash for verification
-    const codes = getStore({ name: "email_codes" });
-    await codes.set(email.toLowerCase(), JSON.stringify({ codeHash, exp }));
+    //const codes = getStore({ name: "email_codes" });
+    //await codes.set(email.toLowerCase(), JSON.stringify({ codeHash, exp }));
 
-    return json(200, { ok: true });
+    //return json(200, { ok: true });
+    
+// BEFORE
+// const codes = getStore({ name: "email_codes" });
+// await codes.set(email.toLowerCase(), JSON.stringify({ codeHash, exp }));
+
+// AFTER (drop-in)
+const codes = getStore({ name: "email_codes" });
+const key = (email || '').trim().toLowerCase();
+const issuedAt = Date.now();
+await codes.set(key, JSON.stringify({ codeHash, exp, issuedAt }));
+return json(200, { ok: true, storedKey: key, issuedAt });
+
   } catch (err) {
     console.error("request-code error:", err);
     return json(500, { error: "Unexpected server error" });
