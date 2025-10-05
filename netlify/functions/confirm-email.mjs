@@ -18,7 +18,7 @@ export const handler = async (event) => {
 
     // Mark confirmed in Blobs
     const confirmations = getStore({
-      name: "email_confirmations",
+      name: "email_status",
       siteID: process.env.NETLIFY_SITE_ID,
       token : process.env.NETLIFY_BLOBS_TOKEN,
     });
