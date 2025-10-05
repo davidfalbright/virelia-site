@@ -1,48 +1,76 @@
 // netlify/functions/request-code.mjs
-import crypto from "crypto";
-import dns from "dns/promises";
+import crypto from "node:crypto";
+import dns from "node:dns/promises";
 import { getStore } from "@netlify/blobs";
 
-export async function handler(event, context) {
+/**
+ * POST /.netlify/functions/request-code
+ * Body: { "email": "you@example.com" }
+ */
+export const handler = async (event) => {
+  // Simple CORS (harmless even if same-origin)
+  if (event.httpMethod === "OPTIONS") {
+    return cors(204, "");
+  }
   if (event.httpMethod !== "POST") {
-    return json(405, { error: "Method Not Allowed" });
+    return cors(405, JSON.stringify({ error: "Method Not Allowed" }));
   }
 
   try {
-    const { email } = JSON.parse(event.body || "{}");
+    let body = {};
+    try {
+      body = JSON.parse(event.body || "{}");
+    } catch {
+      return cors(400, JSON.stringify({ error: "Invalid JSON body" }));
+    }
+
+    const email = String(body.email || "").trim();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return json(400, { error: "Invalid or missing email" });
+      return cors(400, JSON.stringify({ error: "Invalid or missing email" }));
     }
 
-    // Optional MX check (enable with STRICT_MX=true)
+    // Optional MX check
     const STRICT_MX = (process.env.STRICT_MX || "false").toLowerCase() === "true";
-    if (STRICT_MX && !(await hasMx(email).catch(() => false))) {
-      return json(400, { error: "Email domain has no MX records" });
+    if (STRICT_MX) {
+      const okMx = await hasMx(email).catch(() => false);
+      if (!okMx) return cors(400, JSON.stringify({ error: "Email domain has no MX records" }));
     }
 
-    // Generate code & hash (we store only the hash)
-    const code = genCvc(); // e.g., ABC-DEF
-    const codeHash = sha256(code.toUpperCase());
-    const exp = Date.now() + 10 * 60 * 1000; // 10 minutes
-    const issuedAt = Date.now();
-
+    // Required env
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
     const FROM_EMAIL = process.env.FROM_EMAIL;
     const CODE_SIGNING_SECRET = process.env.CODE_SIGNING_SECRET;
     if (!RESEND_API_KEY || !FROM_EMAIL || !CODE_SIGNING_SECRET) {
-      return json(500, { error: "Server not configured" });
+      console.error("Missing envs", {
+        hasResend: !!RESEND_API_KEY,
+        hasFrom: !!FROM_EMAIL,
+        hasSecret: !!CODE_SIGNING_SECRET,
+      });
+      return cors(500, JSON.stringify({ error: "Server not configured" }));
     }
 
-    const base = publicBaseUrl(event);
-    const confirmToken = signToken(
-      { email, exp: Date.now() + 30 * 60 * 1000, purpose: "confirm" },
+    // Generate code & payload to store
+    const code = genCvc(); // e.g. BAV-REK
+    const codeHash = sha256(code.toUpperCase());
+    const issuedAt = Date.now();
+    const exp = issuedAt + 10 * 60 * 1000; // 10 minutes
+
+    // Confirmation link (JWT-like HMAC token)
+    const token = signToken(
+      { email, exp: issuedAt + 30 * 60 * 1000, purpose: "confirm" },
       CODE_SIGNING_SECRET
     );
+    const base = publicBaseUrl(event);
     const confirmLink = `${base}/.netlify/functions/confirm-email?token=${encodeURIComponent(
-      confirmToken
+      token
     )}`;
 
-    // Send email via Resend
+    // Compose email
+    const subject = "Verify your email";
+    const text =
+      `Your verification code: ${code}\n\n` +
+      `Please confirm your email by clicking this link:\n${confirmLink}\n\n` +
+      `The code expires in 10 minutes.`;
     const html = `
 <div style="font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
   <p>Your verification code:</p>
@@ -51,6 +79,7 @@ export async function handler(event, context) {
   <p style="color:#4b5563">The code expires in 10 minutes.</p>
 </div>`.trim();
 
+    // Send via Resend
     const emailRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -60,44 +89,53 @@ export async function handler(event, context) {
       body: JSON.stringify({
         from: FROM_EMAIL,
         to: email,
-        subject: "Verify your email",
-        text:
-          `Your code: ${code}\n\n` +
-          `Please also confirm your email by clicking:\n${confirmLink}\n\n` +
-          `The code expires in 10 minutes.`,
+        subject,
+        text,
         html,
       }),
     });
 
     if (!emailRes.ok) {
-      const detail = await emailRes.text().catch(() => "");
-      return json(502, { error: "Email provider error", detail });
+      const detail = await safeText(emailRes);
+      console.error("Resend failed", emailRes.status, detail);
+      return cors(502, JSON.stringify({ error: "Email provider error", detail }));
     }
 
-    // Write to Blobs (production: no PAT needed), then read it back for verification
-    const key = (email || "").trim().toLowerCase();
-    let stored = false, storeError = null, echo = null;
-
+    // Persist to Blobs (PRODUCTION requires no token)
     try {
-      const store = getStore("email_codes", { context }); // <-- important
-      await store.set(key, JSON.stringify({ codeHash, exp, issuedAt }));
-      const raw = await store.get(key);                   // verify write
-      echo = raw ? JSON.parse(raw) : null;
-      stored = !!echo;
+      const store = getStore("email_codes");
+      await store.set(
+        email.toLowerCase(),
+        JSON.stringify({ codeHash, exp, issuedAt })
+      );
     } catch (e) {
-      storeError = e?.message || String(e);
-      console.error("request-code: blobs write failed:", e);
-      // We still return 200 since the email was sent; UI can decide what to show.
+      console.error("Blobs set failed", e);
+      // We still return 200 so the user can try the code from email,
+      // but the verify step will fail if persistence is unavailable.
+      return cors(
+        200,
+        JSON.stringify({
+          ok: true,
+          note: "Email sent, but we could not persist the code.",
+        })
+      );
     }
 
-    return json(200, { ok: true, stored, storeError, storedKey: key, echo });
+    return cors(
+      200,
+      JSON.stringify({
+        ok: true,
+        email,
+        expiresAt: exp,
+      })
+    );
   } catch (err) {
     console.error("request-code error:", err);
-    return json(500, { error: err?.message ?? "Unexpected server error" });
+    return cors(500, JSON.stringify({ error: err.message || "Unexpected server error" }));
   }
-}
+};
 
-/* -------------------- helpers -------------------- */
+/* ---------------- helpers ---------------- */
 
 function genCvc() {
   const C = "BCDFGHJKMNPQRSTVWXYZ";
@@ -118,7 +156,11 @@ function sha256(s) {
 }
 
 function b64url(b) {
-  return Buffer.from(b).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return Buffer.from(b)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 }
 
 function signToken(payload, secret) {
@@ -137,10 +179,30 @@ function publicBaseUrl(event) {
   return `${proto}://${host}`;
 }
 
-function json(statusCode, obj) {
+async function safeText(res) {
+  try {
+    return await res.text();
+  } catch {
+    return "";
+  }
+}
+
+function cors(statusCode, body) {
   return {
     statusCode,
-    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-    body: JSON.stringify(obj),
+    headers: {
+      "Content-Type": body ? guessType(body) : "text/plain",
+      "Cache-Control": "no-store",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST,OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
+    body,
   };
+}
+
+function guessType(body) {
+  return body && body.trim().startsWith("{")
+    ? "application/json"
+    : "text/plain; charset=utf-8";
 }
