@@ -3,7 +3,7 @@ import crypto from "crypto";
 import dns from "dns/promises";
 import { getStore } from "@netlify/blobs";
 
-export const handler = async (event, context) => {
+export async function handler(event, context) {
   if (event.httpMethod !== "POST") {
     return json(405, { error: "Method Not Allowed" });
   }
@@ -14,16 +14,16 @@ export const handler = async (event, context) => {
       return json(400, { error: "Invalid or missing email" });
     }
 
-    // Optional MX check
+    // Optional MX check (enable with STRICT_MX=true)
     const STRICT_MX = (process.env.STRICT_MX || "false").toLowerCase() === "true";
     if (STRICT_MX && !(await hasMx(email).catch(() => false))) {
       return json(400, { error: "Email domain has no MX records" });
     }
 
-    // Generate a new code and hash
-    const code = genCvc();                               // e.g., BAV-REK
+    // Generate code & hash (we store only the hash)
+    const code = genCvc(); // e.g., ABC-DEF
     const codeHash = sha256(code.toUpperCase());
-    const exp = Date.now() + 10 * 60 * 1000;             // 10 minutes
+    const exp = Date.now() + 10 * 60 * 1000; // 10 minutes
     const issuedAt = Date.now();
 
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -38,17 +38,18 @@ export const handler = async (event, context) => {
       { email, exp: Date.now() + 30 * 60 * 1000, purpose: "confirm" },
       CODE_SIGNING_SECRET
     );
-    const confirmLink = `${base}/.netlify/functions/confirm-email?token=${encodeURIComponent(confirmToken)}`;
+    const confirmLink = `${base}/.netlify/functions/confirm-email?token=${encodeURIComponent(
+      confirmToken
+    )}`;
 
-    // Send email (Resend)
+    // Send email via Resend
     const html = `
-      <div style="font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
-        <p>Your verification code:</p>
-        <p style="font-size:24px;font-weight:700;letter-spacing:.08em">${code}</p>
-        <p><a href="${confirmLink}">Click here to Confirm your email</a></p>
-        <p style="color:#4b5563">The code expires in 10 minutes.</p>
-      </div>
-    `.trim();
+<div style="font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  <p>Your verification code:</p>
+  <p style="font-size:24px;font-weight:700;letter-spacing:.08em">${code}</p>
+  <p><a href="${confirmLink}">Click here to Confirm your email</a></p>
+  <p style="color:#4b5563">The code expires in 10 minutes.</p>
+</div>`.trim();
 
     const emailRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -73,19 +74,28 @@ export const handler = async (event, context) => {
       return json(502, { error: "Email provider error", detail });
     }
 
-    // ✅ Store/overwrite under the same key (lowercased email)
-    const store = getStore("email_codes", { context });     // <-- context passed here
-    const key = email.trim().toLowerCase();
-    await store.set(key, JSON.stringify({ codeHash, exp, issuedAt }));
+    // Write to Blobs (production: no PAT needed), then read it back for verification
+    const key = (email || "").trim().toLowerCase();
+    let stored = false, storeError = null, echo = null;
 
-    return json(200, { ok: true, storedKey: key, issuedAt });
+    try {
+      const store = getStore("email_codes", { context }); // <-- important
+      await store.set(key, JSON.stringify({ codeHash, exp, issuedAt }));
+      const raw = await store.get(key);                   // verify write
+      echo = raw ? JSON.parse(raw) : null;
+      stored = !!echo;
+    } catch (e) {
+      storeError = e?.message || String(e);
+      console.error("request-code: blobs write failed:", e);
+      // We still return 200 since the email was sent; UI can decide what to show.
+    }
+
+    return json(200, { ok: true, stored, storeError, storedKey: key, echo });
   } catch (err) {
     console.error("request-code error:", err);
-    //return json(500, { error: "Unexpected server error" });
-    
-    return json(500, {error: err?.message ?? String(err) ?? 'Unexpected server error', });
+    return json(500, { error: err?.message ?? "Unexpected server error" });
   }
-};
+}
 
 /* -------------------- helpers -------------------- */
 
@@ -108,11 +118,7 @@ function sha256(s) {
 }
 
 function b64url(b) {
-  return Buffer.from(b)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
+  return Buffer.from(b).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 function signToken(payload, secret) {
@@ -134,10 +140,7 @@ function publicBaseUrl(event) {
 function json(statusCode, obj) {
   return {
     statusCode,
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store",
-    },
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     body: JSON.stringify(obj),
   };
 }
