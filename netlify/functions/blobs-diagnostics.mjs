@@ -1,27 +1,26 @@
 // netlify/functions/blobs-diagnostics.mjs
 import { getStore } from "@netlify/blobs";
 
-const json = (s,b)=>({statusCode:s,headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
-const opts = () => {
-  const siteID = process.env.NETLIFY_SITE_ID || "";
-  const token  = process.env.NETLIFY_BLOBS_TOKEN || "";
-  return siteID && token ? { siteID, token } : undefined;
-};
-
 export const handler = async () => {
-  const out = {
-    siteIdFromEnv: !!process.env.NETLIFY_SITE_ID,
-    tokenFromEnv:  !!process.env.NETLIFY_BLOBS_TOKEN,
-    storeWriteOk:  null,
-    error: null,
-  };
+  const siteID = !!process.env.NETLIFY_SITE_ID;
+  const token  = !!process.env.NETLIFY_BLOBS_TOKEN;
+
+  let write = false, error = null;
   try {
-    const store = opts() ? getStore("email_codes", opts()) : getStore("email_codes");
-    await store.set("healthcheck", JSON.stringify({ ok: true, t: Date.now() }));
-    out.storeWriteOk = true;
+    const store = getStore({
+      name: "email_codes",
+      siteID: process.env.NETLIFY_SITE_ID,
+      token : process.env.NETLIFY_BLOBS_TOKEN,
+    });
+    await store.set("_diag", JSON.stringify({ t: Date.now() }));
+    write = true;
   } catch (e) {
-    out.storeWriteOk = false;
-    out.error = e?.message || String(e);
+    error = e.message || String(e);
   }
-  return json(200, out);
+
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+    body: JSON.stringify({ siteIdFromEnv: siteID, tokenFromEnv: token, storeWriteOk: write, error }),
+  };
 };
