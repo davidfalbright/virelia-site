@@ -4,8 +4,6 @@
   "dependencies": {
     "@netlify/blobs": "^6.0.0",
     "js-yaml": "^4.1.0"
-    // add "node-fetch": "^3.3.2" ONLY if you import it anywhere;
-    // Node 18+ already has global fetch.
   }
 }
 {"private": true, "type": "commonjs", "dependencies": {"js-yaml": "^4.1.0", "@netlify/blobs": "^6.0.0"}}
