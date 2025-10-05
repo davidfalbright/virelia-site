@@ -1,19 +1,20 @@
-// netlify/functions/peek-code.mjs
-import { getStore } from '@netlify/blobs';
+import { getStore } from "@netlify/blobs";
 
-export async function handler(event) {
-  const email = (event.queryStringParameters?.email || '').trim().toLowerCase();
-  if (!email) return resp(400, { error: 'missing email' });
+export const handler = async (event, context) => {
+  const email = (event.queryStringParameters?.email || "").trim().toLowerCase();
+  if (!email) return j(400, { error: "email is required" });
 
   try {
-    const store = getStore('email_codes'); // prod context auto-injected
+    const store = getStore("email_codes", { context });   // <-- pass context
     const raw = await store.get(email);
-    return resp(200, { key: email, value: raw ? JSON.parse(raw) : null });
-  } catch (err) {
-    return resp(500, { error: err.message });
+    return raw ? j(200, JSON.parse(raw)) : j(404, { error: "not found" });
+  } catch (e) {
+    return j(500, { error: e.message });
   }
-}
+};
 
-function resp(statusCode, body) {
-  return { statusCode, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, body: JSON.stringify(body) };
-}
+const j = (s, b) => ({
+  statusCode: s,
+  headers: { "content-type": "application/json", "cache-control": "no-store" },
+  body: JSON.stringify(b),
+});
