@@ -2,62 +2,45 @@
 import crypto from "crypto";
 import { getStore } from "@netlify/blobs";
 
+function json(status, body) {
+  return {
+    statusCode: status,
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+    body: JSON.stringify(body),
+  };
+}
+function sha256(s) {
+  return crypto.createHash("sha256").update(s).digest("hex");
+}
+function blobsStore(name) {
+  if (process.env.NETLIFY_BLOBS_TOKEN && process.env.NETLIFY_SITE_ID) {
+    return getStore(name, { siteID: process.env.NETLIFY_SITE_ID, token: process.env.NETLIFY_BLOBS_TOKEN });
+  }
+  return getStore(name);
+}
+
 export const handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method Not Allowed" });
 
   try {
     const { email, code } = JSON.parse(event.body || "{}");
-    if (!email || !code) return json(400, { error: "Missing email or code" });
+    const key = (email || "").trim().toLowerCase();
+    if (!key || !code) return json(400, { error: "Missing email or code" });
 
-    const store = getStore("email_codes");
+    const codes = blobsStore("email_codes");
+    const stored = await codes.get(key, { type: "json" }); // { codeHash, exp, issuedAt, ... }
+    if (!stored) return json(400, { error: "No code on record" });
+    if (Date.now() > Number(stored.exp || 0)) return json(400, { error: "Code expired" });
 
-    let raw;
-    try {
-      raw = await store.get(email.toLowerCase());
-    } catch (e) {
-      console.error("verify-code: blobs get failed", e);
-      return json(500, { error: "Storage unavailable" });
-    }
+    const ok = sha256(String(code).toUpperCase()) === stored.codeHash;
+    if (!ok) return json(401, { error: "Invalid code" });
 
-    if (!raw) return json(400, { error: "No active code for this email" });
+    // Optionally: consume the code by deleting it
+    // await codes.delete(key);
 
-    let rec;
-    try {
-      rec = JSON.parse(raw); // { codeHash, exp, issuedAt? }
-    } catch {
-      return json(500, { error: "Corrupt stored record" });
-    }
-
-    if (rec.exp && Date.now() > rec.exp) return json(400, { error: "Code expired" });
-
-    const calcHash = sha256(String(code).toUpperCase());
-    const ok = calcHash === rec.codeHash;
-
-    if (ok) {
-      // Invalidate the code after successful verification.
-      try {
-        await store.delete(email.toLowerCase());
-      } catch (e) {
-        console.warn("verify-code: delete failed", e);
-      }
-    }
-
-    return json(200, { ok });
+    return json(200, { ok: true });
   } catch (err) {
-    console.error("verify-code error", err);
-    return json(500, { error: err.message || "Unexpected server error" });
+    console.error("verify-code error:", err);
+    return json(500, { error: err?.message || "Unexpected server error" });
   }
 };
-
-/* ------------ helpers ------------ */
-
-function sha256(s) {
-  return crypto.createHash("sha256").update(s).digest("hex");
-}
-function json(statusCode, obj) {
-  return {
-    statusCode,
-    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-    body: JSON.stringify(obj),
-  };
-}
