@@ -1,4 +1,5 @@
 {
+  "name": "virelia-functions",
   "private": true,
   "type": "module",
   "dependencies": {
