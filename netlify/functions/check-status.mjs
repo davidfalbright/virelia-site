@@ -33,7 +33,7 @@ export const handler = async (event) => {
 
 async function lookup(email) {
   const key = email.toLowerCase();
-  const verified = getStore({ name: 'verified_emails' });
+  const verified = getStore({ name: 'email_status' });
   const v = JSON.parse((await verified.get(key)) || 'null');
 
   const emailIndex = getStore({ name: 'email_index' });
