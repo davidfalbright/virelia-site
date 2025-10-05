@@ -59,10 +59,16 @@ requestForm?.addEventListener('submit', async (e) => {
   requestBtn.disabled = true; requestBtn.textContent = 'Sending…';
   try {
     const r = await call('request-code', 'POST', { email });
+
+    // Remember email + that a request has happened
     localStorage.setItem('lastEmail', email);
+    localStorage.setItem('lastEmailRequested', '1');
+
     pendingEmail = email;
     setMsg(msg1, r.message || `Email sent to ${email}. Click the Confirm link and enter the code.`, true);
     requestBtn.textContent = 'Sent!';
+
+    // Make sure Verify is visible & focused when they return
     reveal(verifyForm, true);
     codeEl?.focus();
   } catch (err) {
@@ -83,7 +89,10 @@ verifyForm?.addEventListener('submit', async (e) => {
   verifyBtn.disabled = true; verifyBtn.textContent = 'Verifying…';
   try {
     const r = await call('verify-code', 'POST', { email: pendingEmail, code: cvc });
-    // server may send these
+
+    // Once verified we no longer need to nag them with the verify step
+    if (r.confirmed) localStorage.removeItem('lastEmailRequested');
+
     const { hasCredentials, confirmed, canCreate } = r;
     canCreateCreds = !!canCreate || !!confirmed;
 
@@ -121,10 +130,17 @@ refreshLink?.addEventListener('click', async (e) => {
   try {
     // prefer GET with query param; fall back to POST if 405
     let res = await fetch(API('check-status') + `?email=${encodeURIComponent(pendingEmail)}`);
-    if (res.status === 405) res = await fetch(API('check-status'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: pendingEmail }) });
+    if (res.status === 405) {
+      res = await fetch(API('check-status'), {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email: pendingEmail })
+      });
+    }
     const data = await res.json();
 
     if (data.confirmed && data.verified) {
+      localStorage.removeItem('lastEmailRequested');
       setMsg(msg2, 'Email confirmed and code verified — proceed.', true);
       if (data.hasCredentials) {
         reveal(loginForm, true); loginIdEl.value = pendingEmail; loginPwdEl.focus();
@@ -200,25 +216,35 @@ loginForm?.addEventListener('submit', async (e) => {
   }
 });
 
-// ---- On load: prefill + auto-confirm ?token=... ----
+// ---- On load: prefill + keep Verify visible after returning ----
 window.addEventListener('DOMContentLoaded', async () => {
   const saved = localStorage.getItem('lastEmail');
+  const requested = localStorage.getItem('lastEmailRequested') === '1';
+
   if (saved && emailEl && !emailEl.value) emailEl.value = saved;
   if (!pendingEmail && saved) pendingEmail = saved;
 
+  // If a code was requested before, keep the Verify step visible and ready
+  if (requested) {
+    reveal(verifyForm, true);
+    if (saved) setMsg(msg1, `Email sent to ${saved}. Click the Confirm link and enter the code.`, true);
+    setTimeout(() => codeEl?.focus(), 0);
+  }
+
+  // If the URL contains ?token=... we *try* to confirm, but we don't rely on JSON.
   const token = new URLSearchParams(location.search).get('token');
-  if (!token) return;
-  try {
-    const res = await fetch(API('confirm-email') + `?token=${encodeURIComponent(token)}`);
-    const data = await res.json();
-    if (data.ok) {
-      setMsg(msg1, (data.message || 'Email confirmed') + (data.email ? ` for ${data.email}` : ''), true);
-      reveal(verifyForm, true);
-    } else {
-      setMsg(msg1, data.error || 'Confirmation failed.');
-    }
-  } catch {
-    setMsg(msg1, 'Confirmation failed.');
+  if (token) {
+    try {
+      const res = await fetch(API('confirm-email') + `?token=${encodeURIComponent(token)}`);
+      // If confirm returns JSON we show it; if it returns HTML we just show Verify form.
+      const ct = res.headers.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        const data = await res.json();
+        if (data.ok) setMsg(msg1, (data.message || 'Email confirmed') + (data.email ? ` for ${data.email}` : ''), true);
+      }
+    } catch {}
+    reveal(verifyForm, true);
+    setTimeout(() => codeEl?.focus(), 0);
   }
 });
 
