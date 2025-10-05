@@ -6,40 +6,40 @@ const normalizeCVC = (s) => (s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const formatCVC = (s) => (s.length === 6 ? `${s.slice(0, 3)}-${s.slice(3)}` : s);
 const isCVC = (s) => /^[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(s);
 
-const requestForm = $('requestForm'),
-  verifyForm = $('verifyForm'),
-  createCredsForm = $('createCredsForm'),
-  loginForm = $('loginForm');
+const requestForm   = $('requestForm'),
+      verifyForm    = $('verifyForm'),
+      createCredsForm = $('createCredsForm'),
+      loginForm     = $('loginForm');
 
-const emailEl = $('email'),
-  codeEl = $('code'),
-  requestBtn = $('requestBtn'),
-  verifyBtn = $('verifyBtn'),
-  createBtn = $('createBtn'),
-  loginBtn = $('loginBtn');
+const emailEl   = $('email'),
+      codeEl    = $('code'),
+      requestBtn= $('requestBtn'),
+      verifyBtn = $('verifyBtn'),
+      createBtn = $('createBtn'),
+      loginBtn  = $('loginBtn');
 
 const msg1 = $('msg1'),
-  msg2 = $('msg2'),
-  msg3 = $('msg3'),
-  msg4 = $('msg4');
+      msg2 = $('msg2'),
+      msg3 = $('msg3'),
+      msg4 = $('msg4');
 
-const sessionOut = $('sessionOut');
-const resendLink = $('resendLink'),
-  refreshLink = $('refreshLink'),
-  showLoginLink = $('showLoginLink');
+const sessionOut    = $('sessionOut');
+const resendLink    = $('resendLink'),
+      refreshLink   = $('refreshLink'),
+      showLoginLink = $('showLoginLink');
 
 const usernameEl = $('username'),
-  passwordEl = $('password'),
-  loginIdEl = $('loginId'),
-  loginPwdEl = $('loginPwd');
+      passwordEl = $('password'),
+      loginIdEl  = $('loginId'),
+      loginPwdEl = $('loginPwd');
 
 const LOGIN_DEST = '/landing_page.html';
 
-let pendingEmail = null;
-let canCreateCreds = false;
-let confirmedViaLink = false; // <-- new
+let pendingEmail     = null;
+let canCreateCreds   = false;
+let confirmedViaLink = false;
 
-// Generic fetch wrapper
+// ---------- fetch wrapper ----------
 async function call(path, method = 'GET', body) {
   const opts = { method, headers: {} };
   if (body) {
@@ -48,9 +48,7 @@ async function call(path, method = 'GET', body) {
   }
   const res = await fetch(API(path), opts);
   let data = {};
-  try {
-    data = await res.json();
-  } catch {}
+  try { data = await res.json(); } catch {}
   if (!res.ok || data.ok === false) throw data;
   return data;
 }
@@ -65,20 +63,25 @@ function reveal(el, show = true) {
   el && el.classList.toggle('hidden', !show);
 }
 
-// create (or reuse) a single proceed button
-function ensureProceedButton(text = 'Log in', href = LOGIN_DEST) {
+// ---------- Proceed button utilities ----------
+function getOrCreateProceedBtn() {
   let btn = document.getElementById('proceedLoginBtn');
   if (!btn) {
     btn = document.createElement('button');
     btn.id = 'proceedLoginBtn';
     btn.type = 'button';
     btn.className = 'btn';
-    // Try to place it next to the Verify button for nice UX
+    btn.onclick = () => (window.location.href = LOGIN_DEST);
     (verifyForm || document.body).appendChild(btn);
   }
-  btn.textContent = text;
-  btn.onclick = () => (window.location.href = href);
   btn.classList.remove('hidden');
+  return btn;
+}
+
+// Set the big button label based on whether the user already has credentials
+function setProceedLabel(hasCreds) {
+  const btn = getOrCreateProceedBtn();
+  btn.textContent = hasCreds ? 'Log in' : 'Guest Login';
 }
 
 // ---- UX niceties ----
@@ -137,18 +140,19 @@ verifyForm?.addEventListener('submit', async (e) => {
     const { hasCredentials, confirmed, canCreate } = r;
     canCreateCreds = !!canCreate || !!confirmed;
 
-    // NEW: treat "already clicked confirm link" as confirmed
-    const isReallyConfirmed = !!confirmed || confirmedViaLink || localStorage.getItem('confirmed_ok') === '1';
+    // Also accept a prior link-click as confirmation
+    const isReallyConfirmed =
+      !!confirmed || confirmedViaLink || localStorage.getItem('confirmed_ok') === '1';
 
     if (isReallyConfirmed) {
       setMsg(msg2, r.message || 'Code verified. You’re all set.', true);
       verifyBtn.textContent = 'Verified';
       verifyBtn.disabled = true;
 
-      // Show proceed-to-login button
-      ensureProceedButton('Log in', LOGIN_DEST);
+      // Update the proceed button label based on account state
+      setProceedLabel(!!hasCredentials);
 
-      // If you still want to reveal forms based on credentials, keep this:
+      // Optionally expose log-in/create forms too
       if (hasCredentials) {
         reveal(loginForm, true);
         loginIdEl.value = pendingEmail;
@@ -176,18 +180,23 @@ refreshLink?.addEventListener('click', async (e) => {
   if (!pendingEmail) return setMsg(msg2, 'Enter your email first.');
 
   try {
+    // prefer GET with query param; fall back to POST if 405
     let res = await fetch(API('check-status') + `?email=${encodeURIComponent(pendingEmail)}`);
-    if (res.status === 405)
+    if (res.status === 405) {
       res = await fetch(API('check-status'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: pendingEmail })
       });
+    }
     const data = await res.json();
 
     if (data.confirmed && data.verified) {
       setMsg(msg2, 'Email confirmed and code verified — proceed.', true);
-      ensureProceedButton('Log in', LOGIN_DEST);
+
+      // Update label -> Log in / Guest Login
+      setProceedLabel(!!data.hasCredentials);
+
       if (data.hasCredentials) {
         reveal(loginForm, true);
         loginIdEl.value = pendingEmail;
@@ -238,6 +247,9 @@ createCredsForm?.addEventListener('submit', async (e) => {
     reveal(loginForm, true);
     loginIdEl.value = username;
     loginPwdEl.focus();
+
+    // Now that creds exist, flip the big button label to "Log in"
+    setProceedLabel(true);
   } catch (err) {
     setMsg(msg3, err.error || err.message || 'Error creating account.');
     createBtn.textContent = 'Create account';
@@ -294,7 +306,11 @@ window.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('lastEmail', data.email);
         if (emailEl) emailEl.value = data.email;
       }
-      setMsg(msg1, (data.message || 'Email confirmed') + (data.email ? ` for ${data.email}` : ''), true);
+      setMsg(
+        msg1,
+        (data.message || 'Email confirmed') + (data.email ? ` for ${data.email}` : ''),
+        true
+      );
       reveal(verifyForm, true);
     } else {
       setMsg(msg1, data.error || 'Confirmation failed.');
