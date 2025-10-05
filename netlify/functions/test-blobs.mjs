@@ -1,39 +1,50 @@
 // netlify/functions/test-blobs.mjs
 import { getStore } from '@netlify/blobs';
 
-export async function handler() {
+function json(status, body) {
+  return {
+    statusCode: status,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    body: JSON.stringify(body),
+  };
+}
+
+export async function handler(event) {
   try {
-    // Create (or open) the "email_codes" store.
-    // In production, Netlify injects the needed context automatically.
-    // When running locally with `netlify dev`, you can also provide siteID/token.
-    const codes = getStore('email_codes'); // no token needed in production;
+    // In production Netlify injects siteID/token automatically.
+    // If you're running locally with `netlify dev` and have the two env vars,
+    // we'll use them as a fallback.
+    const store =
+      process.env.NETLIFY_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN
+        ? getStore({
+            name: 'email_codes',
+            siteID: process.env.NETLIFY_SITE_ID,
+            token: process.env.NETLIFY_BLOBS_TOKEN,
+          })
+        : getStore({ name: 'email_codes' });
 
-    // Write a simple healthcheck record, then read it back.
+    const qs = event.queryStringParameters || {};
+    const op = qs.op || 'health';
+    const key = qs.key;
+    const value = qs.value ?? '';
+
+    if (op === 'write' && key) {
+      await store.set(key, value);
+      const roundTrip = await store.get(key);
+      return json(200, { ok: true, wrote: { key, value: roundTrip } });
+    }
+
+    if (op === 'read' && key) {
+      const v = await store.get(key);
+      return json(200, { ok: true, read: { key, value: v } });
+    }
+
+    // Default: health-check
     const payload = { ok: true, ts: Date.now() };
-    await emailCodes.set('healthcheck', JSON.stringify(payload));
-    const roundTrip = await emailCodes.get('healthcheck');
-
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-      body: JSON.stringify({
-        ok: true,
-        message: 'Blobs store seeded',
-        store: 'email_codes',
-        wrote_key: 'healthcheck',
-        value: JSON.parse(roundTrip),
-      }),
-    };
-  } catch (error) {
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-      body: JSON.stringify({
-        ok: false,
-        error: error.message,
-        hint:
-          'If this fails locally, ensure NETLIFY_SITE_ID and NETLIFY_BLOBS_TOKEN are set. In production, simply call this once.',
-      }),
-    };
+    await store.set('healthcheck', JSON.stringify(payload));
+    const roundTrip = await store.get('healthcheck');
+    return json(200, { ok: true, mode: 'health', value: JSON.parse(roundTrip) });
+  } catch (err) {
+    return json(500, { ok: false, error: err.message });
   }
 }
