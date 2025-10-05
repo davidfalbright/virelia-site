@@ -1,70 +1,69 @@
-// netlify/functions/confirm-email.mjs
 import crypto from "crypto";
-import { getStore } from "@netlify/blobs";
-
-/* helpers */
-const html = (status, message) => ({
-  statusCode: status,
-  headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
-  body: `<!doctype html><meta name=viewport content="width=device-width,initial-scale=1">
-  <style>body{background:#0b1020;color:#e6edf3;font:16px system-ui;margin:0}
-  .card{max-width:720px;margin:4rem auto;padding:2rem;background:#0f172a;border-radius:16px}
-  a{color:#93c5fd}</style>
-  <div class=card>${message}</div>`,
-});
-function b64urlDecode(s) {
-  const pad = s.length % 4 ? "=".repeat(4 - (s.length % 4)) : "";
-  return Buffer.from(s.replace(/-/g, "+").replace(/_/g, "/") + pad, "base64").toString();
-}
-function verifyToken(token, secret) {
-  const [h, p, s] = token.split(".");
-  const data = `${h}.${p}`;
-  const expected = crypto.createHmac("sha256", secret).update(data).digest("base64")
-    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-  if (expected !== s) throw new Error("Bad signature");
-  return JSON.parse(b64urlDecode(p));
-}
-function blobsStore(name) {
-  if (process.env.NETLIFY_BLOBS_TOKEN && process.env.NETLIFY_SITE_ID) {
-    return getStore(name, { siteID: process.env.NETLIFY_SITE_ID, token: process.env.NETLIFY_BLOBS_TOKEN });
-  }
-  return getStore(name);
-}
+import { emailCodesStore } from "./_blobs.mjs";
 
 export const handler = async (event) => {
   try {
-    const token = event.queryStringParameters?.token || "";
-    if (!token) return html(400, "<h2>Missing token</h2>");
+    const token = new URL(event.rawUrl).searchParams.get("token");
+    if (!token) return html(400, "Missing token");
 
-    const payload = verifyToken(token, process.env.CODE_SIGNING_SECRET || "dev-secret");
-    if (payload.purpose !== "confirm") return html(400, "<h2>Invalid token</h2>");
-    if (Date.now() > Number(payload.exp || 0)) return html(400, "<h2>Token expired</h2>");
+    const secret = process.env.CODE_SIGNING_SECRET;
+    if (!secret) return html(500, "Server not configured");
 
-    // Try to persist "confirmedAt" next to the user's code entry.
-    let persisted = true;
-    try {
-      const codes = blobsStore("email_codes");
-      const key = String(payload.email || "").trim().toLowerCase();
-      const existing = (await codes.get(key, { type: "json" })) || {};
-      existing.confirmedAt = Date.now();
-      await codes.set(key, JSON.stringify(existing));
-    } catch (e) {
-      persisted = false;
-      console.error("confirm-email: persist failed:", e);
+    const payload = verify(token, secret);
+    if (!payload || payload.purpose !== "confirm" || payload.exp < Date.now()) {
+      return html(400, "Invalid or expired token");
     }
 
-    const note = persisted
-      ? ""
-      : `<p style="color:#f59e0b">Technical note: we couldn't persist the confirm status (Blobs write failed). You may still verify your code.</p>`;
+    // Best-effort: persist "confirmed" flag (won’t block success page)
+    let note = "";
+    try {
+      const store = emailCodesStore();
+      await store.set(`confirm:${payload.email.toLowerCase()}`, JSON.stringify({ ok: true, at: Date.now() }));
+    } catch (e) {
+      console.warn("Blobs write failed on confirm:", e);
+      note = "Technical note: we couldn't persist the confirm status (Blobs write failed). You may still verify your code.";
+    }
 
-    return html(
-      200,
-      `<h2>Your email has been confirmed.</h2>
-       <p><a href="/">Back to iamvirelia.org</a></p>
-       ${note}`
-    );
+    return successPage(note);
   } catch (err) {
     console.error("confirm-email error:", err);
-    return html(500, "<h2>Unexpected error</h2>");
+    return html(500, "Unexpected error");
   }
 };
+
+/* ---------- helpers ---------- */
+
+function successPage(note) {
+  const detail = note
+    ? `<p style="margin-top:12px;color:#f5a524">${escapeHtml(note)}</p>`
+    : "";
+  const body = `
+  <div style="font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:680px;margin:64px auto;padding:24px;border-radius:16px;background:#0b1220;color:#e5e7eb">
+    <h2 style="margin:0 0 12px 0">Your email has been confirmed.</h2>
+    <p><a href="/" style="color:#93c5fd">Back to iamvirelia.org</a></p>
+    ${detail}
+  </div>`;
+  return html(200, body, true);
+}
+
+function verify(token, secret) {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  const [h, p, s] = parts;
+  const data = `${h}.${p}`;
+  const expected = crypto.createHmac("sha256", secret).update(data).digest("base64")
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  if (expected !== s) return null;
+  return JSON.parse(Buffer.from(p.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+}
+
+function html(statusCode, body, isHtml = false) {
+  return {
+    statusCode,
+    headers: { "Content-Type": isHtml ? "text/html" : "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+    body: isHtml ? body : String(body),
+  };
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
