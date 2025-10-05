@@ -10,7 +10,7 @@ export const handler = async (event) => {
     if (!email || !code) return j(400, { error: "Missing email or code" });
 
     const store = getStore({
-      name: "email_codes",
+      name: "email_status",
       siteID: process.env.NETLIFY_SITE_ID,
       token : process.env.NETLIFY_BLOBS_TOKEN,
     });
