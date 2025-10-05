@@ -81,7 +81,9 @@ export const handler = async (event, context) => {
     return json(200, { ok: true, storedKey: key, issuedAt });
   } catch (err) {
     console.error("request-code error:", err);
-    return json(500, { error: "Unexpected server error" });
+    //return json(500, { error: "Unexpected server error" });
+    
+    return json(500, {error: err?.message ?? String(err) ?? 'Unexpected server error', });
   }
 };
 
