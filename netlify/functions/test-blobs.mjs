@@ -6,12 +6,7 @@ export async function handler() {
     // Create (or open) the "email_codes" store.
     // In production, Netlify injects the needed context automatically.
     // When running locally with `netlify dev`, you can also provide siteID/token.
-    const emailCodes = getStore({
-      name: 'email_codes',
-      // These are optional in production; useful locally if needed
-      siteID: process.env.NETLIFY_SITE_ID,
-      token: process.env.NETLIFY_BLOBS_TOKEN,
-    });
+    const codes = getStore('email_codes'); // no token needed in production;
 
     // Write a simple healthcheck record, then read it back.
     const payload = { ok: true, ts: Date.now() };
