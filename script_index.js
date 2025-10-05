@@ -6,40 +6,40 @@ const normalizeCVC = (s) => (s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const formatCVC = (s) => (s.length === 6 ? `${s.slice(0, 3)}-${s.slice(3)}` : s);
 const isCVC = (s) => /^[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(s);
 
-const requestForm     = $('requestForm'),
-      verifyForm      = $('verifyForm'),
-      createCredsForm = $('createCredsForm'),
-      loginForm       = $('loginForm');
+const requestForm = $('requestForm'),
+  verifyForm = $('verifyForm'),
+  createCredsForm = $('createCredsForm'),
+  loginForm = $('loginForm');
 
-const emailEl   = $('email'),
-      codeEl    = $('code'),
-      requestBtn= $('requestBtn'),
-      verifyBtn = $('verifyBtn'),
-      createBtn = $('createBtn'),
-      loginBtn  = $('loginBtn');
+const emailEl = $('email'),
+  codeEl = $('code'),
+  requestBtn = $('requestBtn'),
+  verifyBtn = $('verifyBtn'),
+  createBtn = $('createBtn'),
+  loginBtn = $('loginBtn');
 
 const msg1 = $('msg1'),
-      msg2 = $('msg2'),
-      msg3 = $('msg3'),
-      msg4 = $('msg4');
+  msg2 = $('msg2'),
+  msg3 = $('msg3'),
+  msg4 = $('msg4');
 
-const sessionOut    = $('sessionOut');
-const resendLink    = $('resendLink'),
-      refreshLink   = $('refreshLink'),
-      showLoginLink = $('showLoginLink');
+const sessionOut = $('sessionOut');
+const resendLink = $('resendLink'),
+  refreshLink = $('refreshLink'),
+  showLoginLink = $('showLoginLink');
 
-const usernameEl = $('username'),   // will be hidden & forced to email
-      passwordEl = $('password'),
-      loginIdEl  = $('loginId'),    // will be hidden & forced to email
-      loginPwdEl = $('loginPwd');
+const usernameEl = $('username'),           // may or may not exist in your HTML
+  passwordEl = $('password'),               // create-account password
+  loginIdEl = $('loginId'),
+  loginPwdEl = $('loginPwd');
 
 const LOGIN_DEST = '/landing_page.html';
 
-let pendingEmail     = null;
-let canCreateCreds   = false;
-let confirmedViaLink = false;
+let pendingEmail = null;
+let canCreateCreds = false;
+let confirmedViaLink = false; // set true if ?token=... confirmed
 
-// ---------- fetch wrapper ----------
+// Generic fetch wrapper
 async function call(path, method = 'GET', body) {
   const opts = { method, headers: {} };
   if (body) {
@@ -63,39 +63,55 @@ function reveal(el, show = true) {
   el && el.classList.toggle('hidden', !show);
 }
 
-// ---------- Proceed button utilities ----------
-function getOrCreateProceedBtn() {
-  let btn = document.getElementById('proceedLoginBtn');
+// ---------- small UI helpers (button, dividers, labels) ----------
+function ensureProceedButton(text = 'Log in', href = LOGIN_DEST) {
+  let btn = $('proceedLoginBtn');
   if (!btn) {
     btn = document.createElement('button');
     btn.id = 'proceedLoginBtn';
     btn.type = 'button';
     btn.className = 'btn';
-    btn.onclick = () => (window.location.href = LOGIN_DEST);
+    // place inside verify form for visibility
     (verifyForm || document.body).appendChild(btn);
   }
+  btn.textContent = text;
+  btn.onclick = () => (window.location.href = href);
   btn.classList.remove('hidden');
-  return btn;
+
+  // Divider directly under the button
+  ensureDivider('dividerAfterProceed', btn, 'afterend');
 }
 
-function setProceedLabel(hasCreds) {
-  const btn = getOrCreateProceedBtn();
-  btn.textContent = hasCreds ? 'Log in' : 'Guest Login';
+function ensureDivider(id, anchorEl, where = 'afterend') {
+  if (!anchorEl) return;
+  if ($(id)) return;
+  const hr = document.createElement('hr');
+  hr.id = id;
+  hr.style.border = 'none';
+  hr.style.borderTop = '1px solid rgba(255,255,255,0.15)';
+  hr.style.margin = '18px 0';
+  anchorEl.insertAdjacentElement(where, hr);
 }
 
-// ---------- Force UID == Email (hide inputs) ----------
-function useEmailAsUid() {
-  if (!pendingEmail) return;
-  if (usernameEl) {
-    usernameEl.value = pendingEmail;
-    try { usernameEl.type = 'hidden'; } catch {}
-    usernameEl.classList.add('hidden');
-  }
-  if (loginIdEl) {
-    loginIdEl.value = pendingEmail;
-    try { loginIdEl.type = 'hidden'; } catch {}
-    loginIdEl.classList.add('hidden');
-  }
+function ensurePasswordLabel() {
+  if (!passwordEl || $('passwordLabel')) return;
+  const label = document.createElement('label');
+  label.id = 'passwordLabel';
+  label.textContent = 'Password';
+  label.style.display = 'block';
+  label.style.margin = '16px 0 6px';
+  label.style.color = '#cbd5e1';
+  passwordEl.insertAdjacentElement('beforebegin', label);
+}
+
+function ensureCreateSectionDivider() {
+  // Put a line under the create-account area
+  if (createCredsForm) ensureDivider('dividerUnderCreate', createCredsForm, 'afterend');
+}
+
+// Decide proceed button text
+function updateProceedButton(hasCredentials) {
+  ensureProceedButton(hasCredentials ? 'Log in' : 'Guest Login', LOGIN_DEST);
 }
 
 // ---- UX niceties ----
@@ -120,11 +136,7 @@ requestForm?.addEventListener('submit', async (e) => {
     const r = await call('request-code', 'POST', { email });
     localStorage.setItem('lastEmail', email);
     pendingEmail = email;
-    setMsg(
-      msg1,
-      r.message || `Email sent to ${email}. Click the Confirm link and enter the code.`,
-      true
-    );
+    setMsg(msg1, r.message || `Email sent to ${email}. Click the Confirm link and enter the code.`, true);
     requestBtn.textContent = 'Sent!';
     reveal(verifyForm, true);
     codeEl?.focus();
@@ -158,22 +170,22 @@ verifyForm?.addEventListener('submit', async (e) => {
       !!confirmed || confirmedViaLink || localStorage.getItem('confirmed_ok') === '1';
 
     if (isReallyConfirmed) {
-      setMsg(msg2, r.message || 'Code verified. You’re all set.', true);
+      setMsg(msg2, r.message || 'Code verified and email confirmed. You may proceed.', true);
       verifyBtn.textContent = 'Verified';
       verifyBtn.disabled = true;
 
-      // lock inputs to email and hide them
-      useEmailAsUid();
+      // Proceed + UI polish
+      updateProceedButton(!!hasCredentials);
+      ensurePasswordLabel();
+      ensureCreateSectionDivider();
 
-      // Update the proceed button label based on account state
-      setProceedLabel(!!hasCredentials);
-
-      // Optionally expose log-in/create forms too
       if (hasCredentials) {
         reveal(loginForm, true);
-        loginIdEl.value = pendingEmail;
+        if (loginIdEl) loginIdEl.value = pendingEmail;
       } else {
         reveal(createCredsForm, true);
+        // If a username field exists in the markup, prefill with email (but we won't validate it)
+        if (usernameEl) usernameEl.value = pendingEmail;
       }
     } else {
       const okText = 'Code verified. Please click the Confirm link in your email to continue.';
@@ -207,17 +219,13 @@ refreshLink?.addEventListener('click', async (e) => {
 
     if (data.confirmed && data.verified) {
       setMsg(msg2, 'Email confirmed and code verified — proceed.', true);
-
-      // lock inputs to email and hide them
-      useEmailAsUid();
-
-      // Update label -> Log in / Guest Login
-      setProceedLabel(!!data.hasCredentials);
+      updateProceedButton(!!data.hasCredentials);
+      ensurePasswordLabel();
+      ensureCreateSectionDivider();
 
       if (data.hasCredentials) {
         reveal(loginForm, true);
-        loginIdEl.value = pendingEmail;
-        loginPwdEl.focus();
+        if (loginIdEl) { loginIdEl.value = pendingEmail; loginPwdEl?.focus(); }
       } else {
         reveal(createCredsForm, true);
         passwordEl?.focus();
@@ -225,8 +233,7 @@ refreshLink?.addEventListener('click', async (e) => {
     } else {
       setMsg(
         msg2,
-        data.message ||
-          'Still waiting for both steps. Be sure to click the Confirm link and enter the code.'
+        data.message || 'Still waiting for both steps. Be sure to click the Confirm link and enter the code.'
       );
     }
   } catch {
@@ -239,35 +246,41 @@ showLoginLink?.addEventListener('click', (e) => {
   e.preventDefault();
   reveal(createCredsForm, false);
   reveal(loginForm, true);
-  if (!pendingEmail) pendingEmail = localStorage.getItem('lastEmail') || '';
-  useEmailAsUid();
-  loginPwdEl.focus();
+  if (loginIdEl) loginIdEl.value = pendingEmail || localStorage.getItem('lastEmail') || '';
+  loginPwdEl?.focus();
 });
 
-// ---- Step 3A: create credentials (UID = email) ----
+// ---- Step 3A: create credentials (email is the account id) ----
 createCredsForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   msg3.textContent = '';
   if (!canCreateCreds) return setMsg(msg3, 'Please complete email Confirm + code first.');
   if (!pendingEmail) pendingEmail = localStorage.getItem('lastEmail') || '';
 
-  // Force the "username" to be the email (no uniqueness friction)
-  const username = pendingEmail;
-  const password = (passwordEl.value || '').trim();
+  const emailId = (pendingEmail || '').trim();
+  const password = (passwordEl?.value || '').trim();
+
+  if (!looksLikeEmail(emailId)) return setMsg(msg3, 'Please enter a valid email first.');
   if (password.length < 8) return setMsg(msg3, 'Password must be at least 8 characters.');
 
   createBtn.disabled = true;
   createBtn.textContent = 'Creating…';
   try {
-    const r = await call('create-credentials', 'POST', { email: pendingEmail, username, password });
+    // Send username = email for server compatibility
+    const r = await call('create-credentials', 'POST', {
+      email: emailId,
+      username: emailId,
+      password
+    });
     setMsg(msg3, r.message || 'Account created! You can now log in.', true);
     createBtn.textContent = 'Created';
 
-    // show login (email is already locked)
     reveal(loginForm, true);
-    loginIdEl.value = pendingEmail;
-    setProceedLabel(true);
-    loginPwdEl.focus();
+    if (loginIdEl) loginIdEl.value = emailId;
+    loginPwdEl?.focus();
+
+    // Update the proceed button to “Log in” after creation
+    updateProceedButton(true);
   } catch (err) {
     setMsg(msg3, err.error || err.message || 'Error creating account.');
     createBtn.textContent = 'Create account';
@@ -275,30 +288,28 @@ createCredsForm?.addEventListener('submit', async (e) => {
   }
 });
 
-// ---- Step 3B: login (UID = email) ----
+// ---- Step 3B: login ----
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   msg4.textContent = '';
-  if (!pendingEmail) pendingEmail = localStorage.getItem('lastEmail') || '';
-
-  // Use the email as the login identifier
-  const loginId = pendingEmail;
-  const password = loginPwdEl.value || '';
-  if (!password) return setMsg(msg4, 'Enter your password.');
+  const loginId = (loginIdEl?.value || '').trim();
+  const password = (loginPwdEl?.value || '');
+  if (!loginId || !password) return setMsg(msg4, 'Enter your username/email and password.');
 
   loginBtn.disabled = true;
   loginBtn.textContent = 'Logging in…';
   try {
+    // accept either username or email; we pass both
     const r = await call('login', 'POST', { username: loginId, email: loginId, password });
     const token = r.session || r.sessionToken;
     setMsg(msg4, 'Logged in!', true);
     loginBtn.textContent = 'Logged in';
     if (token) {
       localStorage.setItem('session_token', token);
-      sessionOut.classList.remove('hidden');
-      sessionOut.textContent = `session_token: ${token}`;
+      sessionOut?.classList.remove('hidden');
+      if (sessionOut) sessionOut.textContent = `session_token: ${token}`;
     }
-    // Optionally redirect after login:
+    // optional redirect after login:
     // window.location.href = LOGIN_DEST;
   } catch (err) {
     setMsg(msg4, err.error || err.message || 'Invalid credentials.');
@@ -312,6 +323,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   const saved = localStorage.getItem('lastEmail');
   if (saved && emailEl && !emailEl.value) emailEl.value = saved;
   if (!pendingEmail && saved) pendingEmail = saved;
+
+  // Helpful UI tweaks present from the start
+  ensurePasswordLabel();
+  ensureCreateSectionDivider();
 
   const token = new URLSearchParams(location.search).get('token');
   if (!token) return;
@@ -327,13 +342,13 @@ window.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('lastEmail', data.email);
         if (emailEl) emailEl.value = data.email;
       }
-      setMsg(
-        msg1,
-        (data.message || 'Email confirmed') + (data.email ? ` for ${data.email}` : ''),
-        true
-      );
+      setMsg(msg1, (data.message || 'Email confirmed') + (data.email ? ` for ${data.email}` : ''), true);
       reveal(verifyForm, true);
-      useEmailAsUid();
+
+      // If the token response includes hasCredentials, update the proceed button text
+      if (typeof data.hasCredentials === 'boolean') {
+        updateProceedButton(data.hasCredentials);
+      }
     } else {
       setMsg(msg1, data.error || 'Confirmation failed.');
     }
