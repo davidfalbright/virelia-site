@@ -6,10 +6,10 @@ const normalizeCVC = (s) => (s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const formatCVC = (s) => (s.length === 6 ? `${s.slice(0, 3)}-${s.slice(3)}` : s);
 const isCVC = (s) => /^[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(s);
 
-const requestForm   = $('requestForm'),
-      verifyForm    = $('verifyForm'),
+const requestForm     = $('requestForm'),
+      verifyForm      = $('verifyForm'),
       createCredsForm = $('createCredsForm'),
-      loginForm     = $('loginForm');
+      loginForm       = $('loginForm');
 
 const emailEl   = $('email'),
       codeEl    = $('code'),
@@ -28,9 +28,9 @@ const resendLink    = $('resendLink'),
       refreshLink   = $('refreshLink'),
       showLoginLink = $('showLoginLink');
 
-const usernameEl = $('username'),
+const usernameEl = $('username'),   // will be hidden & forced to email
       passwordEl = $('password'),
-      loginIdEl  = $('loginId'),
+      loginIdEl  = $('loginId'),    // will be hidden & forced to email
       loginPwdEl = $('loginPwd');
 
 const LOGIN_DEST = '/landing_page.html';
@@ -78,10 +78,24 @@ function getOrCreateProceedBtn() {
   return btn;
 }
 
-// Set the big button label based on whether the user already has credentials
 function setProceedLabel(hasCreds) {
   const btn = getOrCreateProceedBtn();
   btn.textContent = hasCreds ? 'Log in' : 'Guest Login';
+}
+
+// ---------- Force UID == Email (hide inputs) ----------
+function useEmailAsUid() {
+  if (!pendingEmail) return;
+  if (usernameEl) {
+    usernameEl.value = pendingEmail;
+    try { usernameEl.type = 'hidden'; } catch {}
+    usernameEl.classList.add('hidden');
+  }
+  if (loginIdEl) {
+    loginIdEl.value = pendingEmail;
+    try { loginIdEl.type = 'hidden'; } catch {}
+    loginIdEl.classList.add('hidden');
+  }
 }
 
 // ---- UX niceties ----
@@ -140,7 +154,6 @@ verifyForm?.addEventListener('submit', async (e) => {
     const { hasCredentials, confirmed, canCreate } = r;
     canCreateCreds = !!canCreate || !!confirmed;
 
-    // Also accept a prior link-click as confirmation
     const isReallyConfirmed =
       !!confirmed || confirmedViaLink || localStorage.getItem('confirmed_ok') === '1';
 
@@ -148,6 +161,9 @@ verifyForm?.addEventListener('submit', async (e) => {
       setMsg(msg2, r.message || 'Code verified. You’re all set.', true);
       verifyBtn.textContent = 'Verified';
       verifyBtn.disabled = true;
+
+      // lock inputs to email and hide them
+      useEmailAsUid();
 
       // Update the proceed button label based on account state
       setProceedLabel(!!hasCredentials);
@@ -160,7 +176,6 @@ verifyForm?.addEventListener('submit', async (e) => {
         reveal(createCredsForm, true);
       }
     } else {
-      // Not confirmed yet
       const okText = 'Code verified. Please click the Confirm link in your email to continue.';
       setMsg(msg2, r.message || okText, false);
       verifyBtn.textContent = 'Verify code';
@@ -180,7 +195,6 @@ refreshLink?.addEventListener('click', async (e) => {
   if (!pendingEmail) return setMsg(msg2, 'Enter your email first.');
 
   try {
-    // prefer GET with query param; fall back to POST if 405
     let res = await fetch(API('check-status') + `?email=${encodeURIComponent(pendingEmail)}`);
     if (res.status === 405) {
       res = await fetch(API('check-status'), {
@@ -194,6 +208,9 @@ refreshLink?.addEventListener('click', async (e) => {
     if (data.confirmed && data.verified) {
       setMsg(msg2, 'Email confirmed and code verified — proceed.', true);
 
+      // lock inputs to email and hide them
+      useEmailAsUid();
+
       // Update label -> Log in / Guest Login
       setProceedLabel(!!data.hasCredentials);
 
@@ -203,7 +220,7 @@ refreshLink?.addEventListener('click', async (e) => {
         loginPwdEl.focus();
       } else {
         reveal(createCredsForm, true);
-        usernameEl.focus();
+        passwordEl?.focus();
       }
     } else {
       setMsg(
@@ -222,20 +239,21 @@ showLoginLink?.addEventListener('click', (e) => {
   e.preventDefault();
   reveal(createCredsForm, false);
   reveal(loginForm, true);
-  loginIdEl.value = pendingEmail || localStorage.getItem('lastEmail') || '';
+  if (!pendingEmail) pendingEmail = localStorage.getItem('lastEmail') || '';
+  useEmailAsUid();
   loginPwdEl.focus();
 });
 
-// ---- Step 3A: create credentials ----
+// ---- Step 3A: create credentials (UID = email) ----
 createCredsForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   msg3.textContent = '';
   if (!canCreateCreds) return setMsg(msg3, 'Please complete email Confirm + code first.');
   if (!pendingEmail) pendingEmail = localStorage.getItem('lastEmail') || '';
 
-  const username = (usernameEl.value || '').trim();
+  // Force the "username" to be the email (no uniqueness friction)
+  const username = pendingEmail;
   const password = (passwordEl.value || '').trim();
-  if (!/^[a-zA-Z0-9._-]{3,20}$/.test(username)) return setMsg(msg3, 'Username must be 3–20 chars.');
   if (password.length < 8) return setMsg(msg3, 'Password must be at least 8 characters.');
 
   createBtn.disabled = true;
@@ -244,12 +262,12 @@ createCredsForm?.addEventListener('submit', async (e) => {
     const r = await call('create-credentials', 'POST', { email: pendingEmail, username, password });
     setMsg(msg3, r.message || 'Account created! You can now log in.', true);
     createBtn.textContent = 'Created';
-    reveal(loginForm, true);
-    loginIdEl.value = username;
-    loginPwdEl.focus();
 
-    // Now that creds exist, flip the big button label to "Log in"
+    // show login (email is already locked)
+    reveal(loginForm, true);
+    loginIdEl.value = pendingEmail;
     setProceedLabel(true);
+    loginPwdEl.focus();
   } catch (err) {
     setMsg(msg3, err.error || err.message || 'Error creating account.');
     createBtn.textContent = 'Create account';
@@ -257,13 +275,16 @@ createCredsForm?.addEventListener('submit', async (e) => {
   }
 });
 
-// ---- Step 3B: login ----
+// ---- Step 3B: login (UID = email) ----
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   msg4.textContent = '';
-  const loginId = (loginIdEl.value || '').trim();
+  if (!pendingEmail) pendingEmail = localStorage.getItem('lastEmail') || '';
+
+  // Use the email as the login identifier
+  const loginId = pendingEmail;
   const password = loginPwdEl.value || '';
-  if (!loginId || !password) return setMsg(msg4, 'Enter your username/email and password.');
+  if (!password) return setMsg(msg4, 'Enter your password.');
 
   loginBtn.disabled = true;
   loginBtn.textContent = 'Logging in…';
@@ -312,6 +333,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         true
       );
       reveal(verifyForm, true);
+      useEmailAsUid();
     } else {
       setMsg(msg1, data.error || 'Confirmation failed.');
     }
