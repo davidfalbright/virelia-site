@@ -1,47 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Delete Email</title>
-  </head>
-  <body>
-    <h1>Delete Your Email</h1>
-    <form id="deleteForm">
-      <label for="email">Email:</label>
-      <input type="email" id="email" placeholder="Enter email to delete" required />
-      <button type="submit">Delete</button>
-    </form>
+import { getStore } from "@netlify/blobs";
 
-    <script>
-      document.getElementById('deleteForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
+export const handler = async (event) => {
+  try {
+    const { email } = JSON.parse(event.body || "{}");
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return json(400, { error: "Invalid email" });
+    }
 
-        const email = document.getElementById('email').value;
-        if (!email) {
-          alert('Please provide an email');
-          return;
-        }
+    const store = getStore({ name: "email_status" }); // Ensure you're using the correct store
 
-        try {
-          const response = await fetch('/.netlify/functions/delete-email', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email }),
-          });
+    const emailKey = email.trim().toLowerCase();
+    const exists = await store.get(emailKey);
 
-          const result = await response.json();
-          if (response.ok) {
-            alert('Email deleted successfully!');
-          } else {
-            alert('Failed to delete email: ' + result.error);
-          }
-        } catch (error) {
-          alert('Error: ' + error.message);
-        }
-      });
-    </script>
-  </body>
-</html>
+    if (!exists) {
+      return json(404, { error: "Email not found" });
+    }
+
+    await store.delete(emailKey); // Delete the email from the blob storage
+
+    return json(200, { ok: true, message: "Email successfully deleted" });
+  } catch (err) {
+    console.error("delete-email error:", err);
+    return json(500, { error: "Unexpected server error" });
+  }
+};
+
+function json(statusCode, body) {
+  return {
+    statusCode,
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+    body: JSON.stringify(body),
+  };
+}
