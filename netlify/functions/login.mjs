@@ -1,64 +1,92 @@
 // netlify/functions/login.js
-// Accepts { loginId, password } where loginId is usually an EMAIL (new scheme).
-// Tries new store first (user_credentials with email as key), then falls back
-// to legacy stores (users + email_index) if needed.
+// Accepts { loginId, password } (preferred), but also supports legacy
+// shapes: { email, password } or { username, password }.
+//
+// Auth order:
+//   1) New scheme: "user_credentials" store keyed by email
+//   2) Legacy: "users" store (username key) via direct username or via
+//      "email_index" (email -> username)
 
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { getStore } from "@netlify/blobs";
 
+const siteID = process.env.NETLIFY_SITE_ID;
+const token  = process.env.NETLIFY_BLOBS_TOKEN;
+
 export const handler = async (event) => {
-  if (event.httpMethod !== "POST") return json(405, { error: "Method Not Allowed" });
+  if (event.httpMethod !== "POST") {
+    return json(405, { error: "Method Not Allowed" });
+  }
 
   try {
-    const { loginId, password } = JSON.parse(event.body || "{}");
-    if (!loginId || !password) return json(400, { error: "Missing loginId or password" });
+    // Accept new and legacy payload shapes
+    const body = JSON.parse(event.body || "{}");
+    const loginId =
+      (body.loginId ?? body.email ?? body.username ?? "").toString().trim();
+    const password = (body.password ?? "").toString();
+
+    if (!loginId || !password) {
+      return json(400, { error: "Missing loginId or password" });
+    }
 
     const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isEmail = looksLikeEmail.test(loginId);
-    const emailKey = (isEmail ? String(loginId).toLowerCase().trim() : null);
+    const emailKey = isEmail ? loginId.toLowerCase() : null;
 
     // 1) Try NEW scheme: user_credentials keyed by email
-    let cred = null;
-    let authEmail = null;  // email we’ll put into the session
-    const newStore = getStore({ name: "user_credentials" });
+    let cred = null;         // { uid, salt, hash, alg }
+    let authEmail = null;    // email put into session
+
     if (emailKey) {
+      const newStore = getStore({ name: "user_credentials", siteID, token });
       const raw = await newStore.get(emailKey);
       if (raw) {
-        cred = safeJSON(raw);
-        authEmail = emailKey;
+        const parsed = safeJSON(raw);
+        if (parsed && parsed.salt && parsed.hash) {
+          cred = { uid: emailKey, salt: parsed.salt, hash: parsed.hash, alg: "scrypt" };
+          authEmail = emailKey;
+        }
       }
     }
 
-    // 2) If not found, try LEGACY:
-    //    a) username path (loginId is a username)
-    //    b) email -> username path via email_index
+    // 2) Legacy fallbacks
     if (!cred) {
-      const users = getStore({ name: "users" });
-      const emailIndex = getStore({ name: "email_index" });
+      const users      = getStore({ name: "users",       siteID, token });
+      const emailIndex = getStore({ name: "email_index", siteID, token });
 
       if (!isEmail) {
-        // treat loginId as legacy username
-        const rawUser = await users.get(String(loginId).toLowerCase());
+        // Treat loginId as legacy username
+        const uname = loginId.toLowerCase();
+        const rawUser = await users.get(uname);
         if (rawUser) {
-          cred = mapLegacyUser(safeJSON(rawUser));
-          authEmail = (cred && cred.uid) || null;
+          const mapped = mapLegacyUser(safeJSON(rawUser));
+          if (mapped) {
+            cred = mapped;
+            authEmail = mapped.uid;
+          }
         }
       } else {
-        // loginId is email, map to username via legacy index
+        // loginId is email: map to username via legacy index
         const uname = await emailIndex.get(emailKey);
         if (uname) {
           const rawUser = await users.get(String(uname).toLowerCase());
           if (rawUser) {
-            cred = mapLegacyUser(safeJSON(rawUser));
-            authEmail = (cred && cred.uid) || null;
+            const mapped = mapLegacyUser(safeJSON(rawUser));
+            if (mapped) {
+              cred = mapped;
+              authEmail = mapped.uid;
+            }
           }
         }
       }
     }
 
-    if (!cred || !authEmail) return json(401, { error: "Invalid credentials" });
+    if (!cred || !authEmail) {
+      // Generic message to avoid account enumeration
+      return json(401, { error: "Invalid credentials" });
+    }
 
-    // Validate password with scrypt (new or legacy structure)
+    // Verify password (scrypt)
     const ok = await verifyPasswordScrypt(password, cred.salt, cred.hash);
     if (!ok) return json(401, { error: "Invalid credentials" });
 
@@ -68,12 +96,7 @@ export const handler = async (event) => {
 
     const now = Date.now();
     const sessionToken = signToken(
-      {
-        sub: authEmail,  // subject is the email/uid
-        email: authEmail,
-        iat: now,
-        exp: now + 60 * 60 * 1000, // 1 hour
-      },
+      { sub: authEmail, email: authEmail, iat: now, exp: now + 60 * 60 * 1000 },
       SECRET
     );
 
@@ -103,8 +126,8 @@ function mapLegacyUser(u) {
   if (!u) return null;
   // Legacy fields: { username, email, pwd_scrypt_hex, salt_hex }
   const email = (u.email || "").toLowerCase().trim();
-  const salt = u.salt_hex || u.salt;
-  const hash = u.pwd_scrypt_hex || u.hash;
+  const salt  = u.salt_hex || u.salt;
+  const hash  = u.pwd_scrypt_hex || u.hash;
   if (!email || !salt || !hash) return null;
   return { uid: email, salt, hash, alg: "scrypt" };
 }
