@@ -1,15 +1,3 @@
-// netlify/functions/create-credentials.js
-// Create credentials using EMAIL as the canonical UID.
-//
-// Stores:
-//   - user_credentials:  key=email, value:
-//       { uid, alg: 'scrypt', salt, hash, createdAt }
-//   - email_index:       key=email, value: email   (truthy marker for hasCredentials)
-//
-// Reads email verification from:
-//   - email_status (preferred)
-//   - verified_emails (legacy fallback)
-
 import crypto from "node:crypto";
 import { getStore } from "@netlify/blobs";
 
@@ -43,9 +31,12 @@ export const handler = async (event) => {
     const creds = getStore({ name: "user_credentials", siteID, token });
     const index = getStore({ name: "email_index",       siteID, token });
 
-    // Don't allow duplicates for this email
+    // Check if the email already exists in the user_credentials store
     const existing = await creds.get(uid);
-    if (existing) return json(409, { error: "Email already has credentials" });
+    if (existing) {
+      // Email already has credentials
+      return json(409, { error: "Email already exists. Please log in or use a different email." });
+    }
 
     // Hash password with scrypt
     const salt = crypto.randomBytes(16).toString("hex");
@@ -59,7 +50,9 @@ export const handler = async (event) => {
       createdAt: Date.now(),
     };
 
+    // Store user credentials
     await creds.set(uid, JSON.stringify(record));
+
     // Keep check-status / UI happy: email_index.get(email) should be truthy
     await index.set(uid, uid);
 
