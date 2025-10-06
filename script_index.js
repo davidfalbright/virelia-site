@@ -278,39 +278,38 @@ loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   msg4.textContent = '';
 
-  const loginId = (loginIdEl.value || '').trim();   // may be email OR username
+  // Prefer the typed value; fall back to the email we just verified.
+  const loginId = (loginIdEl.value || pendingEmail || '').trim();
   const password = loginPwdEl.value || '';
-
   if (!loginId || !password) {
-    setMsg(msg4, 'Enter your username/email and password.');
-    return;
+    return setMsg(msg4, 'Enter your email and password.');
   }
 
   loginBtn.disabled = true;
   loginBtn.textContent = 'Logging in…';
 
   try {
-    // IMPORTANT: send exactly { loginId, password }
+    // Your login function accepts { loginId, password }
     const r = await call('login', 'POST', { loginId, password });
 
-    const token = r.session || r.sessionToken;
-    setMsg(msg4, 'Logged in!', true);
-    loginBtn.textContent = 'Logged in';
-
+    // Store the session for the next page
+    const token = r.sessionToken || r.session;
     if (token) {
       localStorage.setItem('session_token', token);
-      sessionOut.classList.remove('hidden');
-      sessionOut.textContent = `session_token: ${token}`;
-      // (optional) redirect after login:
-      // window.location.href = '/landing_page.html';
+
+      // Optional: also set a non-HttpOnly cookie (expires in 1 hour)
+      document.cookie =
+        `session_token=${encodeURIComponent(token)}; Path=/; Max-Age=3600; SameSite=Lax`;
     }
+
+    // Navigate to your app after login
+    window.location.replace(LOGIN_DEST); // LOGIN_DEST = '/landing_page.html'
   } catch (err) {
     setMsg(msg4, err.error || err.message || 'Invalid credentials.');
     loginBtn.textContent = 'Log in';
     loginBtn.disabled = false;
   }
 });
-
 
 // ---------- On load: prefill + auto-confirm ?token=... ----------
 window.addEventListener('DOMContentLoaded', async () => {
