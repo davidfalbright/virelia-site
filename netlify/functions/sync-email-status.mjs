@@ -1,6 +1,6 @@
 // netlify/functions/sync-email-status.mjs
-// One-off / maintenance function to reconcile verified state between
-// the "verified_emails" (booleans) store and the older "email_status" store.
+// Reconciles verified state between "verified_emails" and "email_status".
+// Works with GET ?email=... or POST { email }.
 
 import { getStore } from "@netlify/blobs";
 
@@ -10,68 +10,76 @@ const json = (status, body) => ({
   headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
   body: JSON.stringify(body),
 });
-
-const ok = (body = {}) => json(200, { ok: true, ...body });
-const bad = (status = 400, body = {}) => json(status, { ok: false, ...body });
+const ok  = (b = {}) => json(200, { ok: true,  ...b });
+const bad = (s = 400, b = {}) => json(s,     { ok: false, ...b });
 
 const looksLikeEmail = (s = "") => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
-const safeJSON = (str) => {
-  try { return JSON.parse(str); } catch { return null; }
-};
+const safeJSON = (s) => { try { return JSON.parse(s); } catch { return null; } };
+
+// Ensure we always pass explicit credentials to Blobs
+function store(name) {
+  const siteID = process.env.NETLIFY_SITE_ID;
+  const token  = process.env.NETLIFY_BLOBS_TOKEN;
+  if (!siteID || !token) {
+    throw new Error(
+      `Blobs not configured: missing ${!siteID ? "NETLIFY_SITE_ID" : ""}${!siteID && !token ? " and " : ""}${!token ? "NETLIFY_BLOBS_TOKEN" : ""}`
+    );
+  }
+  return getStore({ name, siteID, token });
+}
 
 /* ---------------- handler ---------------- */
 export const handler = async (event) => {
   try {
-    // GET ?email=... or POST { email }
-    const qpEmail = (event.queryStringParameters || {}).email || "";
+    const qpEmail   = (event.queryStringParameters || {}).email || "";
     const bodyEmail = safeJSON(event.body || "")?.email || "";
-    const email = (qpEmail || bodyEmail || "").trim().toLowerCase();
+    const email     = (qpEmail || bodyEmail || "").trim().toLowerCase();
 
     if (!looksLikeEmail(email)) {
-      return bad(400, { error: "Provide ?email=<address>" });
+      return bad(400, { error: "Provide ?email=<address> or POST { email }" });
     }
 
-    // Open both stores (env-provided siteID/token are picked up automatically)
-    const verified = getStore({ name: "verified_emails" });
-    const status   = getStore({ name: "email_status" });
+    const verified = store("verified_emails");
+    const status   = store("email_status");
 
-    // Read both sides
+    // Load both records (tolerate missing)
     const vBefore = safeJSON(await verified.get(email)) || {};
-    const s       = safeJSON(await status.get(email)) || {};
+    const s       = safeJSON(await status.get(email))   || {};
 
-    // Synthesize a single truth for the verified_emails store
+    // Merge logic: booleans and timestamps
     const vAfter = {
       ...vBefore,
-      // set booleans if any hint exists either side
-      verified   : vBefore.verified   ?? !!s.verified || !!s.verifiedAt,
-      confirmed  : vBefore.confirmed  ?? !!s.confirmed || !!s.confirmedAt,
-      // carry timestamps forward if present
-      verifiedAt : vBefore.verifiedAt  || s.verifiedAt  || (vBefore.verified ? (vBefore.verifiedAt || Date.now()) : undefined),
-      confirmedAt: vBefore.confirmedAt || s.confirmedAt || (vBefore.confirmed ? (vBefore.confirmedAt || Date.now()) : undefined),
+      verified   : (vBefore.verified  ?? false) || !!s.verified  || !!s.verifiedAt,
+      confirmed  : (vBefore.confirmed ?? false) || !!s.confirmed || !!s.confirmedAt,
+      verifiedAt : vBefore.verifiedAt  || s.verifiedAt  || (vBefore.verified ? Date.now() : undefined),
+      confirmedAt: vBefore.confirmed   || s.confirmed   ? (vBefore.confirmedAt || s.confirmedAt || Date.now()) : vBefore.confirmedAt,
       updatedAt  : Date.now(),
     };
 
-    // Persist back to the canonical store
     await verified.set(email, JSON.stringify(vAfter));
 
-    // (Optional) also ensure email_status has the timestamp shape for UI that reads it
+    // Optionally keep legacy store shaped with timestamps
     const sAfter = {
       ...s,
-      verifiedAt : vAfter.verified   ? (s.verifiedAt  || vAfter.verifiedAt  || Date.now()) : s.verifiedAt,
-      confirmedAt: vAfter.confirmed  ? (s.confirmedAt || vAfter.confirmedAt || Date.now()) : s.confirmedAt,
+      verifiedAt : vAfter.verified  ? (s.verifiedAt  || vAfter.verifiedAt  || Date.now()) : s.verifiedAt,
+      confirmedAt: vAfter.confirmed ? (s.confirmedAt || vAfter.confirmedAt || Date.now()) : s.confirmedAt,
       updatedAt  : Date.now(),
     };
     await status.set(email, JSON.stringify(sAfter));
 
     return ok({
       email,
-      verified  : !!vAfter.verified,
-      confirmed : !!vAfter.confirmed,
+      verified: !!vAfter.verified,
+      confirmed: !!vAfter.confirmed,
       verifiedStore: vAfter,
-      statusStore  : sAfter,
+      statusStore: sAfter,
     });
   } catch (e) {
     console.error("sync-email-status error:", e);
-    return json(500, { ok: false, error: "Unexpected server error" });
+    // If the environment is the problem, surface it clearly
+    const msg = /Blobs not configured/i.test(String(e?.message))
+      ? e.message
+      : "Unexpected server error";
+    return json(500, { ok: false, error: msg });
   }
 };
