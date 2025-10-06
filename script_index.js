@@ -273,33 +273,44 @@ createCredsForm?.addEventListener('submit', async (e) => {
   }
 });
 
-// ---------- Step 3B: login ----------
+// ---- Step 3B: login ----
 loginForm?.addEventListener('submit', async (e) => {
-  e.preventDefault(); msg4.textContent = '';
-  const loginId = (loginIdEl?.value || '').trim() || (pendingEmail || '');
-  const password = loginPwdEl?.value || '';
-  if (!loginId || !password) return setMsg(msg4, 'Enter your email and password.');
+  e.preventDefault();
+  msg4.textContent = '';
 
-  loginBtn.disabled = true; loginBtn.textContent = 'Logging in…';
+  const loginId = (loginIdEl.value || '').trim();   // may be email OR username
+  const password = loginPwdEl.value || '';
+
+  if (!loginId || !password) {
+    setMsg(msg4, 'Enter your username/email and password.');
+    return;
+  }
+
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Logging in…';
+
   try {
-    // Send both to let backend accept either key
-    const r = await call('login', 'POST', { username: loginId, email: loginId, password });
+    // IMPORTANT: send exactly { loginId, password }
+    const r = await call('login', 'POST', { loginId, password });
+
     const token = r.session || r.sessionToken;
     setMsg(msg4, 'Logged in!', true);
     loginBtn.textContent = 'Logged in';
+
     if (token) {
       localStorage.setItem('session_token', token);
-      sessionOut?.classList.remove('hidden');
-      if (sessionOut) sessionOut.textContent = `session_token: ${token}`;
+      sessionOut.classList.remove('hidden');
+      sessionOut.textContent = `session_token: ${token}`;
+      // (optional) redirect after login:
+      // window.location.href = '/landing_page.html';
     }
-    // Optional redirect:
-    // window.location.href = LOGIN_DEST;
   } catch (err) {
     setMsg(msg4, err.error || err.message || 'Invalid credentials.');
     loginBtn.textContent = 'Log in';
     loginBtn.disabled = false;
   }
 });
+
 
 // ---------- On load: prefill + auto-confirm ?token=... ----------
 window.addEventListener('DOMContentLoaded', async () => {
