@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delete Emails</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    .email-list {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    .email-list li {
+      margin-bottom: 10px;
+    }
+    .email-list input {
+      margin-right: 10px;
+    }
+    .btn {
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-danger {
+      background-color: #DC3545;
+    }
+    .btn:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+    .confirmation {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Delete Emails</h1>
+  <p>Below is a list of emails stored in the blob storage. Select the ones you want to delete and confirm your action.</p>
+
+  <!-- List of emails (dynamically populated) -->
+  <ul class="email-list" id="emailList">
+    <!-- Emails will be dynamically loaded here -->
+  </ul>
+
+  <!-- Delete Confirmation -->
+  <div class="confirmation">
+    <button id="deleteButton" class="btn btn-danger" disabled>Delete Selected Emails</button>
+    <p id="confirmationMessage" style="display:none; color: red;">Are you sure you want to delete the selected emails? <button id="confirmDelete" class="btn btn-danger">Yes, delete</button></p>
+  </div>
+</div>
+
+<script>
+// Fetch the list of emails from the Blob store and populate the list
+async function fetchEmails() {
+  try {
+    // You will need to replace this API call with your actual backend or Blob retrieval endpoint.
+    const response = await fetch('/.netlify/functions/get-email-list'); // Replace with your actual function endpoint
+    const data = await response.json();
+    const emailListElement = document.getElementById('emailList');
+
+    // Clear existing list
+    emailListElement.innerHTML = '';
+
+    // Populate the list with emails
+    data.emails.forEach(email => {
+      const listItem = document.createElement('li');
+      listItem.innerHTML = `
+        <input type="checkbox" value="${email}" class="email-checkbox">
+        ${email}
+      `;
+      emailListElement.appendChild(listItem);
+    });
+  } catch (error) {
+    console.error('Error fetching email list:', error);
+  }
+}
+
+// Handle delete button click
+document.getElementById('deleteButton').addEventListener('click', () => {
+  document.getElementById('confirmationMessage').style.display = 'block';
+  document.getElementById('deleteButton').disabled = true;  // Disable the original button
+});
+
+// Handle confirm delete button click
+document.getElementById('confirmDelete').addEventListener('click', async () => {
+  const selectedEmails = Array.from(document.querySelectorAll('.email-checkbox:checked')).map(checkbox => checkbox.value);
+  if (selectedEmails.length === 0) return;
+
+  try {
+    const response = await fetch('/.netlify/functions/delete-emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ emails: selectedEmails })
+    });
+
+    const data = await response.json();
+    if (data.ok) {
+      alert('Emails deleted successfully!');
+      fetchEmails(); // Reload email list
+    } else {
+      alert('Error deleting emails: ' + (data.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Error deleting emails:', error);
+    alert('An error occurred while deleting emails.');
+  }
+
+  document.getElementById('confirmationMessage').style.display = 'none';
+  document.getElementById('deleteButton').disabled = false; // Re-enable the button
+});
+
+// Initialize by fetching emails
+fetchEmails();
+</script>
+
+</body>
+</html>
