@@ -1,11 +1,20 @@
 // netlify/functions/create-credentials.js
 // Create credentials using EMAIL as the canonical UID.
+//
 // Stores:
-//   - user_credentials: { uid, alg: 'scrypt', salt, hash, createdAt }
-//   - email_index: email -> email  (for check-status hasCredentials)
+//   - user_credentials:  key=email, value:
+//       { uid, alg: 'scrypt', salt, hash, createdAt }
+//   - email_index:       key=email, value: email   (truthy marker for hasCredentials)
+//
+// Reads email verification from:
+//   - email_status (preferred)
+//   - verified_emails (legacy fallback)
 
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { getStore } from "@netlify/blobs";
+
+const siteID = process.env.NETLIFY_SITE_ID;
+const token  = process.env.NETLIFY_BLOBS_TOKEN;
 
 export const handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method Not Allowed" });
@@ -31,8 +40,8 @@ export const handler = async (event) => {
     }
 
     // Blob stores
-    const creds = getStore({ name: "user_credentials" });
-    const index = getStore({ name: "email_index" });
+    const creds = getStore({ name: "user_credentials", siteID, token });
+    const index = getStore({ name: "email_index",       siteID, token });
 
     // Don't allow duplicates for this email
     const existing = await creds.get(uid);
@@ -51,10 +60,10 @@ export const handler = async (event) => {
     };
 
     await creds.set(uid, JSON.stringify(record));
-    // Keep check-status happy: email_index.get(email) should be truthy
+    // Keep check-status / UI happy: email_index.get(email) should be truthy
     await index.set(uid, uid);
 
-    return json(200, { ok: true, message: "Account created", uid });
+    return json(200, { ok: true, message: "Account created", uid, hasCredentials: true });
   } catch (e) {
     console.error("create-credentials error:", e);
     return json(500, { error: "Unexpected server error" });
@@ -87,7 +96,7 @@ async function readEmailStatus(emailKey) {
   const tryStores = ["email_status", "verified_emails"];
   for (const name of tryStores) {
     try {
-      const store = getStore({ name });
+      const store = getStore({ name, siteID, token });
       const raw = await store.get(emailKey);
       if (!raw) continue;
       try {
