@@ -1,1 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Virelia — Sign in</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container row">
+      <div class="brand">
+        <div class="logo">
+          <img src="https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord.png" alt="Virelia Logo">
+        </div>
+        <div class="brand-text">
+          <strong>V.I.R.E.L.I.A.</strong>
+          <span>Virtual Intelligence with Responsible Ethics, Logic, and Independent Alignment</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="about_us.html">About Us</a>
+        <a href="impact.html">Impact & Benefits</a>
+        <a href="solutions.html">Delivery Models</a>
+        <a href="implementation.html">Implementation</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="container narrow">
+      <h1>Welcome back</h1>
+      <p class="lead">Sign in with your email and password, or continue as a guest.</p>
+
+      <form id="loginForm" class="card">
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input id="loginEmail" type="email" autocomplete="username" placeholder="you@example.com" required />
+        </div>
+
+        <div class="field">
+          <label for="loginPwd">Password</label>
+          <input id="loginPwd" type="password" autocomplete="current-password" placeholder="••••••••" required />
+        </div>
+
+        <button id="loginBtn" class="btn" type="submit">Log in</button>
+        <p id="loginMsg" class="msg"></p>
+
+        <div class="divider"></div>
+
+        <button id="guestBtn" class="btn btn-secondary" type="button">Guest Login</button>
+        <p id="guestMsg" class="msg small"></p>
+      </form>
+
+      <p class="small" style="margin-top:1rem;">
+        New here? <a href="register.html" id="createLink">Create an account</a>
+      </p>
+    </div>
+  </section>
+
+  <section id="contact" class="section alt">
+    <div class="container narrow">
+      <h2>Contact</h2>
+      <p>Email: <a class="link" href="mailto:info@iamvirelia.org">info@iamvirelia.org</a></p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container row between">
+      <div>© <span id="year"></span> Virelia. All rights reserved.</div>
+      <div class="foot-links">
+        <a href="about_us.html">About Us</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script_login.js" defer></script>
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
 
