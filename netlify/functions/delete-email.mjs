@@ -1,33 +1,47 @@
-import { getStore } from '@netlify/blobs';
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Delete Email</title>
+  </head>
+  <body>
+    <h1>Delete Your Email</h1>
+    <form id="deleteForm">
+      <label for="email">Email:</label>
+      <input type="email" id="email" placeholder="Enter email to delete" required />
+      <button type="submit">Delete</button>
+    </form>
 
-export const handler = async (event) => {
-  if (event.httpMethod !== 'POST') return json(405, { error: 'Method Not Allowed' });
+    <script>
+      document.getElementById('deleteForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-  try {
-    const { email } = JSON.parse(event.body || '{}');
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(400, { error: 'Invalid email' });
+        const email = document.getElementById('email').value;
+        if (!email) {
+          alert('Please provide an email');
+          return;
+        }
 
-    const emailKey = email.trim().toLowerCase();
-    const usersStore = getStore({ name: 'user_credentials' });
+        try {
+          const response = await fetch('/.netlify/functions/delete-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email }),
+          });
 
-    // Delete email record from the user_credentials store
-    await usersStore.delete(emailKey);
-
-    // Optionally, delete email index as well (if applicable)
-    const emailIndexStore = getStore({ name: 'email_index' });
-    await emailIndexStore.delete(emailKey);
-
-    return json(200, { ok: true, message: `Successfully deleted account for ${email}` });
-  } catch (err) {
-    console.error("delete-email error:", err);
-    return json(500, { error: 'Unexpected server error' });
-  }
-};
-
-function json(statusCode, body) {
-  return {
-    statusCode,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-    body: JSON.stringify(body)
-  };
-}
+          const result = await response.json();
+          if (response.ok) {
+            alert('Email deleted successfully!');
+          } else {
+            alert('Failed to delete email: ' + result.error);
+          }
+        } catch (error) {
+          alert('Error: ' + error.message);
+        }
+      });
+    </script>
+  </body>
+</html>
