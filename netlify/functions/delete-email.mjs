@@ -1,34 +1,31 @@
 import { getStore } from "@netlify/blobs";
 
 export const handler = async (event) => {
+  if (event.httpMethod !== 'POST') return json(405, { error: 'Method Not Allowed' });
+
   try {
-    const { email } = JSON.parse(event.body || "{}");
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return json(400, { error: "Invalid email" });
+    const { emails } = JSON.parse(event.body || '{}');
+    if (!Array.isArray(emails) || emails.length === 0) {
+      return json(400, { error: 'No emails provided' });
     }
 
-    const store = getStore({ name: "email_status" }); // Ensure you're using the correct store
+    const store = getStore({ name: 'email_status' }); // Modify to match the store you're using
 
-    const emailKey = email.trim().toLowerCase();
-    const exists = await store.get(emailKey);
-
-    if (!exists) {
-      return json(404, { error: "Email not found" });
+    for (const email of emails) {
+      await store.delete(email.trim().toLowerCase());
     }
 
-    await store.delete(emailKey); // Delete the email from the blob storage
-
-    return json(200, { ok: true, message: "Email successfully deleted" });
+    return json(200, { ok: true, message: 'Emails deleted successfully' });
   } catch (err) {
-    console.error("delete-email error:", err);
-    return json(500, { error: "Unexpected server error" });
+    console.error("delete-emails error:", err);
+    return json(500, { error: 'Unexpected server error' });
   }
 };
 
 function json(statusCode, body) {
   return {
     statusCode,
-    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     body: JSON.stringify(body),
   };
 }
