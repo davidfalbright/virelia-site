@@ -8,16 +8,60 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- Auth guard: runs immediately, before the page renders -->
+  <script>
+  (function () {
+    function readToken() {
+      try {
+        const ls = localStorage.getItem('session_token');
+        if (ls) return ls;
+      } catch {}
+      const m = document.cookie.match(/(?:^|;\s*)session_token=([^;]+)/);
+      return m ? decodeURIComponent(m[1]) : null;
+    }
+
+    function parsePayload(jwt) {
+      const parts = (jwt || '').split('.');
+      if (parts.length < 2) return null;
+      const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      try {
+        const json = atob(b64);
+        return JSON.parse(decodeURIComponent(
+          json.split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+        ));
+      } catch {
+        try { return JSON.parse(atob(b64)); } catch { return null; }
+      }
+    }
+
+    function bounce(reason) {
+      try { localStorage.removeItem('session_token'); } catch {}
+      document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax';
+      // Send them back to the start page; include a hint in the querystring
+      location.replace('/?session=' + encodeURIComponent(reason || 'missing'));
+    }
+
+    const token = readToken();
+    if (!token) return bounce('missing');
+
+    const payload = parsePayload(token) || {};
+    const exp = typeof payload.exp === 'number' ? payload.exp : 0; // our exp is in ms
+    if (!exp || Date.now() > exp) return bounce('expired');
+
+    // Expose the session to the page if needed
+    window.__SESSION__ = { token, email: payload.email || payload.sub || '' };
+  })();
+  </script>
 </head>
 <body>
 
   <header class="topbar">
     <div class="container row">
       <div class="brand">
-<div class="logo">
-  <img src="https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord.png" alt="Virelia Logo">
-</div>
-
+        <div class="logo">
+          <img src="https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord.png" alt="Virelia Logo">
+        </div>
         <div class="brand-text">
           <strong>V.I.R.E.L.I.A.</strong>
           <span>Virtual Intelligence with Responsible Ethics, Logic, and Independent Alignment</span>
@@ -32,6 +76,7 @@
         <a href="implementation.html">Implementation</a>
         <a href="solutions.html">Delivery Models</a>
         <a href="#contact">Contact</a>
+        <a href="#" id="logoutLink" style="margin-left:.75rem;">Log out</a>
       </nav>
     </div>
   </header>
@@ -61,11 +106,11 @@
           <h1>“I am Virelia.”</h1>
           <p>
             A global ethics framework for AI that helps organizations reason through
-            real‑world dilemmas — consistently, transparently, and with traceable logic.
+            real-world dilemmas — consistently, transparently, and with traceable logic.
           </p>
           <ul class="ticks">
-            <li>Values‑anchored, evidence‑aware reasoning</li>
-            <li>Public‑safe, auditable explanations</li>
+            <li>Values-anchored, evidence-aware reasoning</li>
+            <li>Public-safe, auditable explanations</li>
             <li>Built for alignment with local context</li>
           </ul>
           <a class="btn" href="#about">Learn more</a>
@@ -74,36 +119,35 @@
     </div>
   </section>
   
-<!-- START: Bronze Accord Verdict Widget -->
-<section class="container verdict-section" id="verdict">
-  <h2 class="section-title">Ask Virelia:</h2>
-  <p class="section-subtitle">Describe your dilemma in plain language. I’ll return a decision route and explain which beliefs were triggered.</p>
+  <!-- START: Bronze Accord Verdict Widget -->
+  <section class="container verdict-section" id="verdict">
+    <h2 class="section-title">Ask Virelia:</h2>
+    <p class="section-subtitle">Describe your dilemma in plain language. I’ll return a decision route and explain which beliefs were triggered.</p>
 
-  <div class="verdict-card">
-    <label for="dilemmaInput" class="verdict-label">Your dilemma</label>
-    <textarea id="dilemmaInput" class="verdict-input" rows="6" placeholder="Virelia is temporarily offline — API not connected." disabled=tru></textarea>
-    
-    <div class="verdict-actions">
-      <button id="getVerdictBtn" class="btn btn-primary" disabled=true>Get Verdict</button>
+    <div class="verdict-card">
+      <label for="dilemmaInput" class="verdict-label">Your dilemma</label>
+      <textarea id="dilemmaInput" class="verdict-input" rows="6" placeholder="Virelia is temporarily offline — API not connected." disabled=true></textarea>
       
-      <span id="verdictStatus" class="verdict-status" aria-live="polite"></span>
-    </div>
-
-    <div id="verdictResult" class="verdict-result" hidden>
-      <div class="verdict-row">
-        <div class="verdict-pill" id="verdictRoute">Route: —</div>
-        <div class="verdict-meta"><strong>Risk:</strong> <span id="verdictRisk">—</span> • <strong>Urgency:</strong> <span id="verdictUrgency">—</span></div>
+      <div class="verdict-actions">
+        <button id="getVerdictBtn" class="btn btn-primary" disabled=true>Get Verdict</button>
+        <span id="verdictStatus" class="verdict-status" aria-live="polite"></span>
       </div>
-      <p id="verdictMessage" class="verdict-message"></p>
 
-      <div id="verdictTriggersWrap" class="verdict-triggers" hidden>
-        <h3 class="verdict-triggers-title">Triggered Items</h3>
-        <ul id="verdictTriggers" class="verdict-trigger-list"></ul>
+      <div id="verdictResult" class="verdict-result" hidden>
+        <div class="verdict-row">
+          <div class="verdict-pill" id="verdictRoute">Route: —</div>
+          <div class="verdict-meta"><strong>Risk:</strong> <span id="verdictRisk">—</span> • <strong>Urgency:</strong> <span id="verdictUrgency">—</span></div>
+        </div>
+        <p id="verdictMessage" class="verdict-message"></p>
+
+        <div id="verdictTriggersWrap" class="verdict-triggers" hidden>
+          <h3 class="verdict-triggers-title">Triggered Items</h3>
+          <ul id="verdictTriggers" class="verdict-trigger-list"></ul>
+        </div>
       </div>
     </div>
-  </div>
-</section>
-<!-- END: Bronze Accord Verdict Widget -->
+  </section>
+  <!-- END: Bronze Accord Verdict Widget -->
 
   <!-- How it works (public-safe) -->
   <section id="how" class="section alt">
@@ -112,11 +156,11 @@
       <ol class="list">
         <li><strong>Context capture:</strong> We capture and parse the provided full context scenario.</li>
         <li><strong>Evaluation:</strong> We then assess this scenario alongside the ethical framework.</li>
-        <li><strong>Reasoned paths:</strong> We explore potential actions and trade‑offs with transparent and testable reasoning steps.</li>
+        <li><strong>Reasoned paths:</strong> We explore potential actions and trade-offs with transparent and testable reasoning steps.</li>
         <li><strong>Verdict output:</strong> We provide a concise and auditable explanation of why a decision is recommended.</li>
       </ol>
       <p class="hint">
-        Note: this is a high‑level overview — methods and safeguards are kept private until pilot engagement.
+        Note: this is a high-level overview — methods and safeguards are kept private until pilot engagement.
       </p>
     </div>
   </section>
@@ -128,7 +172,7 @@
       <p>
         Virelia turns unstructured narratives into structured, actionable insight. The system
         extracts key facts, aligns them with ethical constraints, and verifies the resulting
-        recommendation through a test‑harness before any downstream use.
+        recommendation through a test-harness before any downstream use.
       </p>
       <div class="cards">
         <div class="card">
@@ -137,11 +181,11 @@
         </div>
         <div class="card">
           <h3>2) Align</h3>
-          <p>Map facts to organizational values and non‑negotiables (e.g., legal or safety constraints).</p>
+          <p>Map facts to organizational values and non-negotiables (e.g., legal or safety constraints).</p>
         </div>
         <div class="card">
           <h3>3) Reason</h3>
-          <p>Explore options, trade‑offs, and likely consequences — with traceable steps.</p>
+          <p>Explore options, trade-offs, and likely consequences — with traceable steps.</p>
         </div>
         <div class="card">
           <h3>4) Verify</h3>
@@ -155,19 +199,12 @@
   <section id="contact" class="section alt">
     <div class="container narrow">
       <h2>Contact</h2>
-      <p class="lead">
-       <!--  We’re preparing a private pilot. If you’re interested in values‑anchored decision support, drop us a line: -->
-      </p>
-      
+      <p class="lead"></p>
       <p>
-       <!--   <a class="link" href="mailto:contact@iamvirelia.org">contact@iamvirelia.org</a> -->
-           
-      <div style="margin-top:1rem;">
-        <span style="margin-left:.5rem;">Email: <a class="link" href="mailto:info@iamvirelia.org">info@iamvirelia.org</a></span>
-      </div>
-  
+        <div style="margin-top:1rem;">
+          <span style="margin-left:.5rem;">Email: <a class="link" href="mailto:info@iamvirelia.org">info@iamvirelia.org</a></span>
+        </div>
       </p>
-      
       <p class="small">
         Please note: We are not yet open for general business. This site is informational and will be updated as the pilot progresses.
       </p>
@@ -185,8 +222,19 @@
       </div>
     </div>
   </footer>
-  <script src="script_landingPage.js" defer></script>
 
+  <!-- Optional: small script to wire up "Log out" and keep the year fresh -->
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.getElementById('logoutLink')?.addEventListener('click', function(e){
+      e.preventDefault();
+      try { localStorage.removeItem('session_token'); } catch {}
+      document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax';
+      location.replace('/');
+    });
+  </script>
+
+  <!-- Your landing page JS (kept as-is) -->
+  <script src="script_landingPage.js" defer></script>
 </body>
 </html>
-
