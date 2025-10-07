@@ -4,26 +4,45 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Virelia — Create an Account</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* double-ensure hidden state without FOUC */
+    .hidden { display: none !important; }
+    #verifyForm[hidden] { display: none !important; }
+    .stack { display: grid; gap: .75rem; }
+    .row { display: grid; gap: .75rem; grid-template-columns: 1fr 1fr; }
+    @media (max-width: 720px){ .row { grid-template-columns: 1fr; } }
+    .card { background: #111827; border-radius: 12px; padding: 16px; }
+    .field label { display:block; font-weight:600; margin-bottom:.25rem; }
+    .field input { width:100%; padding:.6rem .75rem; border-radius:10px; border:1px solid #374151; background:#fff; color:#111; }
+    .btn { padding:.6rem .9rem; border-radius:10px; border:0; cursor:pointer; }
+    .btn:disabled { opacity:.6; cursor:not-allowed; }
+    .btn-primary { background: #60a5fa; color:#0b1020; }
+    .btn-secondary { background:#1f2937; color:#e5e7eb; border:1px solid #374151; }
+    .msg { margin-top:.5rem; min-height:1.25rem; }
+    .msg.ok { color:#10b981; }
+    .msg.err { color:#ef4444; }
+    .divider { height:1px; background:#233044; margin:1rem 0; }
+  </style>
 </head>
 <body>
   <header class="topbar">
-    <div class="container row">
-      <div class="brand">
+    <div class="container row between">
+      <div class="brand row" style="align-items:center; gap:.75rem;">
         <div class="logo">
-          <img src="https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord.png" alt="Virelia Logo">
+          <img src="https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord.png" alt="Virelia Logo" style="height:40px; width:auto;">
         </div>
         <div class="brand-text">
           <strong>V.I.R.E.L.I.A.</strong>
-          <span>Virtual Intelligence with Responsible Ethics, Logic, and Independent Alignment</span>
+          <span style="display:block;font-size:.9rem;opacity:.8">Virtual Intelligence with Responsible Ethics, Logic, and Independent Alignment</span>
         </div>
       </div>
       <nav class="nav">
-        <a href="/about_us.html">About Us</a>
-        <a href="/impact.html">Impact & Benefits</a>
-        <a href="/solutions.html">Delivery Models</a>
-        <a href="/implementation.html">Implementation</a>
-        <a href="/#contact">Contact</a>
+        <a href="about_us.html">About Us</a>
+        <a href="impact.html">Impact & Benefits</a>
+        <a href="solutions.html">Delivery Models</a>
+        <a href="implementation.html">Implementation</a>
+        <a href="#contact">Contact</a>
       </nav>
     </div>
   </header>
@@ -31,55 +50,58 @@
   <section class="section">
     <div class="container narrow">
       <h1>Create an Account</h1>
-      <p class="lead">
-        Please create an account with your email and a secure password.
-        A verification email will be sent with a 6-digit code and a confirm link.
-      </p>
+      <p class="lead">Please create an account with your email and a secure password. A verification email will be sent with a 6-digit code and a confirm link.</p>
 
-      <!-- Create account (sends code + confirm link) -->
-      <form id="createAccountForm" class="card">
-        <div class="field">
-          <label for="email">Email</label>
-          <input id="email" type="email" autocomplete="username" placeholder="you@example.com" required />
+      <!-- Create Account -->
+      <form id="createAccountForm" class="card stack" autocomplete="off">
+        <div class="row">
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="email" placeholder="you@example.com" autocomplete="username" required />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" type="password" placeholder="••••••••" autocomplete="new-password" required />
+          </div>
         </div>
 
-        <div class="field">
-          <label for="password">Password</label>
-          <input id="password" type="password" autocomplete="new-password" placeholder="••••••••" required />
+        <div class="row" style="align-items:start;">
+          <button id="createAccountBtn" class="btn btn-primary" type="submit">Create Account</button>
+          <p id="msg" class="msg"></p>
         </div>
 
-        <button id="createAccountBtn" class="btn" type="submit">Create Account</button>
-        <p id="msg" class="msg" role="status" aria-live="polite"></p>
-
-        <pre id="debug" class="small" style="white-space:pre-wrap;opacity:.6"></pre>
-        <div class="divider"></div>
         <p class="small">Already have an account? <a href="/index.html">Back to Sign In</a></p>
       </form>
 
-      <!-- Verify code (revealed immediately after email sent) -->
-      <form id="verifyForm" class="card hidden">
-        <h3 style="margin-top:0">Verify your code</h3>
-        <p class="small">
-          Enter the 6-character code from the email (format <code>ABC-DEF</code>).
-          If you haven’t already, click the email’s <strong>Confirm</strong> link too.
-        </p>
+      <!-- Verify code (hidden until email is sent) -->
+      <section id="verifyForm" class="card stack" hidden>
+        <h2 style="margin:0">Verify your code</h2>
+        <p>Enter the 6-character code from the email (format <code>ABC-DEF</code>). If you haven’t already, click the email’s <strong>Confirm</strong> link too.</p>
 
-        <div class="field">
-          <label for="code">Verification code</label>
-          <input id="code" type="text" inputmode="latin-prose" placeholder="ABC-DEF" maxlength="7" />
+        <div class="row">
+          <div class="field">
+            <label for="code">Verification code</label>
+            <input id="code" type="text" inputmode="text" placeholder="ABC-DEF" maxlength="7" autocomplete="one-time-code" />
+          </div>
         </div>
 
-        <button id="verifyBtn" class="btn" type="submit">Verify code</button>
-        <p id="msg2" class="msg" role="status" aria-live="polite"></p>
+        <div class="row" style="align-items:start;">
+          <button id="verifyBtn" class="btn btn-secondary" type="button">Verify code</button>
+          <p id="msg2" class="msg"></p>
+        </div>
 
-        <div class="divider"></div>
-        <p class="small">
+        <div class="small">
           Didn’t get it? <a href="#" id="resendLink">Resend</a>.
           Already clicked the email’s Confirm link? <a href="#" id="refreshLink">Refresh status</a>.
-        </p>
+        </div>
 
-        <button id="proceedBtn" type="button" class="btn hidden">Go to Sign In</button>
-      </form>
+        <div class="divider"></div>
+
+        <div class="row" style="align-items:start;">
+          <button id="goBtn" class="btn btn-primary" type="button" disabled>Go to Sign In</button>
+          <p id="msg3" class="msg"></p>
+        </div>
+      </section>
     </div>
   </section>
 
@@ -94,13 +116,13 @@
     <div class="container row between">
       <div>© <span id="year"></span> Virelia. All rights reserved.</div>
       <div class="foot-links">
-        <a href="/about_us.html">About Us</a>
-        <a href="/#contact">Contact</a>
+        <a href="about_us.html">About Us</a>
+        <a href="#contact">Contact</a>
       </div>
     </div>
   </footer>
 
   <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-  <script src="/script_register.js" defer></script>
+  <script src="script_register.js" defer></script>
 </body>
 </html>
