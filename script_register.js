@@ -3,58 +3,65 @@ const $ = (id) => document.getElementById(id);
 const API = (p) => `/.netlify/functions/${p}`;
 const looksLikeEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim());
 
-// Form elements
+const form = $('createAccountForm');
 const emailEl = $('email');
 const passwordEl = $('password');
-const createAccountBtn = $('createAccountBtn');
-const msgEl = $('msg');  // Message element
+const createBtn = $('createAccountBtn');
+const msgEl = $('msg');
+const dbgEl = $('debug');
 
-// Handle form submission to create account
-document.getElementById('createAccountForm').addEventListener('submit', async (e) => {
+function setMsg(el, text, ok = false) {
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'msg ' + (ok ? 'ok' : 'err');
+}
+
+function showDebug(obj) {
+  try { dbgEl.textContent = JSON.stringify(obj, null, 2); } catch {}
+}
+
+form?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  msgEl.textContent = '';  // Reset message
-  const email = emailEl.value.trim();
-  const password = passwordEl.value.trim();
+  setMsg(msgEl, '');
+  showDebug('');
 
-  // Validate email and password
-  if (!looksLikeEmail(email)) {
-    setMsg(msgEl, 'Please enter a valid email.', false);
-    return;
-  }
-  if (password.length < 8) {
-    setMsg(msgEl, 'Password must be at least 8 characters long.', false);
-    return;
-  }
+  const email = (emailEl.value || '').trim();
+  const password = (passwordEl.value || '').trim();
 
-  createAccountBtn.disabled = true;
-  createAccountBtn.textContent = 'Creating...';
+  if (!looksLikeEmail(email)) return setMsg(msgEl, 'Please enter a valid email.');
+  if (password.length < 8) return setMsg(msgEl, 'Password must be at least 8 characters.');
+
+  // persist email for later steps
+  try { localStorage.setItem('lastEmail', email); } catch {}
+
+  createBtn.disabled = true;
+  createBtn.textContent = 'Sending…';
 
   try {
-    // Call the API to request sending the code
+    // this only sends the email (code + confirm link) and stores the code hash
     const res = await fetch(API('request-code'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email })   // password is NOT needed for request-code
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      // Show the user that the verification email was sent
-      setMsg(msgEl, data.message || 'Check your email inbox for the verification code!', true);
-    } else {
-      const error = await res.json();
-      setMsg(msgEl, error.error || 'Failed to create account, please try again.', false);
+    const data = await res.json().catch(() => ({}));
+    showDebug({ status: res.status, data });
+
+    if (!res.ok || data.ok === false) {
+      return setMsg(msgEl, data.error || 'Failed to send verification email.');
     }
+
+    setMsg(
+      msgEl,
+      'Email sent! Check your inbox (and spam). Click the Confirm link, then enter the 6-digit code on the sign-in page.',
+      true
+    );
+    createBtn.textContent = 'Create Account';
   } catch (err) {
-    setMsg(msgEl, 'Unexpected error occurred. Please try again later.', false);
+    showDebug({ error: (err && err.message) || String(err) });
+    setMsg(msgEl, 'Network error calling request-code.');
+  } finally {
+    createBtn.disabled = false;
   }
-
-  createAccountBtn.disabled = false;
-  createAccountBtn.textContent = 'Create Account';
 });
-
-// Display message
-function setMsg(el, text, success) {
-  el.textContent = text;
-  el.style.color = success ? 'green' : 'red';
-}
