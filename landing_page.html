@@ -38,7 +38,6 @@
     function bounce(reason) {
       try { localStorage.removeItem('session_token'); } catch {}
       document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax';
-      // Send them back to the start page; include a hint in the querystring
       location.replace('/?session=' + encodeURIComponent(reason || 'missing'));
     }
 
@@ -46,12 +45,38 @@
     if (!token) return bounce('missing');
 
     const payload = parsePayload(token) || {};
-    const exp = typeof payload.exp === 'number' ? payload.exp : 0; // our exp is in ms
+    const exp = typeof payload.exp === 'number' ? payload.exp : 0; // exp assumed ms
     if (!exp || Date.now() > exp) return bounce('expired');
 
-    // Expose the session to the page if needed
-    window.__SESSION__ = { token, email: payload.email || payload.sub || '' };
+    // Expose the session (now includes role)
+    window.__SESSION__ = {
+      token,
+      email: payload.email || payload.sub || '',
+      role:  payload.role || null
+    };
   })();
+  </script>
+
+  <!-- Hide Contact UI for guest sessions -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const sess = window.__SESSION__ || {};
+      const role = sess.role || null;
+      const isGuest =
+        role === 'guest' ||
+        (!role && (sess.email === 'guest')); // fallback if older guest tokens don't set role
+
+      if (isGuest) {
+        const navContact = document.getElementById('navContactLink') || document.querySelector('a[href="#contact"]');
+        if (navContact) navContact.style.display = 'none';
+
+        const footContact = document.getElementById('footContactLink');
+        if (footContact) footContact.style.display = 'none';
+
+        const contactSection = document.getElementById('contact');
+        if (contactSection) contactSection.style.display = 'none';
+      }
+    });
   </script>
 </head>
 <body>
@@ -75,7 +100,7 @@
         <a href="differentiation.html">Market Differentiation</a>
         <a href="implementation.html">Implementation</a>
         <a href="solutions.html">Delivery Models</a>
-        <a href="#contact">Contact</a>
+        <a href="#contact" id="navContactLink">Contact</a>
         <a href="/delete-email.html">Manage emails</a>
         <a href="#" id="logoutLink" style="margin-left:.75rem;">Log out</a>
       </nav>
@@ -218,7 +243,7 @@
       <div class="foot-links">
         <a href="about_us.html">About Us</a>
         <a href="#how">How it works</a>
-        <a href="#contact">Contact</a>
+        <a href="#contact" id="footContactLink">Contact</a>
         <a href="impact.html">Impact & Benefits</a>
       </div>
     </div>
