@@ -23,8 +23,12 @@ const resendLink = $('resendLink');
 const refreshLink = $('refreshLink');
 const proceedBtn = $('proceedBtn');
 
-// Route target (your request)
-const SIGNIN_URL = '/landing_page.html';
+// Destinations
+const LANDING_URL = '/landing_page.html';
+const SIGNIN_URL  = '/index.html'; // fallback if we can't auto-login
+
+// State
+let lastStatus = { email: '', verified: false, confirmed: false, hasCredentials: false };
 
 // Utils
 function setMsg(el, text, ok = false) {
@@ -35,11 +39,10 @@ function setMsg(el, text, ok = false) {
 function show(el, on = true) { el && el.classList.toggle('hidden', !on); }
 function saveEmail(v) { try { localStorage.setItem('lastEmail', v); } catch {} }
 function loadEmail() { try { return localStorage.getItem('lastEmail') || ''; } catch { return ''; } }
-function debug(obj) { try { dbg.textContent = JSON.stringify(obj, null, 2); } catch {} }
-function wireProceed() {
-  if (!proceedBtn) return;
-  show(proceedBtn, true);
-  proceedBtn.onclick = () => { window.location.href = SIGNIN_URL; };
+function debug(obj) { if (!dbg) return; try { dbg.textContent = JSON.stringify(obj, null, 2); } catch {} }
+function setSessionToken(token) {
+  try { localStorage.setItem('session_token', token); } catch {}
+  document.cookie = `session_token=${encodeURIComponent(token)}; Max-Age=3600; Path=/; SameSite=Lax`;
 }
 
 // Format code nicely
@@ -55,7 +58,7 @@ window.addEventListener('DOMContentLoaded', () => {
   show(verifyCard, false);
 });
 
-// Create account → send code+link
+// Create account → send code+link (does NOT create creds yet)
 formCreate?.addEventListener('submit', async (e) => {
   e.preventDefault();
   setMsg(msg, ''); setMsg(msg2, ''); debug('');
@@ -75,7 +78,7 @@ formCreate?.addEventListener('submit', async (e) => {
     const res = await fetch(API('request-code'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }) // password not needed for request-code
+      body: JSON.stringify({ email })
     });
     const data = await res.json().catch(() => ({}));
     debug({ status: res.status, data });
@@ -125,7 +128,6 @@ $('verifyForm')?.addEventListener('submit', async (e) => {
       body: JSON.stringify({ email, code: cvc })
     });
     const data = await res.json().catch(() => ({}));
-
     if (!res.ok || data.ok === false) {
       setMsg(msg2, data.error || 'Invalid or expired code. Please resend.');
       verifyBtn.textContent = 'Verify code';
@@ -133,17 +135,16 @@ $('verifyForm')?.addEventListener('submit', async (e) => {
       return;
     }
 
-    // Check overall status (confirmed + verified)
-    const status = await checkStatus(email);
-    if (status.confirmed && status.verified) {
-      setMsg(msg2, 'Code verified and email confirmed. You may proceed to sign in.', true);
+    // Update status from server
+    lastStatus = await checkStatus(email);
+    if (lastStatus.confirmed && lastStatus.verified) {
+      setMsg(msg2, 'Code verified and email confirmed. You may proceed.', true);
     } else {
       setMsg(msg2, 'Code verified. Please click the Confirm link in your email to complete setup.');
     }
 
-    // Always wire the proceed button so it works in both cases
-    wireProceed();
-
+    // Show proceed button (will enforce checks on click)
+    show(proceedBtn, true);
     verifyBtn.textContent = 'Verified';
     verifyBtn.disabled = true;
   } catch {
@@ -166,14 +167,73 @@ refreshLink?.addEventListener('click', async (e) => {
   e.preventDefault();
   const email = (emailEl.value || loadEmail() || '').trim();
   if (!looksLikeEmail(email)) return setMsg(msg2, 'Enter your email first.');
-
-  const s = await checkStatus(email);
-  if (s.confirmed && s.verified) {
+  lastStatus = await checkStatus(email);
+  if (lastStatus.confirmed && lastStatus.verified) {
     setMsg(msg2, 'Email confirmed and code verified. You may proceed.', true);
   } else {
     setMsg(msg2, 'Still waiting for both steps. Be sure to click the Confirm link and enter the code.');
   }
-  wireProceed();
+  show(proceedBtn, true);
+});
+
+// Proceed: enforce verified+confirmed, ensure credentials, then login, then route
+proceedBtn?.addEventListener('click', async () => {
+  setMsg(msg2, '');
+
+  const email = (emailEl.value || loadEmail() || '').trim();
+  const password = (passwordEl.value || '').trim();
+  if (!looksLikeEmail(email)) return setMsg(msg2, 'Enter your email above first.');
+
+  // Always refresh status before acting
+  lastStatus = await checkStatus(email);
+  if (!lastStatus.verified || !lastStatus.confirmed) {
+    return setMsg(msg2, 'Finish email Confirm + code verification first.');
+  }
+
+  // Ensure credentials exist; create if missing
+  if (!lastStatus.hasCredentials) {
+    if (password.length < 8) {
+      return setMsg(msg2, 'Enter a password (8+ chars) to create your account.');
+    }
+    setMsg(msg2, 'Creating your account…', true);
+    const mk = await fetch(API('create-credentials'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const mkj = await mk.json().catch(() => ({}));
+    if (!mk.ok && mk.status !== 409) {
+      // 409 means "Email already has credentials" — treat that as OK
+      return setMsg(msg2, mkj.error || 'Could not create account.');
+    }
+    // Mark as present for downstream
+    lastStatus.hasCredentials = true;
+  }
+
+  // Try to login now (auto-login if password present)
+  if (!password) {
+    // No password in the form — send them to sign-in page instead
+    window.location.href = SIGNIN_URL;
+    return;
+  }
+
+  setMsg(msg2, 'Signing you in…', true);
+  const lr = await fetch(API('login'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ loginId: email, password })
+  });
+  const lj = await lr.json().catch(() => ({}));
+  if (!lr.ok || lj.ok === false || !lj.sessionToken) {
+    // If auto-login fails, fall back to sign-in
+    setMsg(msg2, lj.error || 'Login failed. Redirecting to sign in…');
+    setTimeout(() => (window.location.href = SIGNIN_URL), 900);
+    return;
+  }
+
+  // Success → store token and go to landing
+  setSessionToken(lj.sessionToken);
+  window.location.href = LANDING_URL;
 });
 
 // Call check-status (GET with POST fallback)
