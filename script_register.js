@@ -5,6 +5,7 @@ const looksLikeEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim()
 const normalizeCVC = (s) => (s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const formatCVC = (s) => (s.length === 6 ? `${s.slice(0,3)}-${s.slice(3)}` : s);
 const isCVC = (s) => /^[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(s);
+const nextTick = () => new Promise((r) => requestAnimationFrame(() => r()));
 
 // Elements
 const formCreate = $('createAccountForm');
@@ -22,9 +23,10 @@ const resendLink = $('resendLink');
 const refreshLink = $('refreshLink');
 const proceedBtn = $('proceedBtn');
 
-const SIGNIN_URL = '/index.html';
+// Route target (your request)
+const SIGNIN_URL = '/landing_page.html';
 
-// Utilities
+// Utils
 function setMsg(el, text, ok = false) {
   if (!el) return;
   el.textContent = text;
@@ -34,23 +36,30 @@ function show(el, on = true) { el && el.classList.toggle('hidden', !on); }
 function saveEmail(v) { try { localStorage.setItem('lastEmail', v); } catch {} }
 function loadEmail() { try { return localStorage.getItem('lastEmail') || ''; } catch { return ''; } }
 function debug(obj) { try { dbg.textContent = JSON.stringify(obj, null, 2); } catch {} }
+function wireProceed() {
+  if (!proceedBtn) return;
+  show(proceedBtn, true);
+  proceedBtn.onclick = () => { window.location.href = SIGNIN_URL; };
+}
 
-// Format code as ABC-DEF while typing
+// Format code nicely
 codeEl?.addEventListener('input', () => {
   const raw = normalizeCVC(codeEl.value);
   codeEl.value = formatCVC(raw);
 });
 
-// Prefill last email
+// Prefill + hide verify section on load
 window.addEventListener('DOMContentLoaded', () => {
   const saved = loadEmail();
   if (saved && emailEl && !emailEl.value) emailEl.value = saved;
+  show(verifyCard, false);
 });
 
-// Create account → send code + link
+// Create account → send code+link
 formCreate?.addEventListener('submit', async (e) => {
   e.preventDefault();
   setMsg(msg, ''); setMsg(msg2, ''); debug('');
+  show(verifyCard, false);
 
   const email = (emailEl.value || '').trim();
   const password = (passwordEl.value || '').trim();
@@ -66,21 +75,28 @@ formCreate?.addEventListener('submit', async (e) => {
     const res = await fetch(API('request-code'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Password not needed to send code; we only send the email
-      body: JSON.stringify({ email })
+      body: JSON.stringify({ email }) // password not needed for request-code
     });
     const data = await res.json().catch(() => ({}));
     debug({ status: res.status, data });
 
     if (!res.ok || data.ok === false) {
+      show(verifyCard, false);
       return setMsg(msg, data.error || 'Failed to send verification email.');
     }
 
-    setMsg(msg, 'Email sent! Check your inbox (and spam). Click the Confirm link, then enter the 6-digit code below.', true);
-    show(verifyCard, true);     // <-- Reveal the code area immediately
-    codeEl?.focus();
+    setMsg(
+      msg,
+      'Email sent! Check your inbox (and spam). Click the Confirm link, then enter the 6-digit code below.',
+      true
+    );
+    await nextTick();             // let message paint first
+    show(verifyCard, true);       // then reveal verify card
+    codeEl?.focus({ preventScroll: true });
+    verifyCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (err) {
     debug({ error: (err && err.message) || String(err) });
+    show(verifyCard, false);
     setMsg(msg, 'Network error calling request-code.');
   } finally {
     createBtn.disabled = false;
@@ -88,7 +104,7 @@ formCreate?.addEventListener('submit', async (e) => {
   }
 });
 
-// Verify the 6-digit code
+// Verify 6-digit code
 $('verifyForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   setMsg(msg2, '');
@@ -117,18 +133,16 @@ $('verifyForm')?.addEventListener('submit', async (e) => {
       return;
     }
 
-    // Code verified; now check if the user also clicked the email confirm link
+    // Check overall status (confirmed + verified)
     const status = await checkStatus(email);
     if (status.confirmed && status.verified) {
       setMsg(msg2, 'Code verified and email confirmed. You may proceed to sign in.', true);
-      show(proceedBtn, true);
-      proceedBtn.onclick = () => (window.location.href = SIGNIN_URL);
     } else {
-      setMsg(
-        msg2,
-        'Code verified. Please click the Confirm link in your email to complete setup.'
-      );
+      setMsg(msg2, 'Code verified. Please click the Confirm link in your email to complete setup.');
     }
+
+    // Always wire the proceed button so it works in both cases
+    wireProceed();
 
     verifyBtn.textContent = 'Verified';
     verifyBtn.disabled = true;
@@ -147,7 +161,7 @@ resendLink?.addEventListener('click', (e) => {
   formCreate?.dispatchEvent(new Event('submit'));
 });
 
-// Refresh status after clicking email’s confirm link
+// Refresh status (after clicking email confirm link)
 refreshLink?.addEventListener('click', async (e) => {
   e.preventDefault();
   const email = (emailEl.value || loadEmail() || '').trim();
@@ -156,14 +170,13 @@ refreshLink?.addEventListener('click', async (e) => {
   const s = await checkStatus(email);
   if (s.confirmed && s.verified) {
     setMsg(msg2, 'Email confirmed and code verified. You may proceed.', true);
-    show(proceedBtn, true);
-    proceedBtn.onclick = () => (window.location.href = SIGNIN_URL);
   } else {
     setMsg(msg2, 'Still waiting for both steps. Be sure to click the Confirm link and enter the code.');
   }
+  wireProceed();
 });
 
-// Helper to call check-status (supports GET then POST fallback)
+// Call check-status (GET with POST fallback)
 async function checkStatus(email) {
   try {
     let res = await fetch(API('check-status') + `?email=${encodeURIComponent(email)}`);
