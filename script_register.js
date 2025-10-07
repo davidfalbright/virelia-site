@@ -13,7 +13,7 @@ const emailEl = $('email');
 const passwordEl = $('password');
 const createBtn = $('createAccountBtn');
 const msg = $('msg');
-const dbg = $('debug');
+const dbg = $('debug'); // optional <pre id="debug">
 
 const verifyCard = $('verifyForm');
 const codeEl = $('code');
@@ -21,14 +21,15 @@ const verifyBtn = $('verifyBtn');
 const msg2 = $('msg2');
 const resendLink = $('resendLink');
 const refreshLink = $('refreshLink');
-const proceedBtn = $('proceedBtn');
+const proceedBtn = $('proceedBtn'); // <button type="button" id="proceedBtn" class="btn hidden">Go to Sign In</button>
 
 // Destinations
 const LANDING_URL = '/landing_page.html';
-const SIGNIN_URL  = '/index.html'; // fallback if we can't auto-login
+const SIGNIN_URL  = '/index.html';
 
 // State
 let lastStatus = { email: '', verified: false, confirmed: false, hasCredentials: false };
+let codeVerified = false;
 
 // Utils
 function setMsg(el, text, ok = false) {
@@ -43,6 +44,37 @@ function debug(obj) { if (!dbg) return; try { dbg.textContent = JSON.stringify(o
 function setSessionToken(token) {
   try { localStorage.setItem('session_token', token); } catch {}
   document.cookie = `session_token=${encodeURIComponent(token)}; Max-Age=3600; Path=/; SameSite=Lax`;
+}
+
+// Read status
+async function checkStatus(email) {
+  try {
+    let res = await fetch(API('check-status') + `?email=${encodeURIComponent(email)}`);
+    if (res.status === 405) {
+      res = await fetch(API('check-status'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+    }
+    const data = await res.json().catch(() => ({}));
+    return {
+      email: data.email || email,
+      verified: !!data.verified,
+      confirmed: !!data.confirmed,
+      hasCredentials: !!data.hasCredentials
+    };
+  } catch {
+    return { email, verified: false, confirmed: false, hasCredentials: false };
+  }
+}
+
+// Ask backend to copy/align status between stores, then re-check
+async function syncAndStatus(email) {
+  try {
+    await fetch(API('sync-email-status') + `?email=${encodeURIComponent(email)}`).catch(() => {});
+  } catch {}
+  return checkStatus(email);
 }
 
 // Format code nicely
@@ -128,6 +160,7 @@ $('verifyForm')?.addEventListener('submit', async (e) => {
       body: JSON.stringify({ email, code: cvc })
     });
     const data = await res.json().catch(() => ({}));
+
     if (!res.ok || data.ok === false) {
       setMsg(msg2, data.error || 'Invalid or expired code. Please resend.');
       verifyBtn.textContent = 'Verify code';
@@ -135,15 +168,22 @@ $('verifyForm')?.addEventListener('submit', async (e) => {
       return;
     }
 
-    // Update status from server
+    codeVerified = true;
+
+    // Refresh status; if not aligned yet, sync then re-check
     lastStatus = await checkStatus(email);
-    if (lastStatus.confirmed && lastStatus.verified) {
-      setMsg(msg2, 'Code verified and email confirmed. You may proceed.', true);
-    } else {
-      setMsg(msg2, 'Code verified. Please click the Confirm link in your email to complete setup.');
+    if (!lastStatus.verified || !lastStatus.confirmed) {
+      lastStatus = await syncAndStatus(email);
     }
 
-    // Show proceed button (will enforce checks on click)
+    if (lastStatus.confirmed && lastStatus.verified) {
+      setMsg(msg2, 'Code verified and email confirmed. You may proceed.', true);
+    } else if (lastStatus.verified && !lastStatus.confirmed) {
+      setMsg(msg2, 'Code verified. Please click the email’s Confirm link to finish.');
+    } else {
+      setMsg(msg2, 'Still waiting for both steps. Use “Refresh status”.');
+    }
+
     show(proceedBtn, true);
     verifyBtn.textContent = 'Verified';
     verifyBtn.disabled = true;
@@ -167,27 +207,38 @@ refreshLink?.addEventListener('click', async (e) => {
   e.preventDefault();
   const email = (emailEl.value || loadEmail() || '').trim();
   if (!looksLikeEmail(email)) return setMsg(msg2, 'Enter your email first.');
-  lastStatus = await checkStatus(email);
+  // Try sync then read
+  lastStatus = await syncAndStatus(email);
   if (lastStatus.confirmed && lastStatus.verified) {
     setMsg(msg2, 'Email confirmed and code verified. You may proceed.', true);
+  } else if (lastStatus.verified && !lastStatus.confirmed) {
+    setMsg(msg2, 'Code verified. Please click the email’s Confirm link to finish.');
   } else {
     setMsg(msg2, 'Still waiting for both steps. Be sure to click the Confirm link and enter the code.');
   }
   show(proceedBtn, true);
 });
 
-// Proceed: enforce verified+confirmed, ensure credentials, then login, then route
-proceedBtn?.addEventListener('click', async () => {
+// Proceed: ensure verified+confirmed, ensure creds, login, then route
+proceedBtn?.addEventListener('click', async (e) => {
+  e.preventDefault();
   setMsg(msg2, '');
 
   const email = (emailEl.value || loadEmail() || '').trim();
   const password = (passwordEl.value || '').trim();
   if (!looksLikeEmail(email)) return setMsg(msg2, 'Enter your email above first.');
 
-  // Always refresh status before acting
-  lastStatus = await checkStatus(email);
+  // Always refresh/sync before gating
+  lastStatus = await syncAndStatus(email);
+
   if (!lastStatus.verified || !lastStatus.confirmed) {
-    return setMsg(msg2, 'Finish email Confirm + code verification first.');
+    // If UI already showed "Verified" from code, at least show the clearer message
+    return setMsg(
+      msg2,
+      lastStatus.verified
+        ? 'Code verified. Please click the email’s Confirm link to finish.'
+        : 'Finish email Confirm + code verification first.'
+    );
   }
 
   // Ensure credentials exist; create if missing
@@ -203,16 +254,15 @@ proceedBtn?.addEventListener('click', async () => {
     });
     const mkj = await mk.json().catch(() => ({}));
     if (!mk.ok && mk.status !== 409) {
-      // 409 means "Email already has credentials" — treat that as OK
+      // 409 = already exists (OK)
       return setMsg(msg2, mkj.error || 'Could not create account.');
     }
-    // Mark as present for downstream
     lastStatus.hasCredentials = true;
   }
 
   // Try to login now (auto-login if password present)
   if (!password) {
-    // No password in the form — send them to sign-in page instead
+    // No password in form — send to sign-in page
     window.location.href = SIGNIN_URL;
     return;
   }
@@ -225,7 +275,6 @@ proceedBtn?.addEventListener('click', async () => {
   });
   const lj = await lr.json().catch(() => ({}));
   if (!lr.ok || lj.ok === false || !lj.sessionToken) {
-    // If auto-login fails, fall back to sign-in
     setMsg(msg2, lj.error || 'Login failed. Redirecting to sign in…');
     setTimeout(() => (window.location.href = SIGNIN_URL), 900);
     return;
@@ -235,26 +284,3 @@ proceedBtn?.addEventListener('click', async () => {
   setSessionToken(lj.sessionToken);
   window.location.href = LANDING_URL;
 });
-
-// Call check-status (GET with POST fallback)
-async function checkStatus(email) {
-  try {
-    let res = await fetch(API('check-status') + `?email=${encodeURIComponent(email)}`);
-    if (res.status === 405) {
-      res = await fetch(API('check-status'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-    }
-    const data = await res.json().catch(() => ({}));
-    return {
-      email: data.email || email,
-      verified: !!data.verified,
-      confirmed: !!data.confirmed,
-      hasCredentials: !!data.hasCredentials
-    };
-  } catch {
-    return { email, verified: false, confirmed: false, hasCredentials: false };
-  }
-}
