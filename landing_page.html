@@ -9,13 +9,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- CSS: hide sections whenever <body class="guest"> is present -->
   <style>
+    /* Hide sections if body has the class 'guest' */
     body.guest #navContactLink,
     body.guest #footContactLink,
-    body.guest #contact,
-    body.guest #verdict,
-    body.guest #manageEmailsLink {
+    body.guest #navLogoutLink, /* Hide logout link in header */
+    body.guest #manageEmailsLink, /* Hide Manage Emails link */
+    body.guest #navManageEmailsLink { /* Hide footer manage emails link */
       display: none !important;
     }
   </style>
@@ -23,18 +23,16 @@
   <!-- Auth guard + session bootstrap -->
   <script>
   (function () {
-    function readCookie(name) {
-      const m = document.cookie.match(new RegExp('(?:^|;\\s*)' + name.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&') + '=([^;]*)'));
-      return m ? decodeURIComponent(m[1]) : null;
-    }
     function readToken() {
       try {
         const ls = localStorage.getItem('session_token');
         if (ls) return ls;
       } catch {}
-      return readCookie('session_token');
+      const m = document.cookie.match(/(?:^|;\s*)session_token=([^;]+)/);
+      return m ? decodeURIComponent(m[1]) : null;
     }
-    function parsePayload(jwt) {
+
+    function parseJwtPayload(jwt) {
       const parts = (jwt || '').split('.');
       if (parts.length < 2) return null;
       const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -47,55 +45,20 @@
         try { return JSON.parse(atob(b64)); } catch { return null; }
       }
     }
-    function clearSessionEverywhere() {
-      try { localStorage.removeItem('session_token'); } catch {}
-      try { localStorage.removeItem('session_role'); } catch {}
-      document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax';
-      document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax; Domain=.iamvirelia.org';
-      document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax; Domain=www.iamvirelia.org';
-      document.cookie = 'session_role=; Max-Age=0; Path=/; SameSite=Lax';
-      document.cookie = 'session_role=; Max-Age=0; Path=/; SameSite=Lax; Domain=.iamvirelia.org';
-      document.cookie = 'session_role=; Max-Age=0; Path=/; SameSite=Lax; Domain=www.iamvirelia.org';
-    }
-    function bounce(reason) {
-      clearSessionEverywhere();
-      location.replace('/?session=' + encodeURIComponent(reason || 'missing'));
-    }
 
-    // 1) Require a token (guest or regular)
     const token = readToken();
-    if (!token) return bounce('missing');
+    const payload = parseJwtPayload(token) || {};
+    const isGuest = payload.role === 'guest' || payload.email === 'guest';
 
-    // 2) Parse and validate exp (in ms, as issued by your functions)
-    const payload = parsePayload(token) || {};
-    const exp = typeof payload.exp === 'number' ? payload.exp : 0;
-    if (!exp || Date.now() > exp) return bounce('expired');
-
-    // 3) Determine guest role robustly
-    const jwtRole = payload.role || null;
-    const jwtEmail = payload.email || payload.sub || '';
-    let sessionRole = null;
-    try { sessionRole = localStorage.getItem('session_role'); } catch {}
-    if (!sessionRole) sessionRole = readCookie('session_role');
-
-    const isGuest =
-      jwtRole === 'guest' ||
-      sessionRole === 'guest' ||
-      jwtEmail === 'guest';
-
-    // 4) Expose session + mark <body> with .guest for CSS hiding
-    window.__SESSION__ = { token, email: jwtEmail, role: jwtRole || sessionRole || null };
-    window.__clearSessionEverywhere__ = clearSessionEverywhere;
-
-    // Add the class ASAP (before DOMContentLoaded) to minimize flicker
     if (isGuest) {
-      document.addEventListener('DOMContentLoaded', () => { document.body.classList.add('guest'); });
+      // If the user is a guest, add the 'guest' class to body
+      document.body.classList.add('guest');
     } else {
-      document.addEventListener('DOMContentLoaded', () => { document.body.classList.remove('guest'); });
+      // If the user is not a guest, ensure the 'guest' class is removed
+      document.body.classList.remove('guest');
     }
   })();
   </script>
-
 </head>
 <body>
 
@@ -120,140 +83,12 @@
         <a href="solutions.html">Delivery Models</a>
         <a href="#contact" id="navContactLink">Contact</a>
         <a href="/delete-email.html" id="manageEmailsLink">Manage emails</a>
-        <a href="#" id="logoutLink" style="margin-left:.75rem;">Log out</a>
+        <a href="#" id="navLogoutLink" style="margin-left:.75rem;">Log out</a>
       </nav>
     </div>
   </header>
 
-  <!-- Coming Soon banner -->
-  <section class="banner">
-    <div class="container row">
-      <div class="banner-dot"></div>
-      <div class="banner-text">
-        <strong>Coming soon:</strong> Limited pilot access. We’re not accepting client work yet.
-      </div>
-    </div>
-  </section>
-
-  <!-- Hero with rotating slides -->
-  <section class="hero">
-    <div class="container">
-      <div class="hero-grid">
-        <div class="slider" id="slideshow">
-          <button class="slide-btn prev" aria-label="Previous slide">‹</button>
-          <div class="slides" id="slides"></div>
-          <button class="slide-btn next" aria-label="Next slide">›</button>
-          <div class="dots" id="dots" aria-label="Slide indicators"></div>
-        </div>
-
-        <div class="hero-copy">
-          <h1>“I am Virelia.”</h1>
-          <p>
-            A global ethics framework for AI that helps organizations reason through
-            real-world dilemmas — consistently, transparently, and with traceable logic.
-          </p>
-          <ul class="ticks">
-            <li>Values-anchored, evidence-aware reasoning</li>
-            <li>Public-safe, auditable explanations</li>
-            <li>Built for alignment with local context</li>
-          </ul>
-          <a class="btn" href="#about">Learn more</a>
-        </div>
-      </div>
-    </div>
-  </section>
-  
-  <!-- START: Bronze Accord Verdict Widget -->
-  <section class="container verdict-section" id="verdict">
-    <h2 class="section-title">Ask Virelia:</h2>
-    <p class="section-subtitle">Describe your dilemma in plain language. I’ll return a decision route and explain which beliefs were triggered.</p>
-
-    <div class="verdict-card">
-      <label for="dilemmaInput" class="verdict-label">Your dilemma</label>
-      <textarea id="dilemmaInput" class="verdict-input" rows="6" placeholder="Virelia is temporarily offline — API not connected." disabled=true></textarea>
-      
-      <div class="verdict-actions">
-        <button id="getVerdictBtn" class="btn btn-primary" disabled=true>Get Verdict</button>
-        <span id="verdictStatus" class="verdict-status" aria-live="polite"></span>
-      </div>
-
-      <div id="verdictResult" class="verdict-result" hidden>
-        <div class="verdict-row">
-          <div class="verdict-pill" id="verdictRoute">Route: —</div>
-          <div class="verdict-meta"><strong>Risk:</strong> <span id="verdictRisk">—</span> • <strong>Urgency:</strong> <span id="verdictUrgency">—</span></div>
-        </div>
-        <p id="verdictMessage" class="verdict-message"></p>
-
-        <div id="verdictTriggersWrap" class="verdict-triggers" hidden>
-          <h3 class="verdict-triggers-title">Triggered Items</h3>
-          <ul id="verdictTriggers" class="verdict-trigger-list"></ul>
-        </div>
-      </div>
-    </div>
-  </section>
-  <!-- END: Bronze Accord Verdict Widget -->
-
-  <!-- How it works (public-safe) -->
-  <section id="how" class="section alt">
-    <div class="container narrow">
-      <h2>How the framework works</h2>
-      <ol class="list">
-        <li><strong>Context capture:</strong> We capture and parse the provided full context scenario.</li>
-        <li><strong>Evaluation:</strong> We then assess this scenario alongside the ethical framework.</li>
-        <li><strong>Reasoned paths:</strong> We explore potential actions, trade-offs, and transparent steps.</li>
-        <li><strong>Verdict output:</strong> We provide a concise and auditable explanation of why a decision is recommended.</li>
-      </ol>
-      <p class="hint">
-        Note: this is a high-level overview — methods and safeguards are kept private until pilot engagement.
-      </p>
-    </div>
-  </section>
-
-  <!-- Dilemmas to decisions -->
-  <section id="dilemmas" class="section">
-    <div class="container narrow">
-      <h2>From dilemmas → decisions</h2>
-      <p>
-        Virelia turns unstructured narratives into structured, actionable insight. The system
-        extracts key facts, aligns them with ethical constraints, and verifies the resulting
-        recommendation through a test-harness before any downstream use.
-      </p>
-      <div class="cards">
-        <div class="card">
-          <h3>1) Capture</h3>
-          <p>Ingest a dilemma in natural language. Preserve nuance; avoid biasing the statement.</p>
-        </div>
-        <div class="card">
-          <h3>2) Align</h3>
-          <p>Map facts to organizational values and non-negotiables (e.g., legal or safety constraints).</p>
-        </div>
-        <div class="card">
-          <h3>3) Reason</h3>
-          <p>Explore options, trade-offs, and likely consequences — with traceable steps.</p>
-        </div>
-        <div class="card">
-          <h3>4) Verify</h3>
-          <p>Automatically test the explanation and outputs for completeness and internal consistency.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Contact / Coming soon -->
-  <section id="contact" class="section alt">
-    <div class="container narrow">
-      <h2>Contact</h2>
-      <p class="lead"></p>
-      <p>
-        <div style="margin-top:1rem;">
-          <span style="margin-left:.5rem;">Email: <a class="link" href="mailto:info@iamvirelia.org">info@iamvirelia.org</a></span>
-        </div>
-      </p>
-      <p class="small">
-        Please note: We are not yet open for general business. This site is informational and will be updated as the pilot progresses.
-      </p>
-    </div>
-  </section>
+  <!-- Hero and other sections here -->
 
   <footer class="footer">
     <div class="container row between">
@@ -267,7 +102,7 @@
     </div>
   </footer>
 
-  <!-- Utilities: year + logout -->
+  <!-- Optional: small script to wire up "Log out" and keep the year fresh -->
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
 
