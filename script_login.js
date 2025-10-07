@@ -1,4 +1,3 @@
-// script_login.js
 const API = (p) => `/.netlify/functions/${p}`;
 const LOGIN_DEST = '/landing_page.html';
 
@@ -27,19 +26,15 @@ function parseJwtPayload(jwt){
     return JSON.parse(atob(b64));
   }catch{ return null; }
 }
-function saveToken(token){
-  try{ localStorage.setItem('session_token', token); }catch{}
+function saveToken(token, role = 'user'){
+  try{ 
+    localStorage.setItem('session_token', token); 
+    localStorage.setItem('session_role', role); 
+  }catch{}
   document.cookie = `session_token=${encodeURIComponent(token)}; Path=/; SameSite=Lax`;
+  document.cookie = `session_role=${encodeURIComponent(role)}; Path=/; SameSite=Lax`;
 }
 function redirect(){ window.location.href = LOGIN_DEST; }
-
-// Auto-redirect if already logged in & not expired
-window.addEventListener('DOMContentLoaded', () => {
-  const t = readToken();
-  const p = parseJwtPayload(t) || {};
-  const exp = typeof p.exp === 'number' ? p.exp : 0;
-  if(t && Date.now() < exp){ redirect(); }
-});
 
 async function call(path, body){
   const res = await fetch(API(path), {
@@ -51,6 +46,15 @@ async function call(path, body){
   if(!res.ok || data.ok === false) throw data;
   return data;
 }
+
+// Auto-redirect if already logged in & not expired
+window.addEventListener('DOMContentLoaded', () => {
+  const t = readToken();
+  const p = parseJwtPayload(t) || {};
+  const exp = typeof p.exp === 'number' ? p.exp : 0;
+  if(t && Date.now() < exp){ redirect(); }
+});
+
 
 // Handle email/password login
 loginForm?.addEventListener('submit', async (e) => {
@@ -68,8 +72,10 @@ loginForm?.addEventListener('submit', async (e) => {
   try{
     const r = await call('login', { loginId: email, password: pwd });
     const token = r.sessionToken || r.session || r.token;
+    const role = r.role || 'user';  // assuming the backend sends a "role" property
+
     if(!token) throw { error: 'No session token returned' };
-    saveToken(token);
+    saveToken(token, role);
     setMsg(loginMsg, 'Logged in!', true);
     redirect();
   }catch(err){
@@ -79,16 +85,18 @@ loginForm?.addEventListener('submit', async (e) => {
   }
 });
 
-// Handle guest login (requires tiny server fn: guest-login; see note below)
+// Handle guest login (requires tiny server fn: guest-login)
 guestBtn?.addEventListener('click', async () => {
   clear(guestMsg);
   guestBtn.disabled = true;
   guestBtn.textContent = 'Continuing…';
   try{
-    const r = await call('guest-login', {}); // returns { ok: true, sessionToken }
+    const r = await call('guest-login', {}); // returns { ok: true, sessionToken, role: 'guest' }
     const token = r.sessionToken || r.token;
+    const role = r.role || 'guest';
+
     if(!token) throw { error: 'No session token returned' };
-    saveToken(token);
+    saveToken(token, role);  // store guest role here
     redirect();
   }catch(err){
     setMsg(guestMsg, err.error || err.message || 'Guest login failed.');
