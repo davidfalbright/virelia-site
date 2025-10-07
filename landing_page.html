@@ -9,18 +9,31 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- Auth guard: runs immediately, before the page renders -->
+  <!-- CSS: hide sections whenever <body class="guest"> is present -->
+  <style>
+    body.guest #navContactLink,
+    body.guest #footContactLink,
+    body.guest #contact,
+    body.guest #verdict,
+    body.guest #manageEmailsLink {
+      display: none !important;
+    }
+  </style>
+
+  <!-- Auth guard + session bootstrap -->
   <script>
   (function () {
+    function readCookie(name) {
+      const m = document.cookie.match(new RegExp('(?:^|;\\s*)' + name.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&') + '=([^;]*)'));
+      return m ? decodeURIComponent(m[1]) : null;
+    }
     function readToken() {
       try {
         const ls = localStorage.getItem('session_token');
         if (ls) return ls;
       } catch {}
-      const m = document.cookie.match(/(?:^|;\s*)session_token=([^;]+)/);
-      return m ? decodeURIComponent(m[1]) : null;
+      return readCookie('session_token');
     }
-
     function parsePayload(jwt) {
       const parts = (jwt || '').split('.');
       if (parts.length < 2) return null;
@@ -34,67 +47,53 @@
         try { return JSON.parse(atob(b64)); } catch { return null; }
       }
     }
-
     function clearSessionEverywhere() {
       try { localStorage.removeItem('session_token'); } catch {}
-      // host-scoped cookie
+      try { localStorage.removeItem('session_role'); } catch {}
       document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax';
-      // parent domain cookie (covers www + apex)
       document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax; Domain=.iamvirelia.org';
-      // explicit www cookie (belt & suspenders)
       document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax; Domain=www.iamvirelia.org';
+      document.cookie = 'session_role=; Max-Age=0; Path=/; SameSite=Lax';
+      document.cookie = 'session_role=; Max-Age=0; Path=/; SameSite=Lax; Domain=.iamvirelia.org';
+      document.cookie = 'session_role=; Max-Age=0; Path=/; SameSite=Lax; Domain=www.iamvirelia.org';
     }
-
     function bounce(reason) {
       clearSessionEverywhere();
-      // Send them back to the start page; include a hint in the querystring
       location.replace('/?session=' + encodeURIComponent(reason || 'missing'));
     }
 
+    // 1) Require a token (guest or regular)
     const token = readToken();
     if (!token) return bounce('missing');
 
+    // 2) Parse and validate exp (in ms, as issued by your functions)
     const payload = parsePayload(token) || {};
-    const exp = typeof payload.exp === 'number' ? payload.exp : 0; // exp assumed ms
+    const exp = typeof payload.exp === 'number' ? payload.exp : 0;
     if (!exp || Date.now() > exp) return bounce('expired');
 
-    // Expose the session (includes role)
-    window.__SESSION__ = {
-      token,
-      email: payload.email || payload.sub || '',
-      role:  payload.role || null
-    };
-    // Also expose the clear helper for reuse
+    // 3) Determine guest role robustly
+    const jwtRole = payload.role || null;
+    const jwtEmail = payload.email || payload.sub || '';
+    let sessionRole = null;
+    try { sessionRole = localStorage.getItem('session_role'); } catch {}
+    if (!sessionRole) sessionRole = readCookie('session_role');
+
+    const isGuest =
+      jwtRole === 'guest' ||
+      sessionRole === 'guest' ||
+      jwtEmail === 'guest';
+
+    // 4) Expose session + mark <body> with .guest for CSS hiding
+    window.__SESSION__ = { token, email: jwtEmail, role: jwtRole || sessionRole || null };
     window.__clearSessionEverywhere__ = clearSessionEverywhere;
+
+    // Add the class ASAP (before DOMContentLoaded) to minimize flicker
+    if (isGuest) {
+      document.addEventListener('DOMContentLoaded', () => { document.body.classList.add('guest'); });
+    } else {
+      document.addEventListener('DOMContentLoaded', () => { document.body.classList.remove('guest'); });
+    }
   })();
-  </script>
-
-  <!-- Hide Contact + Ask Virelia for guest sessions -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const sess = window.__SESSION__ || {};
-      const role = sess.role || null;
-      const isGuest =
-        role === 'guest' ||
-        sess.email === 'guest' ||
-        sess.sub === 'guest';
-
-      if (isGuest) {
-        // Hide Contact links + section
-        const navContact = document.getElementById('navContactLink') || document.querySelector('a[href="#contact"]');
-        if (navContact) navContact.style.display = 'none';
-
-        const footContact = document.getElementById('footContactLink');
-        if (footContact) footContact.style.display = 'none';
-
-        const contactSection = document.getElementById('contact');
-        if (contactSection) contactSection.style.display = 'none';
-
-        // Hide "Ask Virelia" section for guests
-        const verdictSection = document.getElementById('verdict');
-        if (verdictSection) verdictSection.style.display = 'none';
-      }
-    });
   </script>
 </head>
 <body>
@@ -273,17 +272,11 @@
 
     document.getElementById('logoutLink')?.addEventListener('click', function(e){
       e.preventDefault();
-      (window.__clearSessionEverywhere__ || function() {
-        try { localStorage.removeItem('session_token'); } catch {}
-        document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax';
-        document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax; Domain=.iamvirelia.org';
-        document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax; Domain=www.iamvirelia.org';
-      })();
+      (window.__clearSessionEverywhere__ || function(){})();
       location.replace('/');
     });
   </script>
 
-  <!-- Your landing page JS (kept as-is) -->
   <script src="script_landingPage.js" defer></script>
 </body>
 </html>
