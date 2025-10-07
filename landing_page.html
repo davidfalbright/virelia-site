@@ -35,9 +35,19 @@
       }
     }
 
-    function bounce(reason) {
+    function clearSessionEverywhere() {
       try { localStorage.removeItem('session_token'); } catch {}
+      // host-scoped cookie
       document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax';
+      // parent domain cookie (covers www + apex)
+      document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax; Domain=.iamvirelia.org';
+      // explicit www cookie (belt & suspenders)
+      document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax; Domain=www.iamvirelia.org';
+    }
+
+    function bounce(reason) {
+      clearSessionEverywhere();
+      // Send them back to the start page; include a hint in the querystring
       location.replace('/?session=' + encodeURIComponent(reason || 'missing'));
     }
 
@@ -48,12 +58,14 @@
     const exp = typeof payload.exp === 'number' ? payload.exp : 0; // exp assumed ms
     if (!exp || Date.now() > exp) return bounce('expired');
 
-    // Expose the session (now includes role)
+    // Expose the session (includes role)
     window.__SESSION__ = {
       token,
       email: payload.email || payload.sub || '',
       role:  payload.role || null
     };
+    // Also expose the clear helper for reuse
+    window.__clearSessionEverywhere__ = clearSessionEverywhere;
   })();
   </script>
 
@@ -64,7 +76,8 @@
       const role = sess.role || null;
       const isGuest =
         role === 'guest' ||
-        (!role && (sess.email === 'guest')); // fallback if older guest tokens don't set role
+        sess.email === 'guest' ||
+        sess.sub === 'guest';
 
       if (isGuest) {
         // Hide Contact links + section
@@ -106,7 +119,7 @@
         <a href="implementation.html">Implementation</a>
         <a href="solutions.html">Delivery Models</a>
         <a href="#contact" id="navContactLink">Contact</a>
-        <a href="/delete-email.html">Manage emails</a>
+        <a href="/delete-email.html" id="manageEmailsLink">Manage emails</a>
         <a href="#" id="logoutLink" style="margin-left:.75rem;">Log out</a>
       </nav>
     </div>
@@ -254,13 +267,18 @@
     </div>
   </footer>
 
-  <!-- Optional: small script to wire up "Log out" and keep the year fresh -->
+  <!-- Utilities: year + logout -->
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
+
     document.getElementById('logoutLink')?.addEventListener('click', function(e){
       e.preventDefault();
-      try { localStorage.removeItem('session_token'); } catch {}
-      document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax';
+      (window.__clearSessionEverywhere__ || function() {
+        try { localStorage.removeItem('session_token'); } catch {}
+        document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax';
+        document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax; Domain=.iamvirelia.org';
+        document.cookie = 'session_token=; Max-Age=0; Path=/; SameSite=Lax; Domain=www.iamvirelia.org';
+      })();
       location.replace('/');
     });
   </script>
