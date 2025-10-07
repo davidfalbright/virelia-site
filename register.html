@@ -36,6 +36,7 @@
         A verification email will be sent with a 6-digit code and a confirm link.
       </p>
 
+      <!-- Create account (sends code + confirm link) -->
       <form id="createAccountForm" class="card">
         <div class="field">
           <label for="email">Email</label>
@@ -49,10 +50,35 @@
 
         <button id="createAccountBtn" class="btn" type="submit">Create Account</button>
         <p id="msg" class="msg" role="status" aria-live="polite"></p>
-        <pre id="debug" class="small" style="white-space:pre-wrap;opacity:.7"></pre>
 
+        <pre id="debug" class="small" style="white-space:pre-wrap;opacity:.6"></pre>
         <div class="divider"></div>
         <p class="small">Already have an account? <a href="/index.html">Back to Sign In</a></p>
+      </form>
+
+      <!-- Verify code (revealed immediately after email sent) -->
+      <form id="verifyForm" class="card hidden">
+        <h3 style="margin-top:0">Verify your code</h3>
+        <p class="small">
+          Enter the 6-character code from the email (format <code>ABC-DEF</code>).
+          If you haven’t already, click the email’s <strong>Confirm</strong> link too.
+        </p>
+
+        <div class="field">
+          <label for="code">Verification code</label>
+          <input id="code" type="text" inputmode="latin-prose" placeholder="ABC-DEF" maxlength="7" />
+        </div>
+
+        <button id="verifyBtn" class="btn" type="submit">Verify code</button>
+        <p id="msg2" class="msg" role="status" aria-live="polite"></p>
+
+        <div class="divider"></div>
+        <p class="small">
+          Didn’t get it? <a href="#" id="resendLink">Resend</a>.
+          Already clicked the email’s Confirm link? <a href="#" id="refreshLink">Refresh status</a>.
+        </p>
+
+        <button id="proceedBtn" type="button" class="btn hidden">Go to Sign In</button>
       </form>
     </div>
   </section>
