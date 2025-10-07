@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Virelia — Create an Account</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <header class="topbar">
@@ -19,11 +19,11 @@
         </div>
       </div>
       <nav class="nav">
-        <a href="about_us.html">About Us</a>
-        <a href="impact.html">Impact & Benefits</a>
-        <a href="solutions.html">Delivery Models</a>
-        <a href="implementation.html">Implementation</a>
-        <a href="#contact">Contact</a>
+        <a href="/about_us.html">About Us</a>
+        <a href="/impact.html">Impact & Benefits</a>
+        <a href="/solutions.html">Delivery Models</a>
+        <a href="/implementation.html">Implementation</a>
+        <a href="/#contact">Contact</a>
       </nav>
     </div>
   </header>
@@ -31,25 +31,28 @@
   <section class="section">
     <div class="container narrow">
       <h1>Create an Account</h1>
-      <p class="lead">Please create an account by providing your email and a secure password. A verification email will be sent to your inbox with a 6-digit code.</p>
+      <p class="lead">
+        Please create an account with your email and a secure password.
+        A verification email will be sent with a 6-digit code and a confirm link.
+      </p>
 
       <form id="createAccountForm" class="card">
         <div class="field">
           <label for="email">Email</label>
-          <input id="email" type="email" placeholder="you@example.com" required />
+          <input id="email" type="email" autocomplete="username" placeholder="you@example.com" required />
         </div>
 
         <div class="field">
           <label for="password">Password</label>
-          <input id="password" type="password" placeholder="••••••••" required />
+          <input id="password" type="password" autocomplete="new-password" placeholder="••••••••" required />
         </div>
 
         <button id="createAccountBtn" class="btn" type="submit">Create Account</button>
-        <p id="createAccountMsg" class="msg"></p>
+        <p id="msg" class="msg" role="status" aria-live="polite"></p>
+        <pre id="debug" class="small" style="white-space:pre-wrap;opacity:.7"></pre>
 
         <div class="divider"></div>
-
-        <p class="small">Already have an account? <a href="index.html">Back to Sign In</a></p>
+        <p class="small">Already have an account? <a href="/index.html">Back to Sign In</a></p>
       </form>
     </div>
   </section>
@@ -65,15 +68,13 @@
     <div class="container row between">
       <div>© <span id="year"></span> Virelia. All rights reserved.</div>
       <div class="foot-links">
-        <a href="about_us.html">About Us</a>
-        <a href="#contact">Contact</a>
+        <a href="/about_us.html">About Us</a>
+        <a href="/#contact">Contact</a>
       </div>
     </div>
   </footer>
 
-  <script src="script_register.js" defer></script>
-  <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
-  </script>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  <script src="/script_register.js" defer></script>
 </body>
 </html>
