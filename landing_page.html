@@ -57,7 +57,7 @@
   })();
   </script>
 
-  <!-- Hide Contact UI for guest sessions -->
+  <!-- Hide Contact + Ask Virelia for guest sessions -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const sess = window.__SESSION__ || {};
@@ -67,6 +67,7 @@
         (!role && (sess.email === 'guest')); // fallback if older guest tokens don't set role
 
       if (isGuest) {
+        // Hide Contact links + section
         const navContact = document.getElementById('navContactLink') || document.querySelector('a[href="#contact"]');
         if (navContact) navContact.style.display = 'none';
 
@@ -75,6 +76,10 @@
 
         const contactSection = document.getElementById('contact');
         if (contactSection) contactSection.style.display = 'none';
+
+        // Hide "Ask Virelia" section for guests
+        const verdictSection = document.getElementById('verdict');
+        if (verdictSection) verdictSection.style.display = 'none';
       }
     });
   </script>
@@ -182,7 +187,7 @@
       <ol class="list">
         <li><strong>Context capture:</strong> We capture and parse the provided full context scenario.</li>
         <li><strong>Evaluation:</strong> We then assess this scenario alongside the ethical framework.</li>
-        <li><strong>Reasoned paths:</strong> We explore potential actions and trade-offs with transparent and testable reasoning steps.</li>
+        <li><strong>Reasoned paths:</strong> We explore potential actions, trade-offs, and transparent steps.</li>
         <li><strong>Verdict output:</strong> We provide a concise and auditable explanation of why a decision is recommended.</li>
       </ol>
       <p class="hint">
