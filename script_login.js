@@ -56,7 +56,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const t = readToken();
   const p = parseJwtPayload(t) || {};
   const exp = typeof p.exp === 'number' ? p.exp : 0;
-  if(t && Date.now() < exp){ redirect(); }
+  if(t && Date.now() < exp){ 
+    document.body.classList.remove('guest');  // remove guest class if token exists
+    redirect(); 
+  }
 });
 
 // Function to call API endpoints
@@ -92,6 +95,7 @@ loginForm?.addEventListener('submit', async (e) => {
     if (!token) throw { error: 'No session token returned' };
     saveToken(token);
     setMsg(loginMsg, 'Logged in!', true);
+    document.body.classList.remove('guest'); // ensure guest class is removed
     redirect();
   } catch (err) {
     setMsg(loginMsg, err.error || err.message || 'Invalid credentials');
@@ -110,6 +114,7 @@ guestBtn?.addEventListener('click', async () => {
     const token = r.sessionToken || r.token;
     if (!token) throw { error: 'No session token returned' };
     saveToken(token);
+    document.body.classList.add('guest'); // add guest class
     redirect();
   } catch (err) {
     setMsg(guestMsg, err.error || err.message || 'Guest login failed.');
