@@ -96,7 +96,13 @@ export const handler = async (event) => {
 
     const now = Date.now();
     const sessionToken = signToken(
-      { sub: authEmail, email: authEmail, iat: now, exp: now + 60 * 60 * 1000 },
+      {
+        sub: authEmail,
+        email: authEmail,
+        role: "user",
+        iat: now,
+        exp: now + 60 * 60 * 1000,
+      },
       SECRET
     );
 
