@@ -38,6 +38,13 @@ export const handler = async (event) => {
         const listing = await store.list(); // Netlify Blobs list
         const blobs = Array.isArray(listing) ? listing : (listing?.blobs || []);
 
+const storeOne = getStore({ name: "email_status", siteID, token });
+const blobOne = await store.get(key);
+console.log("BlobOne content:", blobOne);  // Inspect this in your dev tools console
+
+
+
+       
         for (const b of blobs) {
           const key = (b?.key ?? b)?.toString();
           if (!key || !key.includes("@")) continue;
