@@ -211,7 +211,7 @@ body{
 
 .verdict-card {
   background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
-  padding: 1.25rem 1.25rem 1.5rem; box-shadow: 0 6px 18px rgba(0,0,0,.05);
+  padding: .25rem 1.25rem 1.5rem; box-shadow: 0 6px 18px rgba(0,0,0,.05);
 }
 
 .verdict-label { font-weight: 600; display: block; margin-bottom: .5rem; }
@@ -334,6 +334,7 @@ details .tag {
   color: #fff;        /* white text */
   border: 1px solid #555;
 }
+
 
 
 
