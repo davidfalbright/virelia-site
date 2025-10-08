@@ -37,17 +37,19 @@ export const handler = async (event) => {
         //const store = getStore({ name, siteID, token });
         const store = getStore("email_status");
         const listing = await store.list(); // Netlify Blobs list
+       alert("listing = " + listing);
         const blobs = Array.isArray(listing) ? listing : (listing?.blobs || []);
-
+       alert("blobs = " + blobs);
 
         for (const b of blobs) {
+        alert("b = " + b);
           const key = (b?.key ?? b)?.toString();
           if (!key || !key.includes("@")) continue;
           seen.add(key);
-
+       alert("key = " + key);
           // Fetch email status and related fields from the email_status store
           const emailStatus = await store.get(key);
-
+       alert("emailStatus = " + emailStatus);
          
          console.log('emailStatus:', emailStatus);
           const statusData = emailStatus ? JSON.parse(emailStatus) : {};
