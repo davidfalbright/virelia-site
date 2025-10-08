@@ -108,7 +108,8 @@
           emailTable.innerHTML = '<tr><td colspan="6"><em>Failed to return emails from list-emails().</em></td></tr>';
         }
         
-        const emails = data.emails || [];
+        //const emails = data.emails || [];
+        const emails = data.emailData || [];
         if (emails.length === 0) {
           emailTable.innerHTML = '<tr><td colspan="6"><em>No emails found.</em></td></tr>';
           deleteBtn.disabled = true;
