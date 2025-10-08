@@ -34,17 +34,12 @@ export const handler = async (event) => {
     for (const name of stores) {
       try {
         console.log(`Processing store: ${name}`); // Debugging line to show which store is being processed
-        const store = getStore({ name, siteID, token });
+        //const store = getStore({ name, siteID, token });
+        const store = getStore("email_status");
         const listing = await store.list(); // Netlify Blobs list
         const blobs = Array.isArray(listing) ? listing : (listing?.blobs || []);
 
-const storeOne = getStore({ name: "email_status", siteID, token });
-const blobOne = await store.get(key);
-console.log("BlobOne content:", blobOne);  // Inspect this in your dev tools console
 
-
-
-       
         for (const b of blobs) {
           const key = (b?.key ?? b)?.toString();
           if (!key || !key.includes("@")) continue;
