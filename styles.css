@@ -70,7 +70,7 @@ body{
 
 /* hero */
 <!-- .hero{padding:3.25rem 0 2rem} -->
-.hero{padding:1rem 0 2rem}
+.hero{padding:1rem 0 1rem}
 .hero-grid{
   display:grid; gap:1rem;
   grid-template-columns:  .6fr 1.1fr;
@@ -243,7 +243,7 @@ body{
 
 /* ---------------------- */
 /* sections */
-.section{padding:1rem 0}
+.section{padding:0.5rem 0}
 .section.alt{background:linear-gradient(180deg,#0b0d10,#0f1319)}
 .section h2{margin:0 0 .6rem}
 .section p{color:#cfe1f3}
@@ -334,6 +334,7 @@ details .tag {
   color: #fff;        /* white text */
   border: 1px solid #555;
 }
+
 
 
 
