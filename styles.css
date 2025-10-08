@@ -242,7 +242,7 @@ body{
 
 /* ---------------------- */
 /* sections */
-.section{padding:3rem 0}
+.section{padding:1rem 0}
 .section.alt{background:linear-gradient(180deg,#0b0d10,#0f1319)}
 .section h2{margin:0 0 .6rem}
 .section p{color:#cfe1f3}
@@ -333,6 +333,7 @@ details .tag {
   color: #fff;        /* white text */
   border: 1px solid #555;
 }
+
 
 
 
