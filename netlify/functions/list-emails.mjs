@@ -41,13 +41,12 @@ export const handler = async (event) => {
         for (const b of blobs) {
           const key = (b?.key ?? b)?.toString();
           if (!key || !key.includes("@")) continue;
-
-          //console.log(`${b} found email key: ${key}`); // Debugging line to check if we're finding the emails
-          //alert(`${b} found email key: ${key}`); // Debugging line to check if we're finding the emails
           seen.add(key);
 
           // Fetch email status and related fields from the email_status store
           const emailStatus = await store.get(key);
+
+         
          console.log('emailStatus:', emailStatus);
           const statusData = emailStatus ? JSON.parse(emailStatus) : {};
 
@@ -73,17 +72,17 @@ export const handler = async (event) => {
 
           emailData.push({
             email: key.toString(),
-            emailSent: statusData.emailSent.toString() || false,  // Check if the email was sent
-            emailSentDate: statusData.emailSentDate.toString() || null, // Timestamp for email sent
+            emailSent: statusData.emailSent.toString() || false, 
+            emailSentDate: statusData.emailSentDate.toString() || null, 
            
-            codeVerified: statusData.codeVerified.toString() || false, // Check if the code was verified
-            codeVerifiedDate: statusData.codeVerifiedDate.toString() || null, // Timestamp for code verification
+            codeVerified: statusData.codeVerified.toString() || false,
+            codeVerifiedDate: statusData.codeVerifiedDate.toString() || null,
            
-            confirmed: statusData.confirmed.toString() || false, // Check if the email was confirmed
-            confirmedAt: statusData.confirmedAt.toString() || null, // Timestamp for confirmation
+            confirmed: statusData.confirmed.toString() || false,
+            confirmedAt: statusData.confirmedAt.toString() || null,
            
-            verified: statusData.verified.toString() || false,  // Check if the email was verified
-            verifiedAt: statusData.verifiedAt.toString() || null, // Timestamp for verification
+            verified: statusData.verified.toString() || false, 
+            verifiedAt: statusData.verifiedAt.toString() || null, 
           });
 
          
