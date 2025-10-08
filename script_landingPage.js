@@ -193,7 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const sess = window.__SESSION__ || {};
   const role = sess.role || null;
   const isGuest = role === 'guest' || (!role && (sess.email === 'guest'));
-  alert("isGuest value: " + isGuest + "  role value: " + role + "  sess.email value: " + sess.email);
   
   // Hide sections for guest users
   const verdictSection = document.getElementById('verdict');
@@ -220,5 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contactSection) contactSection.style.display = 'block';
   }
 });
+
 
 
