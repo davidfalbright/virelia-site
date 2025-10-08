@@ -1,12 +1,15 @@
-// netlify/functions/list-emails.mjs
 import { getStore } from "@netlify/blobs";
 
 const siteID = process.env.NETLIFY_SITE_ID;
-const token = process.env.NETLIFY_BLOBS_TOKEN;
+const token  = process.env.NETLIFY_BLOBS_TOKEN;
 
 // Which stores to scan for email keys
 const DEFAULT_STORES = [
-  "email_status",           // Store for email sent statuses
+  "email_status", // Ensure we get data from email_status for verification/confirmation
+  "user_credentials",
+  "verified_emails",
+  "email_codes",
+  "email_index",
 ];
 
 export const handler = async (event) => {
@@ -20,9 +23,8 @@ export const handler = async (event) => {
       (qp.stores ? qp.stores.split(",") : DEFAULT_STORES).map((s) => s.trim()).filter(Boolean);
 
     const seen = new Set();
-    const emailData = {};
+    const emailData = [];
 
-    // Fetch data from each store
     for (const name of stores) {
       try {
         const store = getStore({ name, siteID, token });
@@ -31,49 +33,40 @@ export const handler = async (event) => {
 
         for (const b of blobs) {
           const key = (b?.key ?? b)?.toString();
-          if (!key) continue;
+          if (!key || !key.includes("@")) continue;
 
-          if (key.includes("@")) {
-            // Initialize the email data entry if it doesn't already exist
-            if (!emailData[key]) {
-              emailData[key] = {
-                email: key,
-                emailSent: false,
-                emailSentDate: null,
-                codeVerified: false,
-                codeVerifiedDate: null,
-              };
-            }
+          seen.add(key);
 
-            // Depending on the store, update the email data
-            if (name === "email_status" && b.status === "sent") {
-              emailData[key].emailSent = true;
-              emailData[key].emailSentDate = b.timestamp || new Date().toISOString();
-            }
+          // Fetch email status and related fields from the email_status store
+          const emailStatus = await store.get(key);
+          const statusData = emailStatus ? JSON.parse(emailStatus) : {};
 
-            if (name === "verified_emails") {
-              emailData[key].codeVerified = true;
-              emailData[key].codeVerifiedDate = b.timestamp || new Date().toISOString();
-            }
-          }
+          // Now create an object with the correct fields
+          emailData.push({
+            email: key,
+            emailSent: statusData.emailSent || false,  // Check if the email was sent
+            emailSentDate: statusData.emailSentDate || null, // Timestamp for email sent
+            codeVerified: statusData.codeVerified || false, // Check if the code was verified
+            codeVerifiedDate: statusData.codeVerifiedDate || null, // Timestamp for code verification
+            confirmed: statusData.confirmed || false, // Check if the email was confirmed
+            confirmedAt: statusData.confirmedAt || null, // Timestamp for confirmation
+            verified: statusData.verified || false,  // Check if the email was verified
+            verifiedAt: statusData.verifiedAt || null, // Timestamp for verification
+          });
         }
-      } catch (e) {
-        // If a store doesn't exist yet or is unreachable, just skip it
-        console.warn(`Store ${name} could not be accessed:`, e);
+      } catch (error) {
+        console.error(`Error while processing store ${name}:`, error);
       }
     }
 
-    // Convert the emailData object to an array of emails with statuses
-    const emails = Object.values(emailData).sort((a, b) => a.email.localeCompare(b.email));
-
-    return json(200, { ok: true, emails });
+    const emails = Array.from(seen).sort();
+    return json(200, { ok: true, emails, emailData });
   } catch (e) {
     console.error("list-emails error:", e);
     return json(500, { error: "Unexpected server error" });
   }
 };
 
-// Utility function to return a structured JSON response
 function json(statusCode, body) {
   return {
     statusCode,
