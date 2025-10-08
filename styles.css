@@ -69,8 +69,7 @@ body{
 .banner-text{color:#cde7f7}
 
 /* hero */
-<!-- .hero{padding:3.25rem 0 2rem} -->
-.hero{padding:1rem 0 1rem}
+.hero{padding:1rem 0 0.5rem}
 .hero-grid{
   display:grid; gap:1rem;
   grid-template-columns:  .6fr 1.1fr;
@@ -334,6 +333,7 @@ details .tag {
   color: #fff;        /* white text */
   border: 1px solid #555;
 }
+
 
 
 
