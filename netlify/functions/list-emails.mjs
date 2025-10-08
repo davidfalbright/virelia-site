@@ -5,11 +5,11 @@ const token  = process.env.NETLIFY_BLOBS_TOKEN;
 
 // Which stores to scan for email keys
 //  const DEFAULT_STORES = [
-//    "email_status", 
+//    "email_status",     --> 2 records but no data
 //    "user_credentials", --> 2 records but no data
 //    "verified_emails",  --> No Emails found
-//    "email_codes",  --> No Emails found
-//    "email_index",  --> 1 record but no data
+//    "email_codes",      --> No Emails found
+//    "email_index",      --> 1 record but no data
 //  ];
 
  // Ensure we get data from email_status for verification/confirmation
@@ -51,7 +51,7 @@ export const handler = async (event) => {
          console.log('emailStatus:', emailStatus);
           const statusData = emailStatus ? JSON.parse(emailStatus) : {};
 
-          console.log(`Email status for ${key}:`, statusData); // Debugging line to check email status
+          //console.log(`Email status for ${key}:`, statusData); // Debugging line to check email status
          //EMAIL_STATUS:      {"confirmed":true,"confirmedAt":1759948595696,"email":"davidfalbright@yahoo.com","verified":true,"verifiedAt":1759948613396}
          
           // Now create an object with the correct fields
