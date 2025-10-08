@@ -205,7 +205,7 @@ body{
 
 /* ---------------------- */
 /* Bronze Accord Verdict Widget */
-.verdict-section { margin: 3rem auto; max-width: 960px; }
+.verdict-section { margin: 1rem auto; max-width: 960px; }
 .section-title { font-size: 1.75rem; margin: 0 0 .25rem; }
 .section-subtitle { color: #6b7280; margin: 0 0 1rem; }
 
@@ -334,6 +334,7 @@ details .tag {
   color: #fff;        /* white text */
   border: 1px solid #555;
 }
+
 
 
 
