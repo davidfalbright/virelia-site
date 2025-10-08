@@ -192,7 +192,7 @@ body{
 
 
 /* ---------------------- */
-.hero-copy h1{margin:.25rem 0 0}
+.hero-copy h1{margin:.1rem 0 0}
 .hero-copy p{color:var(--muted); line-height:1.6}
 .ticks{margin:.75rem 0 1.25rem; padding-left:1.1rem}
 .ticks li{margin:.2rem 0}
@@ -243,7 +243,7 @@ body{
 
 /* ---------------------- */
 /* sections */
-.section{padding:0.5rem 0}
+.section{padding:0.1rem 0}
 .section.alt{background:linear-gradient(180deg,#0b0d10,#0f1319)}
 .section h2{margin:0 0 .6rem}
 .section p{color:#cfe1f3}
@@ -334,6 +334,7 @@ details .tag {
   color: #fff;        /* white text */
   border: 1px solid #555;
 }
+
 
 
 
