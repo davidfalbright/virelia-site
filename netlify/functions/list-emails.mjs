@@ -6,7 +6,7 @@ const token  = process.env.NETLIFY_BLOBS_TOKEN;
 // Which stores to scan for email keys
 //  const DEFAULT_STORES = [
 //    "email_status", 
-//    "user_credentials",
+//    "user_credentials", --> 2 records but no data
 //    "verified_emails",  --> No Emails found
 //    "email_codes",  --> No Emails found
 //    "email_index",  --> 1 record but no data
@@ -14,7 +14,7 @@ const token  = process.env.NETLIFY_BLOBS_TOKEN;
 
  // Ensure we get data from email_status for verification/confirmation
  const DEFAULT_STORES = [
-   "user_credentials"
+   "email_status"
  ];
 
 export const handler = async (event) => {
