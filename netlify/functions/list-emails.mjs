@@ -42,7 +42,7 @@ export const handler = async (event) => {
 
           console.log(`Found email key: ${key}`); // Debugging line to check if we're finding the emails
 
-          seen.add(key);
+          //seen.add(key);
 
           // Fetch email status and related fields from the email_status store
           const emailStatus = await store.get(key);
