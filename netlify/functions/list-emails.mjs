@@ -9,12 +9,12 @@ const token  = process.env.NETLIFY_BLOBS_TOKEN;
 //    "user_credentials",
 //    "verified_emails",  --> No Emails found
 //    "email_codes",  --> No Emails found
-//    "email_index",
+//    "email_index",  --> 1 record but no data
 //  ];
 
  // Ensure we get data from email_status for verification/confirmation
  const DEFAULT_STORES = [
-   "email_index"
+   "user_credentials"
  ];
 
 export const handler = async (event) => {
