@@ -114,30 +114,19 @@
         }
 
         emailTable.innerHTML = '';
-        //for (const email of emails) {
-        //const li = document.createElement('tr');
-        //li.innerHTML = `
-        //<td><input type="checkbox" class="email-checkbox" value="${email.email}"></td>
-        //<td>${email.email.toString()}</td>
-        //<td>${email.emailSent.toString() ? 'Sent' : 'Not Sent'}</td>
-        //<td>${email.emailSentDate.toString() || 'N/A'}</td>
-        //<td>${email.codeVerified.toString() ? 'Verified' : 'Not Verified'}</td>
-        //<td>${email.codeVerifiedDate.toString() || 'N/A'}</td>
-        //`;
-        //emailTable.appendChild(li);
-        //}
-        for (const emailDatum of emailData) {
-          const li = document.createElement('tr');
-          li.innerHTML = `
-            <td><input type="checkbox" class="email-checkbox" value="${emailDatum.email}"></td>
-            <td>${emailDatum.email.toString()}</td>
-            <td>${emailDatum.emailSent.toString() ? 'Sent' : 'Not Sent'}</td>
-            <td>${emailDatum.emailSentDate.toString() || 'N/A'}</td>
-            <td>${emailDatum.codeVerified.toString() ? 'Verified' : 'Not Verified'}</td>
-            <td>${emailDatum.codeVerifiedDate.toString() || 'N/A'}</td>
-          `;
-          emailTable.appendChild(li);
+        for (const email of emails) {
+        const li = document.createElement('tr');
+        li.innerHTML = `
+        <td><input type="checkbox" class="email-checkbox" value="${email.email}"></td>
+        <td>${email.email.toString()}</td>
+        <td>${email.emailSent.toString() ? 'Sent' : 'Not Sent'}</td>
+        <td>${email.emailSentDate.toString() || 'N/A'}</td>
+        <td>${email.codeVerified.toString() ? 'Verified' : 'Not Verified'}</td>
+        <td>${email.codeVerifiedDate.toString() || 'N/A'}</td>
+        `;
+        emailTable.appendChild(li);
         }
+       
         emailTable.addEventListener('change', syncDeleteButtonState);
         syncDeleteButtonState();
       } catch (e) {
