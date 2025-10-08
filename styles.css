@@ -197,6 +197,7 @@ body{
 .ticks li{margin:.2rem 0}
 .btn{
   display:inline-block; padding:.7rem 1rem; border-radius:10px;
+  text-align: center; /* Centers text horizontally */
   background:linear-gradient(135deg,var(--accent),#6fd8ff);
   color:#0b0d10; text-decoration:none; font-weight:700;
   box-shadow:0 10px 26px rgba(110,210,255,.25);
@@ -333,6 +334,7 @@ details .tag {
   color: #fff;        /* white text */
   border: 1px solid #555;
 }
+
 
 
 
