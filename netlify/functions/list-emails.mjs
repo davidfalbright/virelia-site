@@ -6,11 +6,8 @@ const token = process.env.NETLIFY_BLOBS_TOKEN;
 
 // Which stores to scan for email keys
 const DEFAULT_STORES = [
-  "user_credentials",       // Store containing user credentials
   "email_status",           // Store for email sent statuses
-  "verified_emails",        // Store for emails that have been verified
   "email_codes",            // Store containing verification codes
-  "email_index",            // Index of email addresses
 ];
 
 export const handler = async (event) => {
