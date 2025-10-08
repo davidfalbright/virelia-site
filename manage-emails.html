@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manage Emails</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .container { max-width: 900px; margin: 0 auto; padding: 32px; }
+    .email-list { list-style: none; padding: 0; margin: 16px 0 24px; }
+    .email-list li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1f2937; }
+    .toolbar { display: flex; align-items: center; gap: 12px; }
+    .msg { margin-top: 12px; }
+    .ok { color: #10b981; }
+    .err { color: #ef4444; }
+    .btn { cursor: pointer; }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    th {
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container row">
+      <div class="brand">
+        <div class="logo">
+          <img src="https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord.png" alt="Virelia Logo">
+        </div>
+        <div class="brand-text">
+          <strong>V.I.R.E.L.I.A.</strong>
+          <span>Virtual Intelligence with Responsible Ethics, Logic, and Independent Alignment</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="/">Home</a>
+        <a href="/landing_page.html">Landing</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="container">
+      <h1>Email Management</h1>
+      <p>Below is a list of emails stored in Blob storage. This includes their current status: whether they have been sent, clicked, and verified.</p>
+
+      <div class="toolbar">
+        <button id="refreshBtn" class="btn">Refresh</button>
+        <button id="deleteBtn" class="btn btn-secondary" disabled>Delete Selected Emails</button>
+      </div>
+
+      <table id="emailTable">
+        <thead>
+          <tr>
+            <th>Select</th>
+            <th>Email</th>
+            <th>Email Sent Status</th>
+            <th>Email Sent Date</th>
+            <th>Verification Code Status</th>
+            <th>Verification Code Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamically populated rows will go here -->
+        </tbody>
+      </table>
+
+      <p id="status" class="msg"></p>
+    </div>
+  </section>
+
+  <script>
+    const emailTable = document.getElementById('emailTable').getElementsByTagName('tbody')[0];
+    const refreshBtn = document.getElementById('refreshBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const statusEl = document.getElementById('status');
+
+    function setMsg(text, ok=false) {
+      statusEl.textContent = text;
+      statusEl.className = 'msg ' + (ok ? 'ok' : 'err');
+    }
+
+    function getSelectedEmails() {
+      return Array.from(document.querySelectorAll('.email-checkbox:checked'))
+        .map(c => c.value);
+    }
+
+    function syncDeleteButtonState() {
+      deleteBtn.disabled = getSelectedEmails().length === 0;
+    }
+
+    async function loadEmails() {
+      setMsg('');
+      emailTable.innerHTML = '<tr><td colspan="6">Loading…</td></tr>';
+      try {
+        const res = await fetch('/.netlify/functions/list-emails');
+        const data = await res.json();
+        if (!res.ok || data.ok === false) throw new Error(data.error || 'Failed to load');
+
+        const emails = data.emails || [];
+        if (emails.length === 0) {
+          emailTable.innerHTML = '<tr><td colspan="6"><em>No emails found.</em></td></tr>';
+          deleteBtn.disabled = true;
+          return;
+        }
+
+        emailTable.innerHTML = '';
+        for (const email of emails) {
+          const li = document.createElement('tr');
+          li.innerHTML = `
+            <td><input type="checkbox" class="email-checkbox" value="${email.email}"></td>
+            <td>${email.email}</td>
+            <td>${email.emailSent ? 'Sent' : 'Not Sent'}</td>
+            <td>${email.emailSentDate || 'N/A'}</td>
+            <td>${email.codeVerified ? 'Verified' : 'Not Verified'}</td>
+            <td>${email.codeVerifiedDate || 'N/A'}</td>
+          `;
+          emailTable.appendChild(li);
+        }
+
+        emailTable.addEventListener('change', syncDeleteButtonState);
+        syncDeleteButtonState();
+      } catch (e) {
+        emailTable.innerHTML = '';
+        setMsg(e.message || 'Failed to load emails');
+      }
+    }
+
+    refreshBtn.addEventListener('click', loadEmails);
+
+    deleteBtn.addEventListener('click', async () => {
+      const selected = getSelectedEmails();
+      if (selected.length === 0) return;
+
+      const confirm1 = confirm(`Delete ${selected.length} email(s)?`);
+      if (!confirm1) return;
+
+      try {
+        deleteBtn.disabled = true;
+        const res = await fetch('/.netlify/functions/delete-emails', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ emails: selected })
+        });
+        const data = await res.json();
+        if (!res.ok || data.ok === false) throw new Error(data.error || 'Delete failed');
+        setMsg('Deleted: ' + (data.deleted || []).join(', '), true);
+        await loadEmails();
+      } catch (e) {
+        setMsg(e.message || 'Delete failed');
+      } finally {
+        syncDeleteButtonState();
+      }
+    });
+
+    // initial load
+    loadEmails();
+  </script>
+</body>
+</html>
