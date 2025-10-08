@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const navContact = document.getElementById('navContactLink') || document.querySelector('a[href="#contact"]');
   const footContact = document.getElementById('footContactLink');
   const contactSection = document.getElementById('contact');
-  const askMeButton = document.getElementById('contact');
+  const askMeButton = document.getElementById('askme');
 
   if (isGuest) {
     if (navContact) navContact.style.display = 'none';
@@ -275,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contactSection) askMeButton.style.display = 'block';
   }
 });
+
 
 
 
