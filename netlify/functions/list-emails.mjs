@@ -4,16 +4,18 @@ const siteID = process.env.NETLIFY_SITE_ID;
 const token  = process.env.NETLIFY_BLOBS_TOKEN;
 
 // Which stores to scan for email keys
- const DEFAULT_STORES = [
-   "email_status", 
-   "user_credentials",
-   "verified_emails",
-   "email_codes",
-   "email_index",
- ];
+//  const DEFAULT_STORES = [
+//    "email_status", 
+//    "user_credentials",
+//    "verified_emails",
+//    "email_codes",
+//    "email_index",
+//  ];
 
  // Ensure we get data from email_status for verification/confirmation
-//const DEFAULT_STORES = ["email_status"];
+ const DEFAULT_STORES = [
+   "email_status"
+ ];
 
 export const handler = async (event) => {
   if (event.httpMethod !== "GET") {
