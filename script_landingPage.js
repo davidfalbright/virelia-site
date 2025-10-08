@@ -267,14 +267,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (navContact) navContact.style.display = 'none';
     if (footContact) footContact.style.display = 'none';
     if (contactSection) contactSection.style.display = 'none';
-    if (contactSection) askMeButton.style.display = 'none';
+    if (askMeButton) askMeButton.style.display = 'none';
   } else {
     if (navContact) navContact.style.display = 'inline';
     if (footContact) footContact.style.display = 'inline';
     if (contactSection) contactSection.style.display = 'block';
-    if (contactSection) askMeButton.style.display = 'block';
+    if (askMeButton) askMeButton.style.display = 'block';
   }
 });
+
 
 
 
