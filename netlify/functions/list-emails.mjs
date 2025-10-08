@@ -27,6 +27,7 @@ export const handler = async (event) => {
 
     for (const name of stores) {
       try {
+        console.log(`Processing store: ${name}`); // Debugging line to show which store is being processed
         const store = getStore({ name, siteID, token });
         const listing = await store.list(); // Netlify Blobs list
         const blobs = Array.isArray(listing) ? listing : (listing?.blobs || []);
@@ -35,11 +36,15 @@ export const handler = async (event) => {
           const key = (b?.key ?? b)?.toString();
           if (!key || !key.includes("@")) continue;
 
+          console.log(`Found email key: ${key}`); // Debugging line to check if we're finding the emails
+
           seen.add(key);
 
           // Fetch email status and related fields from the email_status store
           const emailStatus = await store.get(key);
           const statusData = emailStatus ? JSON.parse(emailStatus) : {};
+
+          console.log(`Email status for ${key}:`, statusData); // Debugging line to check email status
 
           // Now create an object with the correct fields
           emailData.push({
@@ -60,6 +65,8 @@ export const handler = async (event) => {
     }
 
     const emails = Array.from(seen).sort();
+    console.log("Emails found:", emails); // Debugging line to check if we're finding emails
+
     return json(200, { ok: true, emails, emailData });
   } catch (e) {
     console.error("list-emails error:", e);
