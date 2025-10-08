@@ -20,6 +20,7 @@ export const handler = async (event) => {
     return json(405, { error: "Method Not Allowed" });
   }
 
+
   try {
     const qp = event.queryStringParameters || {};
     const stores =
@@ -45,19 +46,24 @@ export const handler = async (event) => {
 
           // Fetch email status and related fields from the email_status store
           const emailStatus = await store.get(key);
+         console.log('emailStatus:', emailStatus);
           const statusData = emailStatus ? JSON.parse(emailStatus) : {};
 
           console.log(`Email status for ${key}:`, statusData); // Debugging line to check email status
-
+         //EMAIL_STATUS:      {"confirmed":true,"confirmedAt":1759948595696,"email":"davidfalbright@yahoo.com","verified":true,"verifiedAt":1759948613396}
+         
           // Now create an object with the correct fields
           emailData.push({
             email: key,
             emailSent: statusData.emailSent || false,  // Check if the email was sent
             emailSentDate: statusData.emailSentDate || null, // Timestamp for email sent
+           
             codeVerified: statusData.codeVerified || false, // Check if the code was verified
             codeVerifiedDate: statusData.codeVerifiedDate || null, // Timestamp for code verification
+           
             confirmed: statusData.confirmed || false, // Check if the email was confirmed
             confirmedAt: statusData.confirmedAt || null, // Timestamp for confirmation
+           
             verified: statusData.verified || false,  // Check if the email was verified
             verifiedAt: statusData.verifiedAt || null, // Timestamp for verification
           });
