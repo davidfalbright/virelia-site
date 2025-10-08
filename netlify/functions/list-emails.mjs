@@ -40,8 +40,8 @@ export const handler = async (event) => {
           const key = (b?.key ?? b)?.toString();
           if (!key || !key.includes("@")) continue;
 
-          console.log(`${b} found email key: ${key}`); // Debugging line to check if we're finding the emails
-          alert(`${b} found email key: ${key}`); // Debugging line to check if we're finding the emails
+          //console.log(`${b} found email key: ${key}`); // Debugging line to check if we're finding the emails
+          //alert(`${b} found email key: ${key}`); // Debugging line to check if we're finding the emails
           seen.add(key);
 
           // Fetch email status and related fields from the email_status store
