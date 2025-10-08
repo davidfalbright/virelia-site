@@ -7,14 +7,14 @@ const token  = process.env.NETLIFY_BLOBS_TOKEN;
 //  const DEFAULT_STORES = [
 //    "email_status", 
 //    "user_credentials",
-//    "verified_emails",
+//    "verified_emails",  --> No Emails found
 //    "email_codes",
 //    "email_index",
 //  ];
 
  // Ensure we get data from email_status for verification/confirmation
  const DEFAULT_STORES = [
-   "verified_emails"
+   "email_codes"
  ];
 
 export const handler = async (event) => {
