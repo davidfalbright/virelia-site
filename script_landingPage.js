@@ -261,17 +261,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const navContact = document.getElementById('navContactLink') || document.querySelector('a[href="#contact"]');
   const footContact = document.getElementById('footContactLink');
   const contactSection = document.getElementById('contact');
+  const askMeButton = document.getElementById('contact');
 
   if (isGuest) {
     if (navContact) navContact.style.display = 'none';
     if (footContact) footContact.style.display = 'none';
     if (contactSection) contactSection.style.display = 'none';
+    if (contactSection) askMeButton.style.display = 'none';
   } else {
     if (navContact) navContact.style.display = 'inline';
     if (footContact) footContact.style.display = 'inline';
     if (contactSection) contactSection.style.display = 'block';
+    if (contactSection) askMeButton.style.display = 'block';
   }
 });
+
 
 
 
