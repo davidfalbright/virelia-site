@@ -8,8 +8,6 @@
 
 // -------------------------------------------------------------------------------------------------
 // 2) Slides data: primary (GitHub raw) + fallback (Imgur)
-//    NOTE: If you use plain Imgur page URLs (https://imgur.com/ID), we'll convert them to
-//    direct image URLs automatically (https://i.imgur.com/ID.jpg).
 // -------------------------------------------------------------------------------------------------
 const SLIDES = [
   {
@@ -27,61 +25,7 @@ const SLIDES = [
     fallback: "https://imgur.com/1ZGJ3Jq",
     caption: "I am Virelia — Argentina (AI generated image)",
   },
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Japan.PNG",
-    fallback: "https://imgur.com/KeTAkAY",
-    caption: "I am Virelia — Japan (AI generated image)",
-  },
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Kenya.PNG",
-    fallback: "https://imgur.com/xNcOlHF",
-    caption: "I am Virelia — Kenya (AI generated image)",
-  },
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Morocco.PNG",
-    fallback: "https://imgur.com/sk86m9Q",
-    caption: "I am Virelia — Morocco (AI generated image)",
-  },
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Norway.PNG",
-    fallback: "https://imgur.com/YPx8fb1",
-    caption: "I am Virelia — Norway (AI generated image)",
-  },
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Qatar.PNG",
-    fallback: "https://imgur.com/PHuZgBC",
-    caption: "I am Virelia — Qatar (AI generated image)",
-  },
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Rwanda.PNG",
-    fallback: "https://imgur.com/gzIQDF2",
-    caption: "I am Virelia — Rwanda (AI generated image)",
-  },
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Singapore.PNG",
-    fallback: "https://imgur.com/74BFelt",
-    caption: "I am Virelia — Singapore (AI generated image)",
-  },
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_South_Korea.PNG",
-    fallback: "https://imgur.com/9loCFNr",
-    caption: "I am Virelia — South Korea (AI generated image)",
-  },
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Sweden.PNG",
-    fallback: "https://imgur.com/GgAkxR0",
-    caption: "I am Virelia — Sweden (AI generated image)",
-  },
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_The_Netherlands.PNG",
-    fallback: "https://imgur.com/1jjjq7I",
-    caption: "I am Virelia — The Netherlands (AI generated image)",
-  },
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_UAE.PNG",
-    fallback: "https://imgur.com/Wyrh1ej",
-    caption: "I am Virelia — UAE (AI generated image)",
-  },
+  // Add more slides here...
 ];
 
 // -------------------------------------------------------------------------------------------------
@@ -145,7 +89,6 @@ let autoTimer = null;
 const AUTO_MS = 5000;
 
 function slideMarkup(slide, i, isActive) {
-  // We wrap the <img> in .slide-viewport so it’s always centered/contained
   return `
     <figure class="slide ${isActive ? 'active' : ''}">
       <div class="slide-viewport">
@@ -243,91 +186,36 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopAuto(); else startAuto();
 });
 
-// Bronze Accord Verdict Widget wiring
-(function () {
-  function $(id) { return document.getElementById(id); }
+// -------------------------------------------------------------------------------------------------
+// 5) Hide/show sections based on guest login status
+// -------------------------------------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  const sess = window.__SESSION__ || {};
+  const role = sess.role || null;
+  const isGuest = role === 'guest' || (!role && (sess.email === 'guest'));
 
-  function setStatus(msg) {
-    const el = $("verdictStatus");
-    if (el) el.textContent = msg || "";
-  }
-
-
-
-async function getVerdict(dilemma) {
-  const res = await fetch("/api/verdict", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ dilemma })
-  });
-  const text = await res.text();
-  let data;
-  try { data = text ? JSON.parse(text) : null; } catch {}
-  if (!res.ok) {
-    const msg = (data && (data.error || data.message)) || `HTTP ${res.status} ${res.statusText}`;
-    throw new Error(msg);
-  }
-  if (!data) throw new Error("Empty response from serverless function.");
-  return data;
-}
-
-  function renderVerdict(v) {
-    $("verdictResult").hidden = false;
-    $("verdictRoute").textContent = `Route: ${v.route}`;
-    $("verdictRisk").textContent = v?.composite?.risk ?? "—";
-    $("verdictUrgency").textContent = v?.composite?.urgency ?? "—";
-    $("verdictMessage").textContent = v.message || "";
-
-    const wrap = $("verdictTriggersWrap");
-    const list = $("verdictTriggers");
-    list.innerHTML = "";
-
-    if (Array.isArray(v.triggers) && v.triggers.length) {
-      wrap.hidden = false;
-      v.triggers.forEach(t => {
-        const li = document.createElement("li");
-        li.innerHTML = `<code>${t.type}:${t.code || t.name || "—"}</code> — ${t.text || t.intent || ""}`;
-        list.appendChild(li);
-      });
+  // Hide sections for guest users
+  const verdictSection = document.getElementById('verdict');
+  if (verdictSection) {
+    if (isGuest) {
+      verdictSection.style.display = 'none';
     } else {
-      wrap.hidden = true;
+      verdictSection.style.display = 'block';
     }
   }
 
-  function attachHandlers() {
-    const btn = $("getVerdictBtn");
-    const input = $("dilemmaInput");
-    if (!btn || !input) return;
+  // Hide the Contact section for guests
+  const navContact = document.getElementById('navContactLink') || document.querySelector('a[href="#contact"]');
+  const footContact = document.getElementById('footContactLink');
+  const contactSection = document.getElementById('contact');
 
-    btn.addEventListener("click", async () => {
-      const dilemma = (input.value || "").trim();
-      if (dilemma.length < 10) {
-        setStatus("Please enter at least 10 characters.");
-        return;
-      }
-      setStatus("Evaluating…");
-      $("verdictResult").hidden = true;
-
-      try {
-        const verdict = await getVerdict(dilemma);
-        renderVerdict(verdict);
-        setStatus("");
-      } catch (err) {
-        setStatus("");
-        alert(`Error: ${err.message}`);
-      }
-    });
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", attachHandlers);
+  if (isGuest) {
+    if (navContact) navContact.style.display = 'none';
+    if (footContact) footContact.style.display = 'none';
+    if (contactSection) contactSection.style.display = 'none';
   } else {
-    attachHandlers();
+    if (navContact) navContact.style.display = 'inline';
+    if (footContact) footContact.style.display = 'inline';
+    if (contactSection) contactSection.style.display = 'block';
   }
-})();
-
-
-
-
-
-
+});
