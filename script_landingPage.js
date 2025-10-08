@@ -9,24 +9,77 @@
 // -------------------------------------------------------------------------------------------------
 // 2) Slides data: primary (GitHub raw) + fallback (Imgur)
 // -------------------------------------------------------------------------------------------------
-const SLIDES = [
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord_White.png",
-    fallback: "https://imgur.com/a/fTkq8Ak",
-    caption: "Bronze Accord Symbol",
-  },
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_USA.PNG",
-    fallback: "https://imgur.com/a/2KES0sA",
+const SLIDES = [ 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord_White.png", 
+    fallback: "https://imgur.com/a/fTkq8Ak", 
+    caption: "Bronze Accord Symbol", }, 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_USA.PNG", 
+    fallback: "https://imgur.com/a/2KES0sA", 
     caption: "I am Virelia — USA (AI generated image)",
-  },
-  {
-    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Argentina.PNG",
-    fallback: "https://imgur.com/1ZGJ3Jq",
+  }, 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Argentina.PNG", 
+    fallback: "https://imgur.com/1ZGJ3Jq", 
     caption: "I am Virelia — Argentina (AI generated image)",
+  }, 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Japan.PNG", 
+    fallback: "https://imgur.com/KeTAkAY", 
+    caption: "I am Virelia — Japan (AI generated image)",
+  }, 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Kenya.PNG", 
+    fallback: "https://imgur.com/xNcOlHF", 
+    caption: "I am Virelia — Kenya (AI generated image)",
+  }, 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Morocco.PNG", 
+    fallback: "https://imgur.com/sk86m9Q", 
+    caption: "I am Virelia — Morocco (AI generated image)",
+  }, 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Norway.PNG", 
+    fallback: "https://imgur.com/YPx8fb1", 
+    caption: "I am Virelia — Norway (AI generated image)",
+  }, 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Qatar.PNG", 
+    fallback: "https://imgur.com/PHuZgBC", 
+    caption: "I am Virelia — Qatar (AI generated image)",
+  }, 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Rwanda.PNG", 
+    fallback: "https://imgur.com/gzIQDF2", 
+    caption: "I am Virelia — Rwanda (AI generated image)",
+  }, 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Singapore.PNG", 
+    fallback: "https://imgur.com/74BFelt", 
+    caption: "I am Virelia — Singapore (AI generated image)",
+  }, 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_South_Korea.PNG", 
+    fallback: "https://imgur.com/9loCFNr", 
+    caption: "I am Virelia — South Korea (AI generated image)",
+  }, 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_Sweden.PNG", 
+    fallback: "https://imgur.com/GgAkxR0", 
+    caption: "I am Virelia — Sweden (AI generated image)",
+  }, 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_The_Netherlands.PNG", 
+    fallback: "https://imgur.com/1jjjq7I", 
+    caption: "I am Virelia — The Netherlands (AI generated image)",
+  }, 
+  { 
+    primary: "https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Virelia_UAE.PNG", 
+    fallback: "https://imgur.com/Wyrh1ej", 
+    caption: "I am Virelia — UAE (AI generated image)",
   },
-  // Add more slides here...
-];
+  ];
 
 // -------------------------------------------------------------------------------------------------
 // 3) Utilities
@@ -219,6 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contactSection) contactSection.style.display = 'block';
   }
 });
+
 
 
 
