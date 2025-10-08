@@ -55,20 +55,38 @@ export const handler = async (event) => {
          //EMAIL_STATUS:      {"confirmed":true,"confirmedAt":1759948595696,"email":"davidfalbright@yahoo.com","verified":true,"verifiedAt":1759948613396}
          
           // Now create an object with the correct fields
+          //  emailData.push({
+          //  email: key,
+          //  emailSent: statusData.emailSent || false,  // Check if the email was sent
+          //  emailSentDate: statusData.emailSentDate || null, // Timestamp for email sent
+           
+          //  codeVerified: statusData.codeVerified || false, // Check if the code was verified
+          //  codeVerifiedDate: statusData.codeVerifiedDate || null, // Timestamp for code verification
+           
+          //  confirmed: statusData.confirmed || false, // Check if the email was confirmed
+          //  confirmedAt: statusData.confirmedAt || null, // Timestamp for confirmation
+           
+          //  verified: statusData.verified || false,  // Check if the email was verified
+          //  verifiedAt: statusData.verifiedAt || null, // Timestamp for verification
+          //});
+
+
           emailData.push({
-            email: key,
-            emailSent: statusData.emailSent || false,  // Check if the email was sent
-            emailSentDate: statusData.emailSentDate || null, // Timestamp for email sent
+            email: key.toString(),
+            emailSent: statusData.emailSent.toString() || false,  // Check if the email was sent
+            emailSentDate: statusData.emailSentDate.toString() || null, // Timestamp for email sent
            
-            codeVerified: statusData.codeVerified || false, // Check if the code was verified
-            codeVerifiedDate: statusData.codeVerifiedDate || null, // Timestamp for code verification
+            codeVerified: statusData.codeVerified.toString() || false, // Check if the code was verified
+            codeVerifiedDate: statusData.codeVerifiedDate.toString() || null, // Timestamp for code verification
            
-            confirmed: statusData.confirmed || false, // Check if the email was confirmed
-            confirmedAt: statusData.confirmedAt || null, // Timestamp for confirmation
+            confirmed: statusData.confirmed.toString() || false, // Check if the email was confirmed
+            confirmedAt: statusData.confirmedAt.toString() || null, // Timestamp for confirmation
            
-            verified: statusData.verified || false,  // Check if the email was verified
-            verifiedAt: statusData.verifiedAt || null, // Timestamp for verification
+            verified: statusData.verified.toString() || false,  // Check if the email was verified
+            verifiedAt: statusData.verifiedAt.toString() || null, // Timestamp for verification
           });
+
+         
         }
       } catch (error) {
         console.error(`Error while processing store ${name}:`, error);
