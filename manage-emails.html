@@ -117,11 +117,11 @@
           const li = document.createElement('tr');
           li.innerHTML = `
             <td><input type="checkbox" class="email-checkbox" value="${email.email}"></td>
-            <td>${email.email}</td>
-            <td>${email.emailSent ? 'Sent' : 'Not Sent'}</td>
-            <td>${email.emailSentDate || 'N/A'}</td>
-            <td>${email.codeVerified ? 'Verified' : 'Not Verified'}</td>
-            <td>${email.codeVerifiedDate || 'N/A'}</td>
+            <td>${email.email.toString()}</td>
+            <td>${email.emailSent.toString() ? 'Sent' : 'Not Sent'}</td>
+            <td>${email.emailSentDate.toString() || 'N/A'}</td>
+            <td>${email.codeVerified.toString() ? 'Verified' : 'Not Verified'}</td>
+            <td>${email.codeVerifiedDate.toString() || 'N/A'}</td>
           `;
           emailTable.appendChild(li);
         }
