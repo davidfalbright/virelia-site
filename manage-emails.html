@@ -102,7 +102,7 @@
       emailTable.innerHTML = '<tr><td colspan="6">Loading…</td></tr>';
       try {
         const res = await fetch('/.netlify/functions/list-emails');
-        const data = await res.json();
+        const data = await res//.json();
         if (!res.ok || data.ok === false){
           //throw new Error(data.error || 'Failed to load');
           emailTable.innerHTML = '<tr><td colspan="6"><em>Failed to return emails from list-emails().</em></td></tr>';
@@ -121,8 +121,8 @@
         const li = document.createElement('tr');
         li.innerHTML = `
         <td><input type="checkbox" class="email-checkbox" value="${email.email}"></td>
-        //<td>${email.email.toString()}</td>
-        <td>${email.toString()}</td>
+        <td>${email.email.toString()}</td>
+        //<td>${email.toString()}</td>
         <td>${email.emailSent.toString() ? 'Sent' : 'Not Sent'}</td>
         <td>${email.emailSentDate.toString() || 'N/A'}</td>
         <td>${email.codeVerified.toString() ? 'Verified' : 'Not Verified'}</td>
