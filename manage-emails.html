@@ -62,8 +62,8 @@
           <tr>
             <th>Select</th>
             <th>Email</th>
-            <th>Email Sent Status</th>
-            <th>Email Sent Date</th>
+            <th>Email Confirmed Status</th>
+            <th>Email Confirmed Date</th>
             <th>Verification Code Status</th>
             <th>Verification Code Date</th>
           </tr>
@@ -122,12 +122,12 @@ if (data.ok && Array.isArray(data.emailData)) {
 
     const li = document.createElement('tr');
     li.innerHTML = `
-    <td><input type="checkbox" class="email-checkbox" value=${record.email}></td>
-    <td>${record.email}</td>
-    <td>${record.confirmed ? 'Sent' : 'Not Sent'}</td>
-    <td>${new Date(record.confirmedAt).toLocaleString() || 'N/A'}</td>
-    <td>${record.verified ? 'Verified' : 'Not Verified'}</td>
-    <td>${new Date(record.verifiedAt).toLocaleString() || 'N/A'}</td>
+      <td><input type="checkbox" class="email-checkbox" value=${record.email}></td>
+      <td>${record.email}</td>
+      <td>${record.confirmed ? 'Sent' : 'Not Sent'}</td>
+      <td>${new Date(record.confirmedAt).toLocaleString() || 'N/A'}</td>
+      <td>${record.verified ? 'Verified' : 'Not Verified'}</td>
+      <td>${new Date(record.verifiedAt).toLocaleString() || 'N/A'}</td>
     `;
      emailTable.appendChild(li);
   });
