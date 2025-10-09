@@ -120,15 +120,15 @@ if (data.ok && Array.isArray(data.emailData)) {
     console.log(record.confirmed, record.confirmedAt);
     console.log(record.verified, record.verifiedAt);
 
-        const li = document.createElement('tr');
-        li.innerHTML = `
-        <td><input type="checkbox" class="email-checkbox" value=${record.email}></td>
-        <td>${record.email}</td>
-<td>${record.confirmed ? 'Sent' : 'Not Sent'}</td>
-<td>${record.confirmedAt || 'N/A'}</td>
-<td>${record.verified ? 'Verified' : 'Not Verified'}</td>
-<td>${record.verifiedAt || 'N/A'}</td>
-            `;
+    const li = document.createElement('tr');
+    li.innerHTML = `
+    <td><input type="checkbox" class="email-checkbox" value=${record.email}></td>
+    <td>${record.email}</td>
+    <td>${record.confirmed ? 'Sent' : 'Not Sent'}</td>
+    <td>${new Date(record.confirmedAt).toLocaleString() || 'N/A'}</td>
+    <td>${record.verified ? 'Verified' : 'Not Verified'}</td>
+    <td>${new Date(record.verifiedAt).toLocaleString() || 'N/A'}</td>
+    `;
      emailTable.appendChild(li);
   });
 }
