@@ -6,20 +6,21 @@
 <title>Website Infrastructure Tracker</title>
 <link rel="stylesheet" href="styles.css" />
 <style>
-  body { font-family: sans-serif; margin: 0; padding: 0; background:#0b0d10; color:#e5eef7; }
-  .container { max-width: 1000px; margin: 2rem auto; padding: 1rem; background:#131823; border-radius:8px; box-shadow:0 0 12px rgba(0,0,0,0.5); }
+  body { font-family:sans-serif; margin:0; padding:0; background:#0b0d10; color:#e5eef7; }
+  .container { max-width:1000px; margin:2rem auto; padding:1rem; background:#131823; border-radius:8px; box-shadow:0 0 12px rgba(0,0,0,0.5); }
   h1 { text-align:center; }
-  table { width: 100%; border-collapse: collapse; margin-top:1rem; }
-  th, td { padding: 0.5rem; border: 1px solid #1f2633; text-align:left; }
+  table { width:100%; border-collapse:collapse; margin-top:1rem; }
+  th, td { padding:0.5rem; border:1px solid #1f2633; text-align:left; }
   th { background:#1f2633; }
-  input[type=text] { width: 95%; padding:4px; border-radius:4px; border:1px solid #1f2633; background:#0b0d10; color:#e5eef7; }
-  .toolbar { margin-top:1rem; display:flex; gap:1rem; }
+  input[type=text] { width:95%; padding:4px; border-radius:4px; border:1px solid #1f2633; background:#0b0d10; color:#e5eef7; }
+  .toolbar, .add-form { margin-top:1rem; display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; }
   button { padding:0.5rem 1rem; cursor:pointer; border:none; border-radius:4px; background:#6fb2ff; color:#0b0d10; font-weight:bold; }
   button:disabled { background:#333; cursor:not-allowed; }
   .msg { margin-top:1rem; }
   .ok { color:#10b981; }
   .err { color:#ef4444; }
   .action-btn { cursor:pointer; color:#6fb2ff; text-decoration:underline; background:none; border:none; }
+  label { display:flex; flex-direction:column; font-size:0.85rem; }
 </style>
 </head>
 <body>
@@ -27,10 +28,35 @@
 <div class="container">
   <h1>Website Infrastructure Tracker</h1>
 
-  <div class="toolbar">
-    <button id="refreshBtn">Refresh</button>
-    <button id="addBtn">Add New Record</button>
+  <!-- Add new record form -->
+  <div class="add-form">
+    <label>
+      Website URL
+      <input type="text" id="websiteInput" placeholder="https://www.example.com">
+    </label>
+    <label>
+      Hosted On
+      <input type="text" id="hostedInput" placeholder="Netlify, Squarespace...">
+    </label>
+    <label>
+      Code Stored On
+      <input type="text" id="codeInput" placeholder="GitHub...">
+    </label>
+    <label>
+      Website Email Service
+      <input type="text" id="websiteEmailInput" placeholder="ReSend...">
+    </label>
+    <label>
+      Corporate Email
+      <input type="text" id="corporateEmailInput" placeholder="Zoho email...">
+    </label>
+    <label>
+      AI Dilemma Service
+      <input type="text" id="aiDilemmaInput" placeholder="ChatGPT / OpenAI API...">
+    </label>
+    <button id="addBtn">Add Record</button>
   </div>
+
   <p id="status" class="msg"></p>
 
   <table id="websiteTable">
@@ -60,10 +86,19 @@ const STORE_NAME = "website_infra";
 
 const statusEl = document.getElementById('status');
 const tableBody = document.querySelector('#websiteTable tbody');
-const refreshBtn = document.getElementById('refreshBtn');
+
+const websiteInput = document.getElementById('websiteInput');
+const hostedInput = document.getElementById('hostedInput');
+const codeInput = document.getElementById('codeInput');
+const websiteEmailInput = document.getElementById('websiteEmailInput');
+const corporateEmailInput = document.getElementById('corporateEmailInput');
+const aiDilemmaInput = document.getElementById('aiDilemmaInput');
 const addBtn = document.getElementById('addBtn');
 
-function setMsg(text, ok=false) { statusEl.textContent = text; statusEl.className = 'msg ' + (ok ? 'ok' : 'err'); }
+function setMsg(text, ok=false) {
+  statusEl.textContent = text;
+  statusEl.className = 'msg ' + (ok ? 'ok' : 'err');
+}
 
 async function getStoreInstance() {
   return getStore({ name: STORE_NAME, siteID, token });
@@ -76,7 +111,6 @@ async function loadRecords() {
     const store = await getStoreInstance();
     const listing = await store.list();
     const blobs = Array.isArray(listing) ? listing : (listing?.blobs || []);
-
     tableBody.innerHTML = '';
     if (!blobs.length) {
       tableBody.innerHTML = '<tr><td colspan="7"><em>No records found.</em></td></tr>';
@@ -102,7 +136,6 @@ async function loadRecords() {
         </td>
       `;
 
-      // Save button
       tr.querySelector('.saveBtn').addEventListener('click', async () => {
         const updated = {};
         tr.querySelectorAll('input').forEach(input => {
@@ -114,7 +147,6 @@ async function loadRecords() {
         } catch(e) { setMsg('Save failed'); }
       });
 
-      // Delete button
       tr.querySelector('.deleteBtn').addEventListener('click', async () => {
         if (!confirm('Delete this record?')) return;
         try {
@@ -132,30 +164,41 @@ async function loadRecords() {
     console.error(err);
     setMsg('Error loading records');
   }
-}
+});
 
 addBtn.addEventListener('click', async () => {
+  const website = websiteInput.value.trim();
+  if (!website) return setMsg('Website URL is required');
+
+  const newRecord = {
+    website,
+    hostedOn: hostedInput.value.trim(),
+    codeStoredOn: codeInput.value.trim(),
+    websiteEmail: websiteEmailInput.value.trim(),
+    corporateEmail: corporateEmailInput.value.trim(),
+    aiDilemmaService: aiDilemmaInput.value.trim()
+  };
+
   try {
     const store = await getStoreInstance();
     const key = `record_${Date.now()}`;
-    const emptyRecord = {
-      website: '',
-      hostedOn: '',
-      codeStoredOn: '',
-      websiteEmail: '',
-      corporateEmail: '',
-      aiDilemmaService: ''
-    };
-    await store.put(key, JSON.stringify(emptyRecord));
-    setMsg('New record added', true);
+    await store.put(key, JSON.stringify(newRecord));
+    setMsg('Record added', true);
+
+    // Clear inputs
+    websiteInput.value = '';
+    hostedInput.value = '';
+    codeInput.value = '';
+    websiteEmailInput.value = '';
+    corporateEmailInput.value = '';
+    aiDilemmaInput.value = '';
+
     await loadRecords();
   } catch (e) {
     console.error(e);
     setMsg('Failed to add record');
   }
 });
-
-refreshBtn.addEventListener('click', loadRecords);
 
 // Initial load
 loadRecords();
