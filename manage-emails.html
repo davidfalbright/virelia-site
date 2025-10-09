@@ -124,7 +124,7 @@
         <td>${email}</td>
         
         //<td>${email.emailSent ? 'Sent' : 'Not Sent'}</td>
-<td>${data.emailData}</td>
+<td>${JSON.parse(data.emailData)}</td>
         
         //<td>${email.emailSentDate || 'N/A'}</td>
         <td>${email.confirmedAt}</td>
