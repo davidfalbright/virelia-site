@@ -1,7 +1,7 @@
 import { getStore } from "@netlify/blobs";
 
 const siteID = process.env.NETLIFY_SITE_ID;
-const token  = process.env.NETLIFY_BLOBS_TOKEN;
+const token = process.env.NETLIFY_BLOBS_TOKEN;
 const STORE_NAME = "website_infra";
 
 export const handler = async (event) => {
@@ -9,14 +9,14 @@ export const handler = async (event) => {
     return json(405, { error: "Method Not Allowed" });
   }
   try {
+    const body = JSON.parse(event.body || "{}");
     const store = getStore({ name: STORE_NAME, siteID, token });
-    const body = JSON.parse(event.body);
-    const key = `record_${Date.now()}`;
-    await store.put(key, JSON.stringify({ ...body, createdAt: Date.now() }));
-    return json(200, { ok: true, key });
+    const key = body.website;
+    if (!key) return json(400, { error: "Website required" });
+    await store.put(key, JSON.stringify(body));
+    return json(200, { ok: true });
   } catch (err) {
-    console.error(err);
-    return json(500, { error: "Failed to add record" });
+    return json(500, { error: err.message });
   }
 };
 
