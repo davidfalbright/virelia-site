@@ -122,7 +122,7 @@ if (data.ok && Array.isArray(data.emailData)) {
 
         const li = document.createElement('tr');
         li.innerHTML = `
-        <td><input type="checkbox" class="email-checkbox" value=record.email></td>
+        <td><input type="checkbox" class="email-checkbox" value=${record.email}></td>
         <td>${record.email}</td>
 <td>${record.confirmed ? 'Sent' : 'Not Sent'}</td>
 <td>${record.confirmedAt || 'N/A'}</td>
