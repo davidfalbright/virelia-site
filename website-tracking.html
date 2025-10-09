@@ -18,27 +18,23 @@
   .ok { color: #10b981; }
   .err { color: #ef4444; }
   .form-inline { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1rem; }
-  .form-inline input, .form-inline select { padding: 0.25rem; flex: 1 1 150px; }
+  .form-inline input { padding: 0.25rem; flex: 1 1 150px; }
   th.select-col, td.select-col { text-align: center; width: 40px; }
   td.editable:hover { background: #1f2633; cursor: pointer; }
-  select.inline-select { width: 100%; padding: 2px; border-radius: 2px; }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>Website Infrastructure Tracker</h1>
-  <p>Track your websites, hosting platforms, source code repositories, email providers, and account creation services.</p>
+  <p>Track your websites, hosting platforms, source code repositories, website emails, and corporate emails.</p>
 
   <div class="form-inline">
     <input id="websiteInput" placeholder="Website URL" />
     <input id="platformInput" placeholder="Hosting Platform" />
     <input id="repoInput" placeholder="Source Repo (GitHub, etc.)" />
-    <input id="accountEmailInput" placeholder="Account Email" />
-    <select id="accountTypeInput">
-      <option value="Website">Website</option>
-      <option value="Corporate">Corporate</option>
-    </select>
-    <input id="accountServiceInput" placeholder="Account Service (ReSend, Zoho, etc.)" />
+    <input id="websiteEmailInput" placeholder="Website Email (ReSend)" />
+    <input id="corporateEmailInput" placeholder="Corporate Email (Zoho)" />
+    <input id="accountServiceInput" placeholder="Account Service Name" />
     <button id="addBtn" class="btn">Add Record</button>
   </div>
 
@@ -55,8 +51,8 @@
         <th>Website</th>
         <th>Platform</th>
         <th>Source Repo</th>
-        <th>Account Email</th>
-        <th>Type</th>
+        <th>Website Email</th>
+        <th>Corporate Email</th>
         <th>Account Service</th>
         <th>Last Updated</th>
       </tr>
@@ -88,15 +84,12 @@ const selectAll  = document.getElementById("selectAll");
 const websiteInput = document.getElementById("websiteInput");
 const platformInput = document.getElementById("platformInput");
 const repoInput = document.getElementById("repoInput");
-const accountEmailInput = document.getElementById("accountEmailInput");
+const websiteEmailInput = document.getElementById("websiteEmailInput");
+const corporateEmailInput = document.getElementById("corporateEmailInput");
 const accountServiceInput = document.getElementById("accountServiceInput");
-const accountTypeInput = document.getElementById("accountTypeInput");
 
 let entries = [];
 
-// -----------------------------------------------------------------------------
-// Helpers
-// -----------------------------------------------------------------------------
 function setMsg(text, ok=false){
   statusEl.textContent = text || "";
   statusEl.className = 'msg ' + (ok ? 'ok' : 'err');
@@ -117,8 +110,8 @@ function renderTable() {
       <td class="editable" data-field="website" data-index="${index}">${e.website}</td>
       <td class="editable" data-field="platform" data-index="${index}">${e.platform}</td>
       <td class="editable" data-field="repo" data-index="${index}">${e.repo}</td>
-      <td class="editable" data-field="accountEmail" data-index="${index}">${e.accountEmail}</td>
-      <td class="editable" data-field="accountType" data-index="${index}">${e.accountType}</td>
+      <td class="editable" data-field="websiteEmail" data-index="${index}">${e.websiteEmail}</td>
+      <td class="editable" data-field="corporateEmail" data-index="${index}">${e.corporateEmail}</td>
       <td class="editable" data-field="accountService" data-index="${index}">${e.accountService}</td>
       <td>${e.updatedAt ? new Date(e.updatedAt).toLocaleString() : 'N/A'}</td>
     `;
@@ -132,9 +125,6 @@ function updateDeleteButtonState() {
   deleteBtn.disabled = !anyChecked;
 }
 
-// -----------------------------------------------------------------------------
-// Load entries from blob
-// -----------------------------------------------------------------------------
 async function loadEntries() {
   setMsg('');
   tableBody.innerHTML = '<tr><td colspan="8">Loading…</td></tr>';
@@ -149,9 +139,6 @@ async function loadEntries() {
   }
 }
 
-// -----------------------------------------------------------------------------
-// Save entries to blob
-// -----------------------------------------------------------------------------
 async function saveEntries() {
   try {
     entries.forEach(e => { e.updatedAt = new Date().toISOString(); });
@@ -164,35 +151,32 @@ async function saveEntries() {
   }
 }
 
-// -----------------------------------------------------------------------------
 // Add new record
-// -----------------------------------------------------------------------------
 addBtn.addEventListener('click', async () => {
   const website = websiteInput.value.trim();
   const platform = platformInput.value.trim();
   const repo = repoInput.value.trim();
-  const accountEmail = accountEmailInput.value.trim();
+  const websiteEmail = websiteEmailInput.value.trim();
+  const corporateEmail = corporateEmailInput.value.trim();
   const accountService = accountServiceInput.value.trim();
-  const accountType = accountTypeInput.value;
 
-  if (!website || !platform || !accountEmail) {
-    setMsg("Website, Platform, and Account Email are required.", false);
+  if (!website || !platform || !websiteEmail) {
+    setMsg("Website, Platform, and Website Email are required.", false);
     return;
   }
 
   entries.push({
-    website, platform, repo, accountEmail, accountType, accountService,
+    website, platform, repo, websiteEmail, corporateEmail, accountService,
     updatedAt: new Date().toISOString()
   });
 
-  websiteInput.value = platformInput.value = repoInput.value = accountEmailInput.value = accountServiceInput.value = '';
+  // Clear inputs
+  websiteInput.value = platformInput.value = repoInput.value = websiteEmailInput.value = corporateEmailInput.value = accountServiceInput.value = '';
   setMsg("Record added!", true);
   renderTable();
 });
 
-// -----------------------------------------------------------------------------
 // Delete selected records
-// -----------------------------------------------------------------------------
 deleteBtn.addEventListener('click', async () => {
   const checkedBoxes = tableBody.querySelectorAll('.rowCheckbox:checked');
   if (!checkedBoxes.length) return;
@@ -203,9 +187,7 @@ deleteBtn.addEventListener('click', async () => {
   await saveEntries();
 });
 
-// -----------------------------------------------------------------------------
 // Edit in place
-// -----------------------------------------------------------------------------
 tableBody.addEventListener('click', e => {
   const cell = e.target.closest('.editable');
   if (!cell) return;
@@ -213,40 +195,19 @@ tableBody.addEventListener('click', e => {
   const index = Number(cell.dataset.index);
   const field = cell.dataset.field;
 
-  if (field === "accountType") {
-    const select = document.createElement('select');
-    select.className = 'inline-select';
-    ['Website', 'Corporate'].forEach(opt => {
-      const o = document.createElement('option');
-      o.value = opt;
-      o.textContent = opt;
-      if (opt === cell.textContent) o.selected = true;
-      select.appendChild(o);
-    });
-    select.addEventListener('blur', () => {
-      entries[index][field] = select.value;
-      saveEntries();
-    });
-    cell.textContent = '';
-    cell.appendChild(select);
-    select.focus();
-  } else {
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = cell.textContent;
-    input.addEventListener('blur', () => {
-      entries[index][field] = input.value;
-      saveEntries();
-    });
-    cell.textContent = '';
-    cell.appendChild(input);
-    input.focus();
-  }
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = cell.textContent;
+  input.addEventListener('blur', () => {
+    entries[index][field] = input.value;
+    saveEntries();
+  });
+  cell.textContent = '';
+  cell.appendChild(input);
+  input.focus();
 });
 
-// -----------------------------------------------------------------------------
-// Event delegation for checkboxes
-// -----------------------------------------------------------------------------
+// Checkboxes
 tableBody.addEventListener('change', e => {
   if (e.target.classList.contains('rowCheckbox')) updateDeleteButtonState();
 });
@@ -256,14 +217,13 @@ selectAll.addEventListener('change', e => {
   updateDeleteButtonState();
 });
 
-// -----------------------------------------------------------------------------
 // Buttons
-// -----------------------------------------------------------------------------
 refreshBtn.addEventListener('click', loadEntries);
 saveBtn.addEventListener('click', saveEntries);
 
 // Initial load
 loadEntries();
+
 </script>
 </body>
 </html>
