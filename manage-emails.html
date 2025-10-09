@@ -103,37 +103,64 @@
       try {
         const res = await fetch('/.netlify/functions/list-emails');
         const data = await res.json();
+
+
+        
         if (!res.ok || data.ok === false){
           //throw new Error(data.error || 'Failed to load');
           emailTable.innerHTML = '<tr><td colspan="6"><em>Failed to return emails from list-emails().</em></td></tr>';
         }
-        
-        const emails = data.emails || [];
-        //const emails = res.emails || [];
-        if (emails.length === 0) {
-          emailTable.innerHTML = '<tr><td colspan="6"><em>No emails found.</em></td></tr>';
-          deleteBtn.disabled = true;
-          return;
-        }
 
-        emailTable.innerHTML = '';
-        for (const email of emails) {
+        
+if (data.ok && Array.isArray(data.emailData)) {
+  data.emailData.forEach(record => {
+    console.log(record.email);
+    console.log(record.emailSent, record.emailSentDate);
+    console.log(record.codeVerified, record.codeVerifiedDate);
+    console.log(record.confirmed, record.confirmedAt);
+    console.log(record.verified, record.verifiedAt);
+
         const li = document.createElement('tr');
         li.innerHTML = `
-        <td><input type="checkbox" class="email-checkbox" value="${email.email}"></td>
-        <td>${email}</td>
+        <td><input type="checkbox" class="email-checkbox" value=record.email></td>
+        <td>${record.email}</td>
+<td>${record.emailSent ? 'Sent' : 'Not Sent'}</td>
+<td>${record.emailSentDate || 'N/A'}</td>
+<td>${email.codeVerified ? 'Verified' : 'Not Verified'}</td>
+<td>${email.codeVerifiedDate || 'N/A'}</td>
+            `;
+  });
+}
+
+
+        //const emails = data.emails || [];
+        //if (emails.length === 0) {
+          //emailTable.innerHTML = '<tr><td colspan="6"><em>No emails found.</em></td></tr>';
+          //deleteBtn.disabled = true;
+         // return;
+        //}
+
+//        emailTable.innerHTML = '';
+//        for (const email of emails) {
+
+
+          
+ //       const li = document.createElement('tr');
+//        li.innerHTML = `
+//        <td><input type="checkbox" class="email-checkbox" value="${email.email}"></td>
+//        <td>${email}</td>
         
         //<td>${email.emailSent ? 'Sent' : 'Not Sent'}</td>
-<td>${JSON.parse(data.emailData)}</td>
+//<td>${JSON.parse(data.emailData)}</td>
         
         //<td>${email.emailSentDate || 'N/A'}</td>
-        <td>${email.confirmedAt}</td>
+//        <td>${email.confirmedAt}</td>
         
         //<td>${email.codeVerified ? 'Verified' : 'Not Verified'}</td>
-        <td>${email.verified ? 'Verified' : 'Not Verified'}</td>
+//        <td>${email.verified ? 'Verified' : 'Not Verified'}</td>
         
         //<td>${email.codeVerifiedDate || 'N/A'}</td>
-        <td>${email.verifiedAt || 'N/A'}</td>
+//        <td>${email.verifiedAt || 'N/A'}</td>
         `;
         emailTable.appendChild(li);
         }
