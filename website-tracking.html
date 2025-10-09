@@ -3,227 +3,162 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Website Infrastructure Tracker — V.I.R.E.L.I.A.</title>
+<title>Website Infrastructure Tracker</title>
 <link rel="stylesheet" href="styles.css" />
 <style>
-  body { font-family: Arial, sans-serif; background:#0b0d10; color:#e5eef7; }
-  .container { max-width: 1100px; margin: 2rem auto; padding: 1rem; }
-  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-  th, td { border: 1px solid #1f2937; padding: 6px 8px; text-align: left; }
-  th { background: #131823; }
-  tr:nth-child(even) { background: #101318; }
-  .btn { padding: 0.5rem 1rem; margin: 0.25rem; cursor: pointer; background:#6fb2ff; color:#0b0d10; border:none; border-radius:4px; }
-  .btn:disabled { background:#444; cursor: not-allowed; }
-  .msg { margin-top: 1rem; }
-  .ok { color: #10b981; }
-  .err { color: #ef4444; }
-  .form-inline { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1rem; }
-  .form-inline input { padding: 0.25rem; flex: 1 1 150px; }
-  th.select-col, td.select-col { text-align: center; width: 40px; }
-  td.editable:hover { background: #1f2633; cursor: pointer; }
+  body { font-family: sans-serif; margin: 0; padding: 0; background:#0b0d10; color:#e5eef7; }
+  .container { max-width: 1000px; margin: 2rem auto; padding: 1rem; background:#131823; border-radius:8px; box-shadow:0 0 12px rgba(0,0,0,0.5); }
+  h1 { text-align:center; }
+  table { width: 100%; border-collapse: collapse; margin-top:1rem; }
+  th, td { padding: 0.5rem; border: 1px solid #1f2633; text-align:left; }
+  th { background:#1f2633; }
+  input[type=text] { width: 95%; padding:4px; border-radius:4px; border:1px solid #1f2633; background:#0b0d10; color:#e5eef7; }
+  .toolbar { margin-top:1rem; display:flex; gap:1rem; }
+  button { padding:0.5rem 1rem; cursor:pointer; border:none; border-radius:4px; background:#6fb2ff; color:#0b0d10; font-weight:bold; }
+  button:disabled { background:#333; cursor:not-allowed; }
+  .msg { margin-top:1rem; }
+  .ok { color:#10b981; }
+  .err { color:#ef4444; }
+  .action-btn { cursor:pointer; color:#6fb2ff; text-decoration:underline; background:none; border:none; }
 </style>
 </head>
 <body>
+
 <div class="container">
   <h1>Website Infrastructure Tracker</h1>
-  <p>Track your websites, hosting platforms, source code repositories, website emails, and corporate emails.</p>
 
-  <div class="form-inline">
-    <input id="websiteInput" placeholder="Website URL" />
-    <input id="platformInput" placeholder="Hosting Platform" />
-    <input id="repoInput" placeholder="Source Repo (GitHub, etc.)" />
-    <input id="websiteEmailInput" placeholder="Website Email (ReSend)" />
-    <input id="corporateEmailInput" placeholder="Corporate Email (Zoho)" />
-    <input id="accountServiceInput" placeholder="Account Service Name" />
-    <button id="addBtn" class="btn">Add Record</button>
+  <div class="toolbar">
+    <button id="refreshBtn">Refresh</button>
+    <button id="addBtn">Add New Record</button>
   </div>
+  <p id="status" class="msg"></p>
 
-  <div>
-    <button id="refreshBtn" class="btn">Refresh</button>
-    <button id="saveBtn" class="btn">Save Table</button>
-    <button id="deleteBtn" class="btn" disabled>Delete Selected</button>
-  </div>
-
-  <table id="trackerTable">
+  <table id="websiteTable">
     <thead>
       <tr>
-        <th class="select-col"><input type="checkbox" id="selectAll" /></th>
-        <th>Website</th>
-        <th>Platform</th>
-        <th>Source Repo</th>
-        <th>Website Email</th>
-        <th>Corporate Email</th>
-        <th>Account Service</th>
-        <th>Last Updated</th>
+        <th>Website URL</th>
+        <th>Hosted On</th>
+        <th>Code Stored On</th>
+        <th>Website Email Service</th>
+        <th>Corporate Emails</th>
+        <th>AI Dilemma Service</th>
+        <th>Actions</th>
       </tr>
     </thead>
-    <tbody id="tableBody">
-      <tr><td colspan="8">Loading…</td></tr>
+    <tbody>
+      <tr><td colspan="7">Loading…</td></tr>
     </tbody>
   </table>
-
-  <p id="status" class="msg"></p>
 </div>
 
 <script type="module">
 import { getStore } from "@netlify/blobs";
 
-const siteID = "<YOUR_NETLIFY_SITE_ID>";
-const token  = "<YOUR_NETLIFY_BLOBS_TOKEN>";
-const storeName = "site_infra";
-const store = getStore({ name: storeName, siteID, token });
+const siteID = process.env.NETLIFY_SITE_ID;
+const token = process.env.NETLIFY_BLOBS_TOKEN;
+const STORE_NAME = "website_infra";
 
-const tableBody = document.getElementById("tableBody");
-const statusEl = document.getElementById("status");
-const refreshBtn = document.getElementById("refreshBtn");
-const saveBtn    = document.getElementById("saveBtn");
-const deleteBtn  = document.getElementById("deleteBtn");
-const addBtn     = document.getElementById("addBtn");
-const selectAll  = document.getElementById("selectAll");
+const statusEl = document.getElementById('status');
+const tableBody = document.querySelector('#websiteTable tbody');
+const refreshBtn = document.getElementById('refreshBtn');
+const addBtn = document.getElementById('addBtn');
 
-const websiteInput = document.getElementById("websiteInput");
-const platformInput = document.getElementById("platformInput");
-const repoInput = document.getElementById("repoInput");
-const websiteEmailInput = document.getElementById("websiteEmailInput");
-const corporateEmailInput = document.getElementById("corporateEmailInput");
-const accountServiceInput = document.getElementById("accountServiceInput");
+function setMsg(text, ok=false) { statusEl.textContent = text; statusEl.className = 'msg ' + (ok ? 'ok' : 'err'); }
 
-let entries = [];
-
-function setMsg(text, ok=false){
-  statusEl.textContent = text || "";
-  statusEl.className = 'msg ' + (ok ? 'ok' : 'err');
+async function getStoreInstance() {
+  return getStore({ name: STORE_NAME, siteID, token });
 }
 
-function renderTable() {
-  if (!entries.length) {
-    tableBody.innerHTML = '<tr><td colspan="8"><em>No entries found.</em></td></tr>';
-    deleteBtn.disabled = true;
-    return;
-  }
-
-  tableBody.innerHTML = '';
-  entries.forEach((e, index) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td class="select-col"><input type="checkbox" class="rowCheckbox" data-index="${index}" /></td>
-      <td class="editable" data-field="website" data-index="${index}">${e.website}</td>
-      <td class="editable" data-field="platform" data-index="${index}">${e.platform}</td>
-      <td class="editable" data-field="repo" data-index="${index}">${e.repo}</td>
-      <td class="editable" data-field="websiteEmail" data-index="${index}">${e.websiteEmail}</td>
-      <td class="editable" data-field="corporateEmail" data-index="${index}">${e.corporateEmail}</td>
-      <td class="editable" data-field="accountService" data-index="${index}">${e.accountService}</td>
-      <td>${e.updatedAt ? new Date(e.updatedAt).toLocaleString() : 'N/A'}</td>
-    `;
-    tableBody.appendChild(row);
-  });
-  updateDeleteButtonState();
-}
-
-function updateDeleteButtonState() {
-  const anyChecked = tableBody.querySelectorAll('.rowCheckbox:checked').length > 0;
-  deleteBtn.disabled = !anyChecked;
-}
-
-async function loadEntries() {
+async function loadRecords() {
   setMsg('');
-  tableBody.innerHTML = '<tr><td colspan="8">Loading…</td></tr>';
+  tableBody.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
   try {
-    const raw = await store.get("sites");
-    entries = raw ? JSON.parse(raw) : [];
-    renderTable();
-  } catch(err) {
+    const store = await getStoreInstance();
+    const listing = await store.list();
+    const blobs = Array.isArray(listing) ? listing : (listing?.blobs || []);
+
+    tableBody.innerHTML = '';
+    if (!blobs.length) {
+      tableBody.innerHTML = '<tr><td colspan="7"><em>No records found.</em></td></tr>';
+      return;
+    }
+
+    for (const b of blobs) {
+      const key = b.key ?? b;
+      const contentRaw = await store.get(key);
+      const record = contentRaw ? JSON.parse(contentRaw) : {};
+      const tr = document.createElement('tr');
+
+      tr.innerHTML = `
+        <td><input type="text" value="${record.website || ''}" data-field="website"></td>
+        <td><input type="text" value="${record.hostedOn || ''}" data-field="hostedOn"></td>
+        <td><input type="text" value="${record.codeStoredOn || ''}" data-field="codeStoredOn"></td>
+        <td><input type="text" value="${record.websiteEmail || ''}" data-field="websiteEmail"></td>
+        <td><input type="text" value="${record.corporateEmail || ''}" data-field="corporateEmail"></td>
+        <td><input type="text" value="${record.aiDilemmaService || ''}" data-field="aiDilemmaService"></td>
+        <td>
+          <button class="action-btn saveBtn">Save</button>
+          <button class="action-btn deleteBtn">Delete</button>
+        </td>
+      `;
+
+      // Save button
+      tr.querySelector('.saveBtn').addEventListener('click', async () => {
+        const updated = {};
+        tr.querySelectorAll('input').forEach(input => {
+          updated[input.dataset.field] = input.value.trim();
+        });
+        try {
+          await store.put(key, JSON.stringify(updated));
+          setMsg('Saved successfully', true);
+        } catch(e) { setMsg('Save failed'); }
+      });
+
+      // Delete button
+      tr.querySelector('.deleteBtn').addEventListener('click', async () => {
+        if (!confirm('Delete this record?')) return;
+        try {
+          await store.delete(key);
+          setMsg('Deleted successfully', true);
+          await loadRecords();
+        } catch(e) { setMsg('Delete failed'); }
+      });
+
+      tableBody.appendChild(tr);
+    }
+
+  } catch (err) {
+    tableBody.innerHTML = '<tr><td colspan="7">Error loading records.</td></tr>';
     console.error(err);
-    tableBody.innerHTML = '<tr><td colspan="8">Failed to load data</td></tr>';
-    setMsg("Failed to load table", false);
+    setMsg('Error loading records');
   }
 }
 
-async function saveEntries() {
-  try {
-    entries.forEach(e => { e.updatedAt = new Date().toISOString(); });
-    await store.set("sites", JSON.stringify(entries));
-    setMsg("Saved successfully!", true);
-    renderTable();
-  } catch(err) {
-    console.error(err);
-    setMsg("Failed to save table", false);
-  }
-}
-
-// Add new record
 addBtn.addEventListener('click', async () => {
-  const website = websiteInput.value.trim();
-  const platform = platformInput.value.trim();
-  const repo = repoInput.value.trim();
-  const websiteEmail = websiteEmailInput.value.trim();
-  const corporateEmail = corporateEmailInput.value.trim();
-  const accountService = accountServiceInput.value.trim();
-
-  if (!website || !platform || !websiteEmail) {
-    setMsg("Website, Platform, and Website Email are required.", false);
-    return;
+  try {
+    const store = await getStoreInstance();
+    const key = `record_${Date.now()}`;
+    const emptyRecord = {
+      website: '',
+      hostedOn: '',
+      codeStoredOn: '',
+      websiteEmail: '',
+      corporateEmail: '',
+      aiDilemmaService: ''
+    };
+    await store.put(key, JSON.stringify(emptyRecord));
+    setMsg('New record added', true);
+    await loadRecords();
+  } catch (e) {
+    console.error(e);
+    setMsg('Failed to add record');
   }
-
-  entries.push({
-    website, platform, repo, websiteEmail, corporateEmail, accountService,
-    updatedAt: new Date().toISOString()
-  });
-
-  // Clear inputs
-  websiteInput.value = platformInput.value = repoInput.value = websiteEmailInput.value = corporateEmailInput.value = accountServiceInput.value = '';
-  setMsg("Record added!", true);
-  renderTable();
 });
 
-// Delete selected records
-deleteBtn.addEventListener('click', async () => {
-  const checkedBoxes = tableBody.querySelectorAll('.rowCheckbox:checked');
-  if (!checkedBoxes.length) return;
-  if (!confirm(`Delete ${checkedBoxes.length} record(s)?`)) return;
-
-  const indexes = Array.from(checkedBoxes).map(cb => Number(cb.dataset.index));
-  entries = entries.filter((_, i) => !indexes.includes(i));
-  await saveEntries();
-});
-
-// Edit in place
-tableBody.addEventListener('click', e => {
-  const cell = e.target.closest('.editable');
-  if (!cell) return;
-
-  const index = Number(cell.dataset.index);
-  const field = cell.dataset.field;
-
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.value = cell.textContent;
-  input.addEventListener('blur', () => {
-    entries[index][field] = input.value;
-    saveEntries();
-  });
-  cell.textContent = '';
-  cell.appendChild(input);
-  input.focus();
-});
-
-// Checkboxes
-tableBody.addEventListener('change', e => {
-  if (e.target.classList.contains('rowCheckbox')) updateDeleteButtonState();
-});
-selectAll.addEventListener('change', e => {
-  const checked = e.target.checked;
-  tableBody.querySelectorAll('.rowCheckbox').forEach(cb => cb.checked = checked);
-  updateDeleteButtonState();
-});
-
-// Buttons
-refreshBtn.addEventListener('click', loadEntries);
-saveBtn.addEventListener('click', saveEntries);
+refreshBtn.addEventListener('click', loadRecords);
 
 // Initial load
-loadEntries();
-
+loadRecords();
 </script>
 </body>
 </html>
