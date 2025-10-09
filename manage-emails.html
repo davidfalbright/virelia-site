@@ -129,6 +129,7 @@ if (data.ok && Array.isArray(data.emailData)) {
 <td>${email.codeVerified ? 'Verified' : 'Not Verified'}</td>
 <td>${email.codeVerifiedDate || 'N/A'}</td>
             `;
+     emailTable.appendChild(li);
   });
 }
 
