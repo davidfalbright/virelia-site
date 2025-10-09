@@ -1,146 +1,135 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Website Tracker — V.I.R.E.L.I.A.</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Website & Email Tracker — V.I.R.E.L.I.A.</title>
+  <link rel="stylesheet" href="styles.css" />
   <style>
-    body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: #0b0d10; color: #e5eef7; }
-    .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-    h1 { text-align: center; margin-bottom: 1.5rem; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
-    th, td { padding: 0.75rem 1rem; border: 1px solid #1f2633; text-align: left; }
-    th { background-color: #131823; }
-    tbody tr:nth-child(even) { background-color: #101318; }
-    tbody tr:hover { background-color: #1f2633; }
-    .btn { display: inline-block; padding: 0.5rem 1rem; background-color: #6fb2ff; color: #0b0d10; border: none; border-radius: 4px; cursor: pointer; margin-right: 0.5rem; text-decoration: none; }
-    .btn:hover { background-color: #9ef7d0; }
-    input[type="text"], input[type="url"], select { width: 100%; padding: 0.4rem; border: 1px solid #1f2633; border-radius: 4px; background-color: #131823; color: #e5eef7; }
-    .form-row { display: flex; gap: 1rem; margin-bottom: 0.75rem; }
-    .form-row > div { flex: 1; }
-    .toolbar { margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+    body { font-family: Arial, sans-serif; background:#0b0d10; color:#e5eef7; }
+    .container { max-width: 1000px; margin: 2rem auto; padding: 1rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #1f2633; padding: 8px; text-align: left; }
+    th { background: #131823; }
+    tr:nth-child(even) { background: #101318; }
+    .btn { padding: 0.5rem 1rem; margin: 0.25rem; cursor: pointer; background:#6fb2ff; color:#0b0d10; border:none; border-radius:4px; }
+    .btn:disabled { background:#444; cursor: not-allowed; }
+    .msg { margin-top: 1rem; }
+    .ok { color: #10b981; }
+    .err { color: #ef4444; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Website & Service Tracker</h1>
+    <h1>Website & Email Tracker</h1>
+    <p>Track your websites (Squarespace, Netlify, GitHub) and login emails (Resend, etc.)</p>
 
-    <div class="toolbar">
-      <button class="btn" id="addRowBtn">Add New Entry</button>
-      <button class="btn" id="exportBtn">Export JSON</button>
-      <button class="btn" id="importBtn">Import JSON</button>
+    <div>
+      <button id="refreshBtn" class="btn">Refresh</button>
+      <button id="saveBtn" class="btn">Save Table to Blob</button>
     </div>
 
     <table id="trackerTable">
       <thead>
         <tr>
-          <th>Website Name</th>
-          <th>URL</th>
-          <th>Hosted On</th>
-          <th>Registered On</th>
-          <th>Repo / GitHub</th>
-          <th>Email / Login Service</th>
-          <th>Notes</th>
-          <th>Actions</th>
+          <th>Website</th>
+          <th>Platform</th>
+          <th>Login Email</th>
+          <th>Email Sent?</th>
+          <th>Email Clicked?</th>
+          <th>Code Verified?</th>
+          <th>Last Updated</th>
         </tr>
       </thead>
-      <tbody id="trackerBody">
-        <tr>
-          <td colspan="8" style="text-align:center; color:#8aa0b2;">No entries yet. Click "Add New Entry".</td>
-        </tr>
+      <tbody id="tableBody">
+        <tr><td colspan="7">Loading…</td></tr>
       </tbody>
     </table>
+
+    <p id="status" class="msg"></p>
   </div>
 
-  <script>
-    const trackerBody = document.getElementById('trackerBody');
-    const addRowBtn = document.getElementById('addRowBtn');
-    const exportBtn = document.getElementById('exportBtn');
-    const importBtn = document.getElementById('importBtn');
+  <script type="module">
+    import { getStore } from "@netlify/blobs";
 
-    let entries = [];
+    const siteID = "<YOUR_NETLIFY_SITE_ID>";
+    const token  = "<YOUR_NETLIFY_BLOBS_TOKEN>";
+    const storeName = "tracker_data";
 
-    function renderTable() {
-      trackerBody.innerHTML = '';
-      if(entries.length === 0) {
-        trackerBody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#8aa0b2;">No entries yet. Click "Add New Entry".</td></tr>';
-        return;
-      }
+    const store = getStore({ name: storeName, siteID, token });
 
-      entries.forEach((e, idx) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><input type="text" value="${e.name || ''}" data-field="name" data-idx="${idx}"></td>
-          <td><input type="url" value="${e.url || ''}" data-field="url" data-idx="${idx}"></td>
-          <td><input type="text" value="${e.hostedOn || ''}" data-field="hostedOn" data-idx="${idx}"></td>
-          <td><input type="text" value="${e.registeredOn || ''}" data-field="registeredOn" data-idx="${idx}"></td>
-          <td><input type="text" value="${e.repo || ''}" data-field="repo" data-idx="${idx}"></td>
-          <td><input type="text" value="${e.emailService || ''}" data-field="emailService" data-idx="${idx}"></td>
-          <td><input type="text" value="${e.notes || ''}" data-field="notes" data-idx="${idx}"></td>
-          <td><button class="btn deleteBtn" data-idx="${idx}">Delete</button></td>
-        `;
-        trackerBody.appendChild(tr);
-      });
+    const tableBody = document.getElementById("tableBody");
+    const statusEl = document.getElementById("status");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const saveBtn = document.getElementById("saveBtn");
 
-      document.querySelectorAll('.deleteBtn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const idx = Number(btn.dataset.idx);
-          entries.splice(idx, 1);
-          renderTable();
-        });
-      });
-
-      trackerBody.querySelectorAll('input').forEach(input => {
-        input.addEventListener('input', (e) => {
-          const idx = Number(e.target.dataset.idx);
-          const field = e.target.dataset.field;
-          entries[idx][field] = e.target.value;
-        });
-      });
+    function setMsg(text, ok=false){
+      statusEl.textContent = text || "";
+      statusEl.className = 'msg ' + (ok ? 'ok' : 'err');
     }
 
-    addRowBtn.addEventListener('click', () => {
-      entries.push({ name:'', url:'', hostedOn:'', registeredOn:'', repo:'', emailService:'', notes:'' });
-      renderTable();
-    });
+    async function loadTable() {
+      setMsg('');
+      tableBody.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
+      try {
+        const raw = await store.get("tracker");
+        const entries = raw ? JSON.parse(raw) : [];
+        if (entries.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="7"><em>No entries found.</em></td></tr>';
+          return;
+        }
 
-    exportBtn.addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify(entries, null, 2)], {type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'website-tracker.json';
-      a.click();
-      URL.revokeObjectURL(url);
-    });
+        tableBody.innerHTML = '';
+        for (const e of entries) {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${e.website || ''}</td>
+            <td>${e.platform || ''}</td>
+            <td>${e.loginEmail || ''}</td>
+            <td>${e.emailSent ? 'Yes' : 'No'}</td>
+            <td>${e.emailClicked ? 'Yes' : 'No'}</td>
+            <td>${e.codeVerified ? 'Yes' : 'No'}</td>
+            <td>${e.updatedAt ? new Date(e.updatedAt).toLocaleString() : 'N/A'}</td>
+          `;
+          tableBody.appendChild(row);
+        }
+      } catch(err){
+        tableBody.innerHTML = '<tr><td colspan="7">Failed to load data</td></tr>';
+        console.error(err);
+        setMsg('Error loading table', false);
+      }
+    }
 
-    importBtn.addEventListener('click', () => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-      input.onchange = () => {
-        const file = input.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const data = JSON.parse(e.target.result);
-            if(Array.isArray(data)) {
-              entries = data;
-              renderTable();
-            } else {
-              alert('Invalid JSON structure');
-            }
-          } catch(err) {
-            alert('Failed to parse JSON');
-          }
-        };
-        reader.readAsText(file);
-      };
-      input.click();
-    });
+    async function saveTable() {
+      try {
+        const rows = Array.from(tableBody.querySelectorAll("tr"));
+        const data = rows.map(r => {
+          const cells = r.querySelectorAll("td");
+          if (cells.length !== 7) return null;
+          return {
+            website: cells[0].textContent.trim(),
+            platform: cells[1].textContent.trim(),
+            loginEmail: cells[2].textContent.trim(),
+            emailSent: cells[3].textContent.trim() === 'Yes',
+            emailClicked: cells[4].textContent.trim() === 'Yes',
+            codeVerified: cells[5].textContent.trim() === 'Yes',
+            updatedAt: new Date().toISOString(),
+          };
+        }).filter(Boolean);
 
-    renderTable();
+        await store.set("tracker", JSON.stringify(data));
+        setMsg("Saved successfully!", true);
+      } catch(err){
+        console.error(err);
+        setMsg("Failed to save table", false);
+      }
+    }
+
+    refreshBtn.addEventListener('click', loadTable);
+    saveBtn.addEventListener('click', saveTable);
+
+    // Initial load
+    loadTable();
   </script>
 </body>
 </html>
