@@ -69,22 +69,33 @@ export const handler = async (event) => {
           //});
 
 
-          emailData.push({
-            email: key.toString(),
-            emailSent: statusData.emailSent.toString() || false, 
-            emailSentDate: statusData.emailSentDate.toString() || null, 
+        //  emailData.push({
+          //  email: key.toString(),
+           // emailSent: statusData.emailSent.toString() || false, 
+          //  emailSentDate: statusData.emailSentDate.toString() || null, 
            
-            codeVerified: statusData.codeVerified.toString() || false,
-            codeVerifiedDate: statusData.codeVerifiedDate.toString() || null,
+          //  codeVerified: statusData.codeVerified.toString() || false,
+          //  codeVerifiedDate: statusData.codeVerifiedDate.toString() || null,
            
-            confirmed: statusData.confirmed.toString() || false,
-            confirmedAt: statusData.confirmedAt.toString() || null,
+          //  confirmed: statusData.confirmed.toString() || false,
+          //  confirmedAt: statusData.confirmedAt.toString() || null,
            
-            verified: statusData.verified.toString() || false, 
-            verifiedAt: statusData.verifiedAt.toString() || null, 
-          });
+         //   verified: statusData.verified.toString() || false, 
+         //   verifiedAt: statusData.verifiedAt.toString() || null, 
+         // });
 
-         
+         emailData.push({
+  email: key,
+  emailSent: statusData.emailSent ?? false,
+  emailSentDate: statusData.emailSentDate ?? null,
+  codeVerified: statusData.codeVerified ?? false,
+  codeVerifiedDate: statusData.codeVerifiedDate ?? null,
+  confirmed: statusData.confirmed ?? false,
+  confirmedAt: statusData.confirmedAt ?? null,
+  verified: statusData.verified ?? false,
+  verifiedAt: statusData.verifiedAt ?? null,
+});
+
         }
       } catch (error) {
         console.error(`Error while processing store ${name}:`, error);
