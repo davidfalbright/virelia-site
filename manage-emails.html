@@ -109,7 +109,7 @@
         }
         
         //const emails = data.emails || [];
-        const emails = data.emailData || [];
+        const emails = res.emailData || [];
         if (emails.length === 0) {
           emailTable.innerHTML = '<tr><td colspan="6"><em>No emails found.</em></td></tr>';
           deleteBtn.disabled = true;
