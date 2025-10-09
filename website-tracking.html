@@ -1,206 +1,164 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Website Infrastructure Tracker</title>
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css">
 <style>
-  body { font-family: 'Inter', sans-serif; background:#0b0d10; color:#e5eef7; }
   .container { max-width: 1000px; margin: 0 auto; padding: 32px; }
-  h1 { margin-bottom: 1rem; }
-  input[type=text] { padding:6px; margin-right:6px; width:160px; }
-  .btn { padding:6px 12px; cursor:pointer; background:#6fb2ff; color:#000; border:none; border-radius:4px; }
-  .btn-secondary { background:#ef4444; color:#fff; }
-  table { width:100%; border-collapse:collapse; margin-top:16px; }
-  th, td { border:1px solid #1f2633; padding:8px; text-align:left; }
-  th { background:#131823; }
-  tr:nth-child(even) { background:#101318; }
-  .msg { margin-top:12px; }
-  .ok { color:#10b981; }
-  .err { color:#ef4444; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+  th { background: #f5f5f5; }
+  .toolbar { display: flex; gap: 12px; margin-top: 12px; }
+  .msg { margin-top: 12px; }
+  .ok { color: green; }
+  .err { color: red; }
+  .btn { cursor: pointer; padding: 6px 12px; background:#333; color:#fff; border:none; border-radius:4px; }
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>Website Infrastructure Tracker</h1>
-  <p>Add and track your websites, hosting, code, email services, and AI integration.</p>
+  <header class="topbar">
+    <div class="container row">
+      <div class="brand">
+        <strong>Website Infrastructure Tracker</strong>
+      </div>
+    </div>
+  </header>
 
-  <!-- Input fields -->
-  <div class="inputs">
-    <input type="text" id="websiteInput" placeholder="Website URL" />
-    <input type="text" id="hostedInput" placeholder="Hosted On (Netlify, Squarespace)" />
-    <input type="text" id="codeInput" placeholder="Code Stored On (GitHub)" />
-    <input type="text" id="websiteEmailInput" placeholder="Website Email (ReSend)" />
-    <input type="text" id="corporateEmailInput" placeholder="Corporate Email (Zoho)" />
-    <input type="text" id="aiDilemmaInput" placeholder="AI Dilemma Service (ChatGPT API)" />
-    <button id="addBtn" class="btn">Add Record</button>
-  </div>
+  <section class="section">
+    <div class="container">
+      <h1>Track Website Infrastructure</h1>
+      <p>Add, view, and manage your infrastructure records.</p>
 
-  <p id="status" class="msg"></p>
+      <div>
+        <input type="text" id="websiteInput" placeholder="Website (e.g., www.iamvirelia.org)">
+        <input type="text" id="hostedInput" placeholder="Hosted on (e.g., Netlify)">
+        <input type="text" id="codeInput" placeholder="Source code (e.g., GitHub)">
+        <input type="text" id="websiteEmailInput" placeholder="Website service email (e.g., ReSend)">
+        <input type="text" id="corporateEmailInput" placeholder="Corporate email (e.g., Zoho)">
+        <input type="text" id="aiDilemmaInput" placeholder="AI Dilemma Service (e.g., Chat GPT)">
+        <button id="addBtn" class="btn">Add Record</button>
+        <button id="refreshBtn" class="btn">Refresh Table</button>
+      </div>
 
-  <!-- Table -->
-  <table id="recordTable">
-    <thead>
-      <tr>
-        <th>Website</th>
-        <th>Hosted On</th>
-        <th>Code Stored On</th>
-        <th>Website Email</th>
-        <th>Corporate Email</th>
-        <th>AI Dilemma Service</th>
-        <th>Created At</th>
-        <th>Select</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td colspan="8">Loading…</td></tr>
-    </tbody>
-  </table>
+      <p id="status" class="msg"></p>
 
-  <button id="deleteBtn" class="btn btn-secondary" disabled>Delete Selected</button>
-</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Website</th>
+            <th>Hosted On</th>
+            <th>Code Repository</th>
+            <th>Website Service Email</th>
+            <th>Corporate Email</th>
+            <th>AI Dilemma Service</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="7">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
-<script type="module">
-import { getStore } from "@netlify/blobs";
-const siteID = process.env.NETLIFY_SITE_ID;
-const token = process.env.NETLIFY_BLOBS_TOKEN;
-const STORE_NAME = "website_infra";
+  <script>
+    const websiteInput = document.getElementById('websiteInput');
+    const hostedInput = document.getElementById('hostedInput');
+    const codeInput = document.getElementById('codeInput');
+    const websiteEmailInput = document.getElementById('websiteEmailInput');
+    const corporateEmailInput = document.getElementById('corporateEmailInput');
+    const aiDilemmaInput = document.getElementById('aiDilemmaInput');
+    const addBtn = document.getElementById('addBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const statusEl = document.getElementById('status');
+    const tableBody = document.getElementById('tableBody');
 
-// DOM elements
-const websiteInput = document.getElementById('websiteInput');
-const hostedInput = document.getElementById('hostedInput');
-const codeInput = document.getElementById('codeInput');
-const websiteEmailInput = document.getElementById('websiteEmailInput');
-const corporateEmailInput = document.getElementById('corporateEmailInput');
-const aiDilemmaInput = document.getElementById('aiDilemmaInput');
-const addBtn = document.getElementById('addBtn');
-const statusEl = document.getElementById('status');
-const recordTable = document.getElementById('recordTable').querySelector('tbody');
-const deleteBtn = document.getElementById('deleteBtn');
-
-function setMsg(msg, ok=false) {
-  statusEl.textContent = msg || '';
-  statusEl.className = 'msg ' + (ok ? 'ok' : 'err');
-}
-
-function getSelectedKeys() {
-  return Array.from(recordTable.querySelectorAll('input[type=checkbox]:checked'))
-              .map(cb => cb.dataset.key);
-}
-
-// Blob store helper
-async function getStoreInstance() {
-  return getStore({ name: STORE_NAME, siteID, token });
-}
-
-// Load table from blob
-async function loadRecords() {
-  recordTable.innerHTML = '<tr><td colspan="8">Loading…</td></tr>';
-  try {
-    const store = await getStoreInstance();
-    const listing = await store.list();
-    const blobs = Array.isArray(listing) ? listing : (listing?.blobs || []);
-    if (!blobs.length) {
-      recordTable.innerHTML = '<tr><td colspan="8"><em>No records found.</em></td></tr>';
-      deleteBtn.disabled = true;
-      return;
+    function setMsg(text, ok=false){
+      statusEl.textContent = text;
+      statusEl.className = 'msg ' + (ok ? 'ok' : 'err');
     }
 
-    recordTable.innerHTML = '';
-    for (const b of blobs) {
-      const key = b?.key ?? b;
+    async function loadRecords() {
+      tableBody.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
       try {
-        const val = await store.get(key);
-        const obj = val ? JSON.parse(val) : {};
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${obj.website || ''}</td>
-          <td>${obj.hostedOn || ''}</td>
-          <td>${obj.codeStoredOn || ''}</td>
-          <td>${obj.websiteEmail || ''}</td>
-          <td>${obj.corporateEmail || ''}</td>
-          <td>${obj.aiDilemmaService || ''}</td>
-          <td>${new Date(obj.createdAt || Date.now()).toLocaleString()}</td>
-          <td><input type="checkbox" data-key="${key}" /></td>
-        `;
-        recordTable.appendChild(tr);
-      } catch(e) {
-        console.error(`Failed to parse blob ${key}`, e);
+        const res = await fetch('/.netlify/functions/list-tracking');
+        const data = await res.json();
+        tableBody.innerHTML = '';
+        if (!data.records || !data.records.length) {
+          tableBody.innerHTML = '<tr><td colspan="7"><em>No records found.</em></td></tr>';
+          return;
+        }
+        data.records.forEach((r, idx) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${r.website}</td>
+            <td>${r.hostedOn}</td>
+            <td>${r.codeStoredOn}</td>
+            <td>${r.websiteEmail}</td>
+            <td>${r.corporateEmail}</td>
+            <td>${r.aiDilemmaService}</td>
+            <td><button class="btn deleteBtn" data-id="${r.website}">Delete</button></td>
+          `;
+          tableBody.appendChild(tr);
+        });
+
+        // Attach delete handlers
+        document.querySelectorAll('.deleteBtn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (!confirm(`Delete record for "${btn.dataset.id}"?`)) return;
+            try {
+              const res = await fetch('/.netlify/functions/delete-tracking', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ website: btn.dataset.id })
+              });
+              const data = await res.json();
+              if (!data.ok) throw new Error(data.error || 'Delete failed');
+              setMsg('Deleted record!', true);
+              await loadRecords();
+            } catch (err) {
+              setMsg(err.message || 'Delete failed');
+            }
+          });
+        });
+      } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="7">Failed to load records.</td></tr>';
+        setMsg(err.message || 'Error loading records');
       }
     }
-    deleteBtn.disabled = getSelectedKeys().length === 0;
-  } catch(e) {
-    console.error(e);
-    recordTable.innerHTML = '<tr><td colspan="8">Error loading records</td></tr>';
-  }
-}
 
-// Add new record
-addBtn.addEventListener('click', async () => {
-  const website = websiteInput.value.trim();
-  if (!website) return setMsg('Website URL is required');
+    addBtn.addEventListener('click', async () => {
+      const record = {
+        website: websiteInput.value.trim(),
+        hostedOn: hostedInput.value.trim(),
+        codeStoredOn: codeInput.value.trim(),
+        websiteEmail: websiteEmailInput.value.trim(),
+        corporateEmail: corporateEmailInput.value.trim(),
+        aiDilemmaService: aiDilemmaInput.value.trim()
+      };
+      if (!record.website) { setMsg('Website is required'); return; }
 
-  const newRecord = {
-    website,
-    hostedOn: hostedInput.value.trim(),
-    codeStoredOn: codeInput.value.trim(),
-    websiteEmail: websiteEmailInput.value.trim(),
-    corporateEmail: corporateEmailInput.value.trim(),
-    aiDilemmaService: aiDilemmaInput.value.trim(),
-    createdAt: Date.now()
-  };
+      try {
+        const res = await fetch('/.netlify/functions/add-tracking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(record)
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Add failed');
+        setMsg('Record added!', true);
+        websiteInput.value = hostedInput.value = codeInput.value = websiteEmailInput.value = corporateEmailInput.value = aiDilemmaInput.value = '';
+        await loadRecords();
+      } catch (err) {
+        setMsg(err.message || 'Error adding record');
+      }
+    });
 
-  try {
-    const store = await getStoreInstance();
-    const key = `record_${Date.now()}`;
-    await store.put(key, JSON.stringify(newRecord));
-    setMsg('Record added', true);
+    refreshBtn.addEventListener('click', loadRecords);
 
-    // Clear inputs
-    websiteInput.value = '';
-    hostedInput.value = '';
-    codeInput.value = '';
-    websiteEmailInput.value = '';
-    corporateEmailInput.value = '';
-    aiDilemmaInput.value = '';
-
-    // Tiny delay for blob propagation
-    await new Promise(r => setTimeout(r, 200));
-
-    await loadRecords();
-  } catch(e) {
-    console.error(e);
-    setMsg('Failed to add record');
-  }
-});
-
-// Delete selected
-deleteBtn.addEventListener('click', async () => {
-  const keys = getSelectedKeys();
-  if (!keys.length) return;
-
-  if (!confirm(`Delete ${keys.length} record(s)?`)) return;
-
-  try {
-    const store = await getStoreInstance();
-    for (const key of keys) await store.remove(key);
-    setMsg(`Deleted ${keys.length} record(s)`, true);
-    await loadRecords();
-  } catch(e) {
-    console.error(e);
-    setMsg('Failed to delete record');
-  }
-});
-
-// Track checkbox state
-recordTable.addEventListener('change', () => {
-  deleteBtn.disabled = getSelectedKeys().length === 0;
-});
-
-// Initial load
-loadRecords();
-
-</script>
+    window.addEventListener('DOMContentLoaded', loadRecords);
+  </script>
 </body>
 </html>
