@@ -126,8 +126,8 @@ if (data.ok && Array.isArray(data.emailData)) {
         <td>${record.email}</td>
 <td>${record.confirmed ? 'Sent' : 'Not Sent'}</td>
 <td>${record.confirmedAt || 'N/A'}</td>
-<td>${email.verified ? 'Verified' : 'Not Verified'}</td>
-<td>${email.verifiedAt || 'N/A'}</td>
+<td>${record.verified ? 'Verified' : 'Not Verified'}</td>
+<td>${record.verifiedAt || 'N/A'}</td>
             `;
      emailTable.appendChild(li);
   });
