@@ -113,6 +113,8 @@
 
         
 if (data.ok && Array.isArray(data.emailData)) {
+  
+  emailTable.innerHTML = '';
   data.emailData.forEach(record => {
     console.log(record.email);
     console.log(record.emailSent, record.emailSentDate);
