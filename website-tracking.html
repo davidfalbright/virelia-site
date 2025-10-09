@@ -7,9 +7,9 @@
 <link rel="stylesheet" href="styles.css" />
 <style>
   body { font-family: Arial, sans-serif; background:#0b0d10; color:#e5eef7; }
-  .container { max-width: 1000px; margin: 2rem auto; padding: 1rem; }
+  .container { max-width: 1100px; margin: 2rem auto; padding: 1rem; }
   table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-  th, td { border: 1px solid #1f2937; padding: 8px; text-align: left; }
+  th, td { border: 1px solid #1f2937; padding: 6px 8px; text-align: left; }
   th { background: #131823; }
   tr:nth-child(even) { background: #101318; }
   .btn { padding: 0.5rem 1rem; margin: 0.25rem; cursor: pointer; background:#6fb2ff; color:#0b0d10; border:none; border-radius:4px; }
@@ -18,8 +18,10 @@
   .ok { color: #10b981; }
   .err { color: #ef4444; }
   .form-inline { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1rem; }
-  .form-inline input { padding: 0.25rem; flex: 1 1 150px; }
+  .form-inline input, .form-inline select { padding: 0.25rem; flex: 1 1 150px; }
   th.select-col, td.select-col { text-align: center; width: 40px; }
+  td.editable:hover { background: #1f2633; cursor: pointer; }
+  select.inline-select { width: 100%; padding: 2px; border-radius: 2px; }
 </style>
 </head>
 <body>
@@ -32,6 +34,10 @@
     <input id="platformInput" placeholder="Hosting Platform" />
     <input id="repoInput" placeholder="Source Repo (GitHub, etc.)" />
     <input id="accountEmailInput" placeholder="Account Email" />
+    <select id="accountTypeInput">
+      <option value="Website">Website</option>
+      <option value="Corporate">Corporate</option>
+    </select>
     <input id="accountServiceInput" placeholder="Account Service (ReSend, Zoho, etc.)" />
     <button id="addBtn" class="btn">Add Record</button>
   </div>
@@ -50,12 +56,13 @@
         <th>Platform</th>
         <th>Source Repo</th>
         <th>Account Email</th>
+        <th>Type</th>
         <th>Account Service</th>
         <th>Last Updated</th>
       </tr>
     </thead>
     <tbody id="tableBody">
-      <tr><td colspan="7">Loading…</td></tr>
+      <tr><td colspan="8">Loading…</td></tr>
     </tbody>
   </table>
 
@@ -68,12 +75,10 @@ import { getStore } from "@netlify/blobs";
 const siteID = "<YOUR_NETLIFY_SITE_ID>";
 const token  = "<YOUR_NETLIFY_BLOBS_TOKEN>";
 const storeName = "site_infra";
-
 const store = getStore({ name: storeName, siteID, token });
 
 const tableBody = document.getElementById("tableBody");
 const statusEl = document.getElementById("status");
-
 const refreshBtn = document.getElementById("refreshBtn");
 const saveBtn    = document.getElementById("saveBtn");
 const deleteBtn  = document.getElementById("deleteBtn");
@@ -85,6 +90,7 @@ const platformInput = document.getElementById("platformInput");
 const repoInput = document.getElementById("repoInput");
 const accountEmailInput = document.getElementById("accountEmailInput");
 const accountServiceInput = document.getElementById("accountServiceInput");
+const accountTypeInput = document.getElementById("accountTypeInput");
 
 let entries = [];
 
@@ -98,26 +104,26 @@ function setMsg(text, ok=false){
 
 function renderTable() {
   if (!entries.length) {
-    tableBody.innerHTML = '<tr><td colspan="7"><em>No entries found.</em></td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="8"><em>No entries found.</em></td></tr>';
     deleteBtn.disabled = true;
     return;
   }
 
   tableBody.innerHTML = '';
-  for (const [index, e] of entries.entries()) {
+  entries.forEach((e, index) => {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td class="select-col"><input type="checkbox" class="rowCheckbox" data-index="${index}" /></td>
-      <td>${e.website || ''}</td>
-      <td>${e.platform || ''}</td>
-      <td>${e.repo || ''}</td>
-      <td>${e.accountEmail || ''}</td>
-      <td>${e.accountService || ''}</td>
+      <td class="editable" data-field="website" data-index="${index}">${e.website}</td>
+      <td class="editable" data-field="platform" data-index="${index}">${e.platform}</td>
+      <td class="editable" data-field="repo" data-index="${index}">${e.repo}</td>
+      <td class="editable" data-field="accountEmail" data-index="${index}">${e.accountEmail}</td>
+      <td class="editable" data-field="accountType" data-index="${index}">${e.accountType}</td>
+      <td class="editable" data-field="accountService" data-index="${index}">${e.accountService}</td>
       <td>${e.updatedAt ? new Date(e.updatedAt).toLocaleString() : 'N/A'}</td>
     `;
     tableBody.appendChild(row);
-  }
-
+  });
   updateDeleteButtonState();
 }
 
@@ -131,14 +137,14 @@ function updateDeleteButtonState() {
 // -----------------------------------------------------------------------------
 async function loadEntries() {
   setMsg('');
-  tableBody.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
+  tableBody.innerHTML = '<tr><td colspan="8">Loading…</td></tr>';
   try {
     const raw = await store.get("sites");
     entries = raw ? JSON.parse(raw) : [];
     renderTable();
   } catch(err) {
     console.error(err);
-    tableBody.innerHTML = '<tr><td colspan="7">Failed to load data</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="8">Failed to load data</td></tr>';
     setMsg("Failed to load table", false);
   }
 }
@@ -167,6 +173,7 @@ addBtn.addEventListener('click', async () => {
   const repo = repoInput.value.trim();
   const accountEmail = accountEmailInput.value.trim();
   const accountService = accountServiceInput.value.trim();
+  const accountType = accountTypeInput.value;
 
   if (!website || !platform || !accountEmail) {
     setMsg("Website, Platform, and Account Email are required.", false);
@@ -174,7 +181,7 @@ addBtn.addEventListener('click', async () => {
   }
 
   entries.push({
-    website, platform, repo, accountEmail, accountService,
+    website, platform, repo, accountEmail, accountType, accountService,
     updatedAt: new Date().toISOString()
   });
 
@@ -189,13 +196,52 @@ addBtn.addEventListener('click', async () => {
 deleteBtn.addEventListener('click', async () => {
   const checkedBoxes = tableBody.querySelectorAll('.rowCheckbox:checked');
   if (!checkedBoxes.length) return;
-
   if (!confirm(`Delete ${checkedBoxes.length} record(s)?`)) return;
 
   const indexes = Array.from(checkedBoxes).map(cb => Number(cb.dataset.index));
   entries = entries.filter((_, i) => !indexes.includes(i));
-
   await saveEntries();
+});
+
+// -----------------------------------------------------------------------------
+// Edit in place
+// -----------------------------------------------------------------------------
+tableBody.addEventListener('click', e => {
+  const cell = e.target.closest('.editable');
+  if (!cell) return;
+
+  const index = Number(cell.dataset.index);
+  const field = cell.dataset.field;
+
+  if (field === "accountType") {
+    const select = document.createElement('select');
+    select.className = 'inline-select';
+    ['Website', 'Corporate'].forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt;
+      o.textContent = opt;
+      if (opt === cell.textContent) o.selected = true;
+      select.appendChild(o);
+    });
+    select.addEventListener('blur', () => {
+      entries[index][field] = select.value;
+      saveEntries();
+    });
+    cell.textContent = '';
+    cell.appendChild(select);
+    select.focus();
+  } else {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = cell.textContent;
+    input.addEventListener('blur', () => {
+      entries[index][field] = input.value;
+      saveEntries();
+    });
+    cell.textContent = '';
+    cell.appendChild(input);
+    input.focus();
+  }
 });
 
 // -----------------------------------------------------------------------------
@@ -204,7 +250,6 @@ deleteBtn.addEventListener('click', async () => {
 tableBody.addEventListener('change', e => {
   if (e.target.classList.contains('rowCheckbox')) updateDeleteButtonState();
 });
-
 selectAll.addEventListener('change', e => {
   const checked = e.target.checked;
   tableBody.querySelectorAll('.rowCheckbox').forEach(cb => cb.checked = checked);
@@ -219,7 +264,6 @@ saveBtn.addEventListener('click', saveEntries);
 
 // Initial load
 loadEntries();
-
 </script>
 </body>
 </html>
