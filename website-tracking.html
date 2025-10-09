@@ -19,6 +19,7 @@
   .err { color: #ef4444; }
   .form-inline { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1rem; }
   .form-inline input { padding: 0.25rem; flex: 1 1 150px; }
+  th.select-col, td.select-col { text-align: center; width: 40px; }
 </style>
 </head>
 <body>
@@ -37,12 +38,14 @@
 
   <div>
     <button id="refreshBtn" class="btn">Refresh</button>
-    <button id="saveBtn" class="btn">Save to Blob</button>
+    <button id="saveBtn" class="btn">Save Table</button>
+    <button id="deleteBtn" class="btn" disabled>Delete Selected</button>
   </div>
 
   <table id="trackerTable">
     <thead>
       <tr>
+        <th class="select-col"><input type="checkbox" id="selectAll" /></th>
         <th>Website</th>
         <th>Platform</th>
         <th>Source Repo</th>
@@ -52,7 +55,7 @@
       </tr>
     </thead>
     <tbody id="tableBody">
-      <tr><td colspan="6">Loading…</td></tr>
+      <tr><td colspan="7">Loading…</td></tr>
     </tbody>
   </table>
 
@@ -70,9 +73,12 @@ const store = getStore({ name: storeName, siteID, token });
 
 const tableBody = document.getElementById("tableBody");
 const statusEl = document.getElementById("status");
+
 const refreshBtn = document.getElementById("refreshBtn");
-const saveBtn = document.getElementById("saveBtn");
-const addBtn = document.getElementById("addBtn");
+const saveBtn    = document.getElementById("saveBtn");
+const deleteBtn  = document.getElementById("deleteBtn");
+const addBtn     = document.getElementById("addBtn");
+const selectAll  = document.getElementById("selectAll");
 
 const websiteInput = document.getElementById("websiteInput");
 const platformInput = document.getElementById("platformInput");
@@ -80,66 +86,81 @@ const repoInput = document.getElementById("repoInput");
 const accountEmailInput = document.getElementById("accountEmailInput");
 const accountServiceInput = document.getElementById("accountServiceInput");
 
+let entries = [];
+
+// -----------------------------------------------------------------------------
+// Helpers
+// -----------------------------------------------------------------------------
 function setMsg(text, ok=false){
   statusEl.textContent = text || "";
   statusEl.className = 'msg ' + (ok ? 'ok' : 'err');
 }
 
-async function loadTable() {
+function renderTable() {
+  if (!entries.length) {
+    tableBody.innerHTML = '<tr><td colspan="7"><em>No entries found.</em></td></tr>';
+    deleteBtn.disabled = true;
+    return;
+  }
+
+  tableBody.innerHTML = '';
+  for (const [index, e] of entries.entries()) {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td class="select-col"><input type="checkbox" class="rowCheckbox" data-index="${index}" /></td>
+      <td>${e.website || ''}</td>
+      <td>${e.platform || ''}</td>
+      <td>${e.repo || ''}</td>
+      <td>${e.accountEmail || ''}</td>
+      <td>${e.accountService || ''}</td>
+      <td>${e.updatedAt ? new Date(e.updatedAt).toLocaleString() : 'N/A'}</td>
+    `;
+    tableBody.appendChild(row);
+  }
+
+  updateDeleteButtonState();
+}
+
+function updateDeleteButtonState() {
+  const anyChecked = tableBody.querySelectorAll('.rowCheckbox:checked').length > 0;
+  deleteBtn.disabled = !anyChecked;
+}
+
+// -----------------------------------------------------------------------------
+// Load entries from blob
+// -----------------------------------------------------------------------------
+async function loadEntries() {
   setMsg('');
-  tableBody.innerHTML = '<tr><td colspan="6">Loading…</td></tr>';
+  tableBody.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
   try {
     const raw = await store.get("sites");
-    const entries = raw ? JSON.parse(raw) : [];
-    if (!entries.length) {
-      tableBody.innerHTML = '<tr><td colspan="6"><em>No entries found.</em></td></tr>';
-      return;
-    }
-
-    tableBody.innerHTML = '';
-    for (const e of entries) {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${e.website || ''}</td>
-        <td>${e.platform || ''}</td>
-        <td>${e.repo || ''}</td>
-        <td>${e.accountEmail || ''}</td>
-        <td>${e.accountService || ''}</td>
-        <td>${e.updatedAt ? new Date(e.updatedAt).toLocaleString() : 'N/A'}</td>
-      `;
-      tableBody.appendChild(row);
-    }
-  } catch(err){
-    tableBody.innerHTML = '<tr><td colspan="6">Failed to load data</td></tr>';
+    entries = raw ? JSON.parse(raw) : [];
+    renderTable();
+  } catch(err) {
     console.error(err);
+    tableBody.innerHTML = '<tr><td colspan="7">Failed to load data</td></tr>';
     setMsg("Failed to load table", false);
   }
 }
 
-async function saveTable() {
+// -----------------------------------------------------------------------------
+// Save entries to blob
+// -----------------------------------------------------------------------------
+async function saveEntries() {
   try {
-    const rows = Array.from(tableBody.querySelectorAll("tr"));
-    const data = rows.map(r => {
-      const cells = r.querySelectorAll("td");
-      if (cells.length !== 6) return null;
-      return {
-        website: cells[0].textContent.trim(),
-        platform: cells[1].textContent.trim(),
-        repo: cells[2].textContent.trim(),
-        accountEmail: cells[3].textContent.trim(),
-        accountService: cells[4].textContent.trim(),
-        updatedAt: new Date().toISOString()
-      };
-    }).filter(Boolean);
-
-    await store.set("sites", JSON.stringify(data));
+    entries.forEach(e => { e.updatedAt = new Date().toISOString(); });
+    await store.set("sites", JSON.stringify(entries));
     setMsg("Saved successfully!", true);
-  } catch(err){
+    renderTable();
+  } catch(err) {
     console.error(err);
     setMsg("Failed to save table", false);
   }
 }
 
+// -----------------------------------------------------------------------------
+// Add new record
+// -----------------------------------------------------------------------------
 addBtn.addEventListener('click', async () => {
   const website = websiteInput.value.trim();
   const platform = platformInput.value.trim();
@@ -152,29 +173,53 @@ addBtn.addEventListener('click', async () => {
     return;
   }
 
-  try {
-    const raw = await store.get("sites");
-    const entries = raw ? JSON.parse(raw) : [];
-    entries.push({
-      website, platform, repo, accountEmail, accountService,
-      updatedAt: new Date().toISOString()
-    });
-    await store.set("sites", JSON.stringify(entries));
+  entries.push({
+    website, platform, repo, accountEmail, accountService,
+    updatedAt: new Date().toISOString()
+  });
 
-    websiteInput.value = platformInput.value = repoInput.value = accountEmailInput.value = accountServiceInput.value = '';
-    setMsg("Record added!", true);
-    loadTable();
-  } catch(err){
-    console.error(err);
-    setMsg("Failed to add record", false);
-  }
+  websiteInput.value = platformInput.value = repoInput.value = accountEmailInput.value = accountServiceInput.value = '';
+  setMsg("Record added!", true);
+  renderTable();
 });
 
-refreshBtn.addEventListener('click', loadTable);
-saveBtn.addEventListener('click', saveTable);
+// -----------------------------------------------------------------------------
+// Delete selected records
+// -----------------------------------------------------------------------------
+deleteBtn.addEventListener('click', async () => {
+  const checkedBoxes = tableBody.querySelectorAll('.rowCheckbox:checked');
+  if (!checkedBoxes.length) return;
+
+  if (!confirm(`Delete ${checkedBoxes.length} record(s)?`)) return;
+
+  const indexes = Array.from(checkedBoxes).map(cb => Number(cb.dataset.index));
+  entries = entries.filter((_, i) => !indexes.includes(i));
+
+  await saveEntries();
+});
+
+// -----------------------------------------------------------------------------
+// Event delegation for checkboxes
+// -----------------------------------------------------------------------------
+tableBody.addEventListener('change', e => {
+  if (e.target.classList.contains('rowCheckbox')) updateDeleteButtonState();
+});
+
+selectAll.addEventListener('change', e => {
+  const checked = e.target.checked;
+  tableBody.querySelectorAll('.rowCheckbox').forEach(cb => cb.checked = checked);
+  updateDeleteButtonState();
+});
+
+// -----------------------------------------------------------------------------
+// Buttons
+// -----------------------------------------------------------------------------
+refreshBtn.addEventListener('click', loadEntries);
+saveBtn.addEventListener('click', saveEntries);
 
 // Initial load
-loadTable();
+loadEntries();
+
 </script>
 </body>
 </html>
