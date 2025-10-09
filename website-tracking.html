@@ -75,6 +75,8 @@
     const statusEl = document.getElementById('status');
     const tableBody = document.getElementById('tableBody');
 
+    let existingRecords = [];
+
     function setMsg(text, ok=false){
       statusEl.textContent = text;
       statusEl.className = 'msg ' + (ok ? 'ok' : 'err');
@@ -85,12 +87,13 @@
       try {
         const res = await fetch('/.netlify/functions/list-tracking');
         const data = await res.json();
+        existingRecords = data.records || [];
         tableBody.innerHTML = '';
-        if (!data.records || !data.records.length) {
+        if (!existingRecords.length) {
           tableBody.innerHTML = '<tr><td colspan="7"><em>No records found.</em></td></tr>';
           return;
         }
-        data.records.forEach((r, idx) => {
+        existingRecords.forEach((r) => {
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${r.website}</td>
@@ -104,7 +107,6 @@
           tableBody.appendChild(tr);
         });
 
-        // Attach delete handlers
         document.querySelectorAll('.deleteBtn').forEach(btn => {
           btn.addEventListener('click', async () => {
             if (!confirm(`Delete record for "${btn.dataset.id}"?`)) return;
@@ -138,7 +140,18 @@
         corporateEmail: corporateEmailInput.value.trim(),
         aiDilemmaService: aiDilemmaInput.value.trim()
       };
-      if (!record.website) { setMsg('Website is required'); return; }
+
+      // INLINE VALIDATION
+      if (!record.website) return setMsg('Website is required');
+      if (!record.hostedOn) return setMsg('Hosted On is required');
+      if (!record.codeStoredOn) return setMsg('Code Repository is required');
+      if (!record.websiteEmail) return setMsg('Website Email Service is required');
+      if (!record.corporateEmail) return setMsg('Corporate Email is required');
+      if (!record.aiDilemmaService) return setMsg('AI Dilemma Service is required');
+
+      if (existingRecords.some(r => r.website.toLowerCase() === record.website.toLowerCase())) {
+        return setMsg('Website already exists in records');
+      }
 
       try {
         const res = await fetch('/.netlify/functions/add-tracking', {
@@ -157,7 +170,6 @@
     });
 
     refreshBtn.addEventListener('click', loadRecords);
-
     window.addEventListener('DOMContentLoaded', loadRecords);
   </script>
 </body>
