@@ -2,16 +2,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("verdict-widget");
   if (!container) return;
 
-  container.innerHTML = `
-    // <textarea id="dilemmaInput" placeholder="Enter your dilemma..."></textarea>
-    <textarea id="dilemmaInput" placeholder="Virelia is temporarily offline — API not connected.."></textarea>
-    dilemmaInput.disabled = false;
+  //container.innerHTML = `
+  //  <textarea id="dilemmaInput" placeholder="Enter your dilemma..."></textarea>
+  //  <textarea id="dilemmaInput" placeholder="Virelia is temporarily offline — API not connected.."></textarea>
+ //   dilemmaInput.disabled = false;
     
-    <button id="getVerdictBtn">Get Verdict</button>
-    getVerdictBtn.disabled = false;
+ //   <button id="getVerdictBtn">Get Verdict</button>
+ //   getVerdictBtn.disabled = false;
     
-    <pre id="verdictOutput"></pre>
-  `;
+ //   <pre id="verdictOutput"></pre>
+ // `;
 
   document.getElementById("getVerdictBtn").addEventListener("click", async () => {
     const dilemma = document.getElementById("dilemmaInput").value.trim();
@@ -27,7 +27,8 @@ document.addEventListener("DOMContentLoaded", () => {
 try {
         // Step 1: Pre-process
         const pre = lumenPreProcess(dilemma);
-
+alert(pre);
+  
         // Step 2: Send to LLM
         const llmResponse = await callLLM(pre);
 
@@ -68,7 +69,9 @@ function lumenPostProcess(llmOutput) {
 
 // -------- Option A: Local OLlama (http://localhost:11434) --------
 async function callLLM(prompt) {
-    const response = await fetch("http://localhost:11434/api/generate", {
+   
+alert("Your PROMPT being sent is: " & prompt);
+  const response = await fetch("http://localhost:11434/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
