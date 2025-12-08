@@ -98,7 +98,8 @@
 
     // Add the class ASAP (before DOMContentLoaded) to minimize flicker
     if (isGuest) {
-      document.addEventListener('DOMContentLoaded', () => { document.body.classList.add('guest'); });
+      //document.addEventListener('DOMContentLoaded', () => { document.body.classList.add('guest'); });
+ document.addEventListener('DOMContentLoaded', () => { document.body.classList.remove('guest'); });
     } else {
       document.addEventListener('DOMContentLoaded', () => { document.body.classList.remove('guest'); });
     }
