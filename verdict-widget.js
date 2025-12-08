@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
  //   <pre id="verdictOutput"></pre>
  // `;
 
-  document.getElementById("getVerdictBtn").addEventListener("click", async () => {
+  document.getElementById("getVerdictBtn").addEventListener("click", () => {
     
     alert('Get Verdict Btn was clicked');
     
