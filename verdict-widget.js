@@ -5,10 +5,8 @@ document.addEventListener("DOMContentLoaded", () => {
   //container.innerHTML = `
   //  <textarea id="dilemmaInput" placeholder="Enter your dilemma..."></textarea>
   //  <textarea id="dilemmaInput" placeholder="Virelia is temporarily offline — API not connected.."></textarea>
- //   dilemmaInput.disabled = false;
     
  //   <button id="getVerdictBtn">Get Verdict</button>
- //   getVerdictBtn.disabled = false;
     
  //   <pre id="verdictOutput"></pre>
  // `;
