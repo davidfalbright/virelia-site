@@ -12,6 +12,9 @@ document.addEventListener("DOMContentLoaded", () => {
  // `;
 
   document.getElementById("getVerdictBtn").addEventListener("click", async () => {
+    
+    alert('Get Verdict Btn was clicked');
+    
     const dilemma = document.getElementById("dilemmaInput").value.trim();
     if (!dilemma) return alert("Please enter a dilemma.");
 
