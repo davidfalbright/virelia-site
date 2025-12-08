@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const container = document.getElementById("verdict-widget");
+  const container = document.getElementById("getVerdictBtn");
   if (!container) return;
 
   //container.innerHTML = `
