@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dilemmaInput.disabled = false;
     
     <button id="getVerdictBtn">Get Verdict</button>
-    getVerdictBtn.disabled = true;
+    getVerdictBtn.disabled = false;
     
     <pre id="verdictOutput"></pre>
   `;
