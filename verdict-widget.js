@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
 // -------- Option C: Let Netlify/OpenRouter handle the LLM API call --------
 async function callLLM(prompt) {
-  const res = await fetch("/.netlify/functions/llm-proxy", {
+  const res = await fetch("/netlify/functions/llm-proxy", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt })
