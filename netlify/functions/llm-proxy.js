@@ -29,8 +29,8 @@ export default async (req, context) => {
 
     // Valid OpenRouter model ID (see /api/v1/models)
     // List of valid OpenRouter model IDs ==> https://openrouter.ai/api/v1/models (or try at https://openrouter.ai/models)
-    const myDefaultAIModel = "meta-llama/llama-3.1-8b-instruct:free";
-
+    const myDefaultAIModel = "meta-llama/llama-3.1-8b-instruct";
+    
     const payload = {
       model: myDefaultAIModel,
       messages: [
