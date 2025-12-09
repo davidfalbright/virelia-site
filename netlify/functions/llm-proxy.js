@@ -1,5 +1,9 @@
 // netlify/functions/llm-proxy.js
 
+// https://openrouter.ai/   iamgr8guy!
+
+
+
 // Simple CORS helper so the browser can call this from iamvirelia.org
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
