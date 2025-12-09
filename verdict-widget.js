@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const mybtn = document.getElementById("getVerdictBtn");
  if (!mybtn) {
   alert("no mybtn");
@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
  //   <pre id="verdictOutput"></pre>
  // `;
 
-  mbtn.addEventListener("click", async () => {
+  mybtn.addEventListener("click", async () => {
     
     alert('Get Verdict Btn was clicked');
     
@@ -33,14 +33,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 try {
         // Step 1: Pre-process
-        const pre = lumenPreProcess(dilemma);
+        const pre = await lumenPreProcess(dilemma);
 alert(pre);
   
         // Step 2: Send to LLM
         const llmResponse = await callLLM(pre);
 
         // Step 3: Post-process
-        const finalOutput = lumenPostProcess(llmResponse);
+        const finalOutput = await lumenPostProcess(llmResponse);
 
         // Step 4: Display
        // resultBox.innerHTML = finalOutput;
