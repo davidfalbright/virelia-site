@@ -119,12 +119,21 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   */
   
-// -------- Option C: Let Netlify handle the LLM API call --------
-const response = await fetch("/.netlify/functions/verdict", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ prompt })
-});
+// -------- Option C: Let Netlify/OpenRouter handle the LLM API call --------
+async function callLLM(prompt) {
+  const res = await fetch("/.netlify/functions/lumen-llm", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`LLM proxy returned ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data.response;
+}
 
 
   
