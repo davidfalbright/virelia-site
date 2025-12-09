@@ -122,19 +122,18 @@ document.addEventListener("DOMContentLoaded", () => {
   
 // -------- Option C: Let Netlify/OpenRouter handle the LLM API call --------
 async function callLLM(prompt) {
-  const res = await fetch("/.netlify/functions/lumen-llm", {
+  const res = await fetch("/.netlify/functions/llm-proxy", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ prompt })
   });
 
-  if (!res.ok) {
-    throw new Error(`LLM proxy returned ${res.status}`);
-  }
+  if (!res.ok) throw new Error("LLM proxy returned " + res.status);
 
   const data = await res.json();
   return data.response;
 }
+
 
 
   
