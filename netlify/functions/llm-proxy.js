@@ -42,7 +42,7 @@ export default async (req, context) => {
 
     if (!openRouterResponse.ok) {
       const errorText = await openRouterResponse.text();
-      alert("OpenRouter ERROR: " + errorText);
+      console.log("OpenRouter ERROR: " + errorText);
       return new Response(JSON.stringify({ error: `OpenRouter returned ${openRouterResponse.status}` }), {
         status: 502
       });
@@ -56,7 +56,7 @@ export default async (req, context) => {
     );
 
   } catch (err) {
-    alert("Proxy EXCEPTION: "+ err);
+    console.log("Proxy EXCEPTION: "+ err);
     return new Response(JSON.stringify({ error: "Internal Error" }), { status: 500 });
   }
 };
