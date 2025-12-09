@@ -28,14 +28,15 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       // Step 1: Pre-process
       const pre = lumenPreProcess(dilemma);
-      console.log("Preprocessed prompt:", pre);
+      alert("Preprocessed prompt:  -->" + pre);
 
       // Step 2: Send to LLM
       const llmResponse = await callLLM(pre);
-      console.log("Raw LLM response:", llmResponse);
+      alert("Raw LLM response:  -->" + llmResponse);
 
       // Step 3: Post-process
       const finalOutput = lumenPostProcess(llmResponse);
+      alert("Refined LLM response:  -->" + finalOutput);
 
       // Step 4: Display
       if (messageEl) {
