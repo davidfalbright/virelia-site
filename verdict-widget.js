@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const mybtn = document.getElementById("getVerdictBtn");
  if (!mybtn) {
   alert("no mybtn");
-  return;
+  //return;
 }
 
 
