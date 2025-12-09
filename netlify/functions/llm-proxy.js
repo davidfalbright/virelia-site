@@ -23,7 +23,7 @@ export default async (req, context) => {
 
     // OpenRouter expects ChatCompletions-style body
     // List of valid OpenRouter model IDs ==> https://openrouter.ai/api/v1/models (or try at https://openrouter.ai/models)
-    const { myDefaultAIModel } = "meta-llama/llama-3.1-8b-instruct:free";
+    const myDefaultAIModel = "meta-llama/llama-3.1-8b-instruct:free";
     
     const payload = {
       model: myDefaultAIModel,
