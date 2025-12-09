@@ -1,6 +1,7 @@
 // netlify/functions/llm-proxy.js
 
 // https://openrouter.ai/   iamgr8guy!
+console.log("LLM proxy invoked");
 
 export default async (req, context) => {
   try {
