@@ -40,13 +40,23 @@ export default async (req, context) => {
       body: JSON.stringify(payload)
     });
 
-    if (!openRouterResponse.ok) {
-      const errorText = await openRouterResponse.text();
-      console.log("OpenRouter ERROR: " + errorText);
-      return new Response(JSON.stringify({ error: `OpenRouter returned ${openRouterResponse.status}` }), {
-        status: 502
-      });
+   if (!openRouterResponse.ok) {
+    const errorText = await openRouterResponse.text();
+    console.log("OpenRouter ERROR: " + errorText);
+
+    return new Response(
+    JSON.stringify({
+      error: "OpenRouter_error",
+      upstream_status: openRouterResponse.status,
+      upstream_body: errorText
+    }),
+    {
+      status: 502,
+      headers: { "Content-Type": "application/json" }
     }
+  );
+}
+
 
     const data = await openRouterResponse.json();
 
