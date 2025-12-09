@@ -70,6 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return llmOutput.replace("Ollama:", "LUMEN:");
   }
 
+  /*
   // -------- Option A: Local Ollama (http://localhost:11434) --------
   async function callLLM(prompt) {
     alert(`Your PROMPT being sent is: ${prompt}`);
@@ -90,6 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const data = await response.json();
     return data.response;
   }
+  */
 
   /*
   // -------- Option B: OpenRouter Free Tier (cloud) --------
@@ -116,4 +118,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return data.choices[0].message.content;
   }
   */
+  
+// -------- Option C: Let Netlify handle the LLM API call --------
+const response = await fetch("/.netlify/functions/verdict", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ prompt })
+});
+
+
+  
 });
