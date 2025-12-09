@@ -1,121 +1,119 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  const mybtn = document.getElementById("getVerdictBtn");
- if (!mybtn) {
-  alert("no mybtn");
-  //return;
-}
+// verdict-widget.js
+document.addEventListener("DOMContentLoaded", () => {
+  const buttonEl   = document.getElementById("getVerdictBtn");
+  const inputEl    = document.getElementById("dilemmaInput");
+  const messageEl  = document.getElementById("verdictMessage");
 
+  if (!buttonEl) {
+    alert("Get Verdict button not found on this page.");
+    return;
+  }
+  if (!inputEl) {
+    alert("Dilemma textarea not found on this page.");
+    return;
+  }
+  if (!messageEl) {
+    console.warn("No #verdictMessage element; output will not be visible.");
+  }
 
-  //container.innerHTML = `
-  //  <textarea id="dilemmaInput" placeholder="Enter your dilemma..."></textarea>
-  //  <textarea id="dilemmaInput" placeholder="Virelia is temporarily offline — API not connected.."></textarea>
-    
- //   <button id="getVerdictBtn">Get Verdict</button>
-    
- //   <pre id="verdictOutput"></pre>
- // `;
+  buttonEl.addEventListener("click", async () => {
+    alert("Get Verdict Btn was clicked");
 
-  mybtn.addEventListener("click", async () => {
-    
-    alert('Get Verdict Btn was clicked');
-    
     const dilemma = inputEl.value.trim();
     if (!dilemma) {
       alert("Please enter a dilemma.");
       return;
     }
 
-//    const res = await fetch("verdict", {
-//      method: "POST",
-//      headers: { "Content-Type": "application/json" },
-//      body: JSON.stringify({ dilemma })
-//    });
+    try {
+      // Step 1: Pre-process
+      const pre = lumenPreProcess(dilemma);
+      console.log("Preprocessed prompt:", pre);
 
-try {
-        // Step 1: Pre-process
-        const pre = await lumenPreProcess(dilemma);
-alert(pre);
-  
-        // Step 2: Send to LLM
-        const llmResponse = await callLLM(pre);
+      // Step 2: Send to LLM
+      const llmResponse = await callLLM(pre);
+      console.log("Raw LLM response:", llmResponse);
 
-        // Step 3: Post-process
-        const finalOutput = await lumenPostProcess(llmResponse);
+      // Step 3: Post-process
+      const finalOutput = lumenPostProcess(llmResponse);
 
-        // Step 4: Display
-       // resultBox.innerHTML = finalOutput;
-  document.getElementById("verdictMessage").textContent = finalOutput;
-
+      // Step 4: Display
+      if (messageEl) {
+        messageEl.textContent = finalOutput;
+      } else {
+        alert(finalOutput);
+      }
     } catch (err) {
-        //resultBox.innerHTML = "Error: " + err.message;
-  document.getElementById("verdictMessage").textContent ="Error: " + err.message;
+      const msg = "Error: " + (err?.message || String(err));
+      console.error(err);
+      if (messageEl) {
+        messageEl.textContent = msg;
+      } else {
+        alert(msg);
+      }
     }
-
-
-
-    
-    //const data = await res.json();
-    //document.getElementById("verdictOutput").textContent = JSON.stringify(data, null, 2);
   });
 
-// =============================================================
-// PRE-PROCESSING (LUMEN-PRE)
-// =============================================================
-function lumenPreProcess(inputText) {
+  // =============================================================
+  // PRE-PROCESSING (LUMEN-PRE)
+  // =============================================================
+  function lumenPreProcess(inputText) {
     // TODO: Replace with your actual LUMEN epistemology/perception logic
     return "[LUMEN-PRE] " + inputText.trim();
-}
+  }
 
-// =============================================================
-// POST-PROCESSING (LUMEN-POST)
-// =============================================================
-function lumenPostProcess(llmOutput) {
+  // =============================================================
+  // POST-PROCESSING (LUMEN-POST)
+  // =============================================================
+  function lumenPostProcess(llmOutput) {
     // TODO: Replace with hallucination checking, safeguard logic, etc.
     return llmOutput.replace("Ollama:", "LUMEN:");
-}
+  }
 
-// -------- Option A: Local OLlama (http://localhost:11434) --------
-async function callLLM(prompt) {
-   
-alert(`Your PROMPT being sent is: ${prompt}`);
+  // -------- Option A: Local Ollama (http://localhost:11434) --------
+  async function callLLM(prompt) {
+    alert(`Your PROMPT being sent is: ${prompt}`);
 
-  const response = await fetch("http://localhost:11434/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            model: "llama3.1",        // Or any model you installed
-            prompt: prompt
-        })
+    const response = await fetch("http://localhost:11434/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "llama3.1",   // Or any model you installed in Ollama
+        prompt: prompt
+      })
     });
+
+    if (!response.ok) {
+      throw new Error(`LLM HTTP error: ${response.status} ${response.statusText}`);
+    }
 
     const data = await response.json();
     return data.response;
-}
+  }
 
-/*
-// -------- Option B: OpenRouter Free Tier (cloud) --------
-async function callLLM(prompt) {
+  /*
+  // -------- Option B: OpenRouter Free Tier (cloud) --------
+  async function callLLM(prompt) {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer YOUR_API_KEY_HERE"
-        },
-        body: JSON.stringify({
-            model: "meta-llama/Llama-3-8b-chat-hf",
-            messages: [
-                { role: "user", content: prompt }
-            ]
-        })
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer YOUR_API_KEY_HERE"
+      },
+      body: JSON.stringify({
+        model: "meta-llama/Llama-3-8b-chat-hf",
+        messages: [
+          { role: "user", content: prompt }
+        ]
+      })
     });
+
+    if (!response.ok) {
+      throw new Error(`OpenRouter HTTP error: ${response.status} ${response.statusText}`);
+    }
 
     const data = await response.json();
     return data.choices[0].message.content;
-}
-*/
-
-
-  
-  
-}
-);
+  }
+  */
+});
