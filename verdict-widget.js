@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const container = document.getElementById("getVerdictBtn");
-  if (!container) return;
+  const mybtn = document.getElementById("getVerdictBtn");
+  if (!mybtn) alert("no mybtn") return;
 
   //container.innerHTML = `
   //  <textarea id="dilemmaInput" placeholder="Enter your dilemma..."></textarea>
