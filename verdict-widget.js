@@ -1,6 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
   const mybtn = document.getElementById("getVerdictBtn");
-  if (!mybtn) alert("no mybtn") return;
+ if (!mybtn) {
+  alert("no mybtn");
+  return;
+}
+
 
   //container.innerHTML = `
   //  <textarea id="dilemmaInput" placeholder="Enter your dilemma..."></textarea>
@@ -11,13 +15,15 @@ document.addEventListener("DOMContentLoaded", () => {
  //   <pre id="verdictOutput"></pre>
  // `;
 
-  document.getElementById("getVerdictBtn").addEventListener("click", () => {
+  mbtn.addEventListener("click", async () => {
     
     alert('Get Verdict Btn was clicked');
     
-    const dilemma = document.getElementById("dilemmaInput").value.trim();
-    if (!dilemma) return alert("Please enter a dilemma.");
-
+    const dilemma = inputEl.value.trim();
+    if (!dilemma) {
+      alert("Please enter a dilemma.");
+      return;
+    }
 
 //    const res = await fetch("verdict", {
 //      method: "POST",
@@ -38,11 +44,11 @@ alert(pre);
 
         // Step 4: Display
        // resultBox.innerHTML = finalOutput;
-  document.getElementById("verdictOutput").textContent = finalOutput;
+  document.getElementById("verdictMessage").textContent = finalOutput;
 
     } catch (err) {
         //resultBox.innerHTML = "Error: " + err.message;
-  document.getElementById("verdictOutput").textContent ="Error: " + err.message;
+  document.getElementById("verdictMessage").textContent ="Error: " + err.message;
     }
 
 
@@ -71,7 +77,8 @@ function lumenPostProcess(llmOutput) {
 // -------- Option A: Local OLlama (http://localhost:11434) --------
 async function callLLM(prompt) {
    
-alert("Your PROMPT being sent is: " & prompt);
+alert(`Your PROMPT being sent is: ${prompt}`);
+
   const response = await fetch("http://localhost:11434/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
