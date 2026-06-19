@@ -1,4 +1,3 @@
-```javascript
 // lab.js
 // Virelia Lab: session check + page visibility only.
 // No runner execution, repository access, or operational data yet.
@@ -195,4 +194,3 @@
     initializeLab();
   }
 })();
-```
