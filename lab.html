@@ -335,24 +335,30 @@
 
           <section class="lab-card">
             <h2>Run Investigation Workspace</h2>
+
             <p>
               A read-only local view of completed Virelia simulation runs.
             </p>
+
             <p>
-              When the local Virelia service is available, this workspace lists trace packages, shows validation and integrity status, 
-              and lets an authorized user inspect the ordered run timeline, safeguards activated, generated artifacts, trust/adoption outcomes, and reflection recommendations.
+              When the local Virelia service is available, this workspace lists trace packages,
+              shows validation and integrity status, and lets an authorized user inspect the
+              ordered run timeline, safeguards activated, generated artifacts, trust/adoption
+              outcomes, and reflection recommendations.
             </p>
+
             <p>
-              This workspace does not launch simulations, modify local files, or expose remote operational control. 
-              It reads only from the localhost Virelia trace service running on the same device.
+              This workspace does not launch simulations, modify local files, or expose remote
+              operational control. It reads only from the localhost Virelia trace service
+              running on the same device.
             </p>
 
             <div class="lab-status">
-              <span class="status-dot prototype"></span>
-              <span>No run data connected yet</span>
+              <span id="runWorkspaceStatusDot" class="status-dot offline"></span>
+              <span id="runWorkspaceStatus">Checking local Virelia service…</span>
             </div>
           </section>
-
+          
           <section class="lab-card">
             <h2>Reflection Queue</h2>
             <p>
