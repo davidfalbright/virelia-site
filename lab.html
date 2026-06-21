@@ -315,7 +315,7 @@
             </p>
 
             <div class="lab-status">
-              <span class="status-dot offline"></span>
+              <span id="runnerStatusDot" class="status-dot offline"></span>
               <span id="runnerStatus">Local runner not connected</span>
             </div>
           </section>
@@ -373,6 +373,53 @@
           </section>
         </div>
 
+        <section id="runWorkspacePanel" class="lab-panel">
+             <h2>Available Local Runs</h2>
+
+              <p id="runWorkspaceSummary">
+                Checking the local Virelia trace service…
+             </p>
+
+             <div class="lab-footer-actions">
+               <label
+                 for="runSelect"
+                 style="display: flex; flex-direction: column; gap: 6px; color: #bdd4e6; font-weight: 700;"
+               >
+               Select a run
+
+               <select
+                 id="runSelect"
+                 disabled
+                 style="min-width: 270px; min-height: 42px; border-radius: 8px; padding: 0 10px;"
+               >
+               <option>Local service unavailable</option>
+               </select>
+               </label>
+
+               <button
+                 id="refreshRunsButton"
+                 class="lab-button secondary"
+                 type="button"
+               >
+               Refresh Local Runs
+               </button>
+             </div>
+
+             <div id="runDetailPanel" class="lab-hidden" style="margin-top: 25px;">
+              <h2 id="selectedRunTitle">Selected Run</h2>
+
+               <p id="selectedRunSummary"></p>
+
+               <div id="selectedRunValidation"></div>
+
+               <h3 style="margin-top: 26px;">Trace Timeline</h3>
+               <div id="selectedRunTimeline"></div>
+
+               <h3 style="margin-top: 26px;">Artifacts</h3>
+               <div id="selectedRunArtifacts"></div>
+             </div>
+        </section>
+        
         <section class="lab-panel">
           <h2>Planned Development Sequence</h2>
           <p>
