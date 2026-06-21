@@ -9,6 +9,9 @@
   const LOCAL_STATUS_URL = `${LOCAL_SERVICE_BASE_URL}/status`;
   const LOCAL_RUNS_URL = `${LOCAL_SERVICE_BASE_URL}/runs`;
 
+  let currentSelectedRunId = "";
+  let currentComparisonFamily = null;
+
   function readCookie(name) {
     const escapedName = name.replace(/[-[\]/{}()*+?.\\^$|]/g, "\\$&");
     const match = document.cookie.match(
@@ -139,6 +142,12 @@
     }
 
     return date.toLocaleString();
+  }
+
+  function displayMode(mode) {
+    if (mode === "baseline") return "Baseline";
+    if (mode === "accord") return "Accord";
+    return mode || "Unknown";
   }
 
   function setStatusIndicator(dotId, textId, text, isReady) {
@@ -353,6 +362,263 @@
     `;
   }
 
+  function resetComparisonUi(message) {
+    const familySummary = document.getElementById("comparisonFamilySummary");
+    const targetSelect = document.getElementById("comparisonTargetSelect");
+    const compareButton = document.getElementById("compareRunsButton");
+    const resultPanel = document.getElementById("comparisonResultPanel");
+    const resultContent = document.getElementById("comparisonResultContent");
+
+    currentComparisonFamily = null;
+
+    if (familySummary) {
+      familySummary.textContent = message;
+    }
+
+    if (targetSelect) {
+      targetSelect.innerHTML = "<option>No comparison target available</option>";
+      targetSelect.disabled = true;
+    }
+
+    if (compareButton) {
+      compareButton.disabled = true;
+    }
+
+    if (resultPanel) {
+      resultPanel.classList.add("lab-hidden");
+    }
+
+    if (resultContent) {
+      resultContent.innerHTML = "";
+    }
+  }
+
+  function renderComparisonCandidates(family) {
+    const familySummary = document.getElementById("comparisonFamilySummary");
+    const targetSelect = document.getElementById("comparisonTargetSelect");
+    const compareButton = document.getElementById("compareRunsButton");
+    const resultPanel = document.getElementById("comparisonResultPanel");
+    const resultContent = document.getElementById("comparisonResultContent");
+
+    if (!familySummary || !targetSelect || !compareButton) {
+      return;
+    }
+
+    if (resultPanel) {
+      resultPanel.classList.add("lab-hidden");
+    }
+
+    if (resultContent) {
+      resultContent.innerHTML = "";
+    }
+
+    const candidates = Array.isArray(family?.candidates)
+      ? family.candidates
+      : [];
+
+    const scenario = family?.scenarioId || "scenario not recorded";
+
+    if (family?.familyStatus !== "resolved" || candidates.length === 0) {
+      const reason = family?.reason
+        ? ` Reason: ${family.reason}.`
+        : "";
+
+      familySummary.textContent =
+        `No declared comparison target is available for this run under the current comparison lineage.${reason}`;
+
+      targetSelect.innerHTML = "<option>No comparison target available</option>";
+      targetSelect.disabled = true;
+      compareButton.disabled = true;
+      return;
+    }
+
+    familySummary.textContent =
+      `Declared comparison family resolved for ${scenario}. Choose one related run to compare against the currently selected run.`;
+
+    targetSelect.innerHTML = "";
+
+    candidates.forEach((candidate) => {
+      const option = document.createElement("option");
+
+      option.value = candidate.runId;
+
+      option.textContent =
+        `${candidate.runId} — ${displayMode(candidate.mode)} — ${formatDate(candidate.completedAt)}`;
+
+      targetSelect.appendChild(option);
+    });
+
+    targetSelect.disabled = false;
+    compareButton.disabled = false;
+  }
+
+  function renderSummaryColumn(summary, heading) {
+    const safeguards = Array.isArray(summary?.safeguardsTriggered)
+      ? summary.safeguardsTriggered
+      : [];
+
+    const trustChanges = Array.isArray(summary?.trustChanges)
+      ? summary.trustChanges
+      : [];
+
+    const adoptionStates = Array.isArray(summary?.adoptionStates)
+      ? summary.adoptionStates
+      : [];
+
+    const safeguardMarkup = safeguards.length
+      ? `<ul class="lab-list">${safeguards
+          .map((item) => `<li>${escapeHtml(item)}</li>`)
+          .join("")}</ul>`
+      : "<p>No safeguards recorded.</p>";
+
+    const trustMarkup = trustChanges.length
+      ? `<ul class="lab-list">${trustChanges
+          .map((change) => {
+            const delta =
+              typeof change.change === "number"
+                ? `${change.change >= 0 ? "+" : ""}${change.change.toFixed(2)}`
+                : "not recorded";
+
+            return `
+              <li>
+                <strong>${escapeHtml(change.agentId)}</strong>:
+                ${escapeHtml(change.oldTrustInAccord)} →
+                ${escapeHtml(change.newTrustInAccord)}
+                (${escapeHtml(delta)})
+              </li>
+            `;
+          })
+          .join("")}</ul>`
+      : "<p>No trust changes recorded.</p>";
+
+    const adoptionMarkup = adoptionStates.length
+      ? `<ul class="lab-list">${adoptionStates
+          .map((state) => {
+            return `
+              <li>
+                <strong>${escapeHtml(state.agentId)}</strong>:
+                ${escapeHtml(state.state)}
+                (${escapeHtml(state.trustInAccord)})
+              </li>
+            `;
+          })
+          .join("")}</ul>`
+      : "<p>No adoption states recorded.</p>";
+
+    return `
+      <section class="comparison-column">
+        <h4>${escapeHtml(heading)}</h4>
+
+        <p>
+          <strong>Run:</strong> ${escapeHtml(summary?.runId || "unknown")}<br>
+          <strong>Mode:</strong> ${escapeHtml(displayMode(summary?.mode))}<br>
+          <strong>Scenario:</strong> ${escapeHtml(summary?.scenarioId || "unknown")}<br>
+          <strong>Completed:</strong> ${escapeHtml(formatDate(summary?.completedAt))}<br>
+          <strong>Validation:</strong> ${escapeHtml(summary?.validationStatus || "unknown")}<br>
+          <strong>Integrity:</strong> ${escapeHtml(summary?.integrityStatus || "unknown")}<br>
+          <strong>Trace events:</strong> ${escapeHtml(summary?.traceEventCount || 0)}
+        </p>
+
+        <h4>Resolution</h4>
+        <p>${escapeHtml(summary?.finalResolution || "No final resolution recorded.")}</p>
+
+        <h4>Explanation</h4>
+        <p>${escapeHtml(summary?.plainLanguageExplanation || "No plain-language explanation recorded.")}</p>
+
+        <h4>Risk and Evidence</h4>
+        <p>
+          <strong>Risk:</strong> ${escapeHtml(summary?.riskLevel || "not recorded")}<br>
+          <strong>Evidence quality:</strong> ${escapeHtml(summary?.evidenceQuality || "not recorded")}<br>
+          <strong>Reflection recommended:</strong> ${summary?.reflectionRecommended === true ? "yes" : "no"}
+        </p>
+
+        <h4>Safeguards</h4>
+        ${safeguardMarkup}
+
+        <h4>Trust Changes</h4>
+        ${trustMarkup}
+
+        <h4>Adoption States</h4>
+        ${adoptionMarkup}
+      </section>
+    `;
+  }
+
+  async function compareSelectedRuns() {
+    const targetSelect = document.getElementById("comparisonTargetSelect");
+    const compareButton = document.getElementById("compareRunsButton");
+    const resultPanel = document.getElementById("comparisonResultPanel");
+    const resultContent = document.getElementById("comparisonResultContent");
+
+    if (
+      !currentSelectedRunId ||
+      !targetSelect ||
+      !targetSelect.value ||
+      !resultPanel ||
+      !resultContent
+    ) {
+      return;
+    }
+
+    const targetRunId = targetSelect.value;
+
+    if (compareButton) {
+      compareButton.disabled = true;
+    }
+
+    resultPanel.classList.remove("lab-hidden");
+    resultContent.innerHTML = "<p>Loading pairwise comparison…</p>";
+
+    try {
+      const selectedEncoded = encodeURIComponent(currentSelectedRunId);
+      const targetEncoded = encodeURIComponent(targetRunId);
+
+      const [selectedSummary, targetSummary] = await Promise.all([
+        fetchJson(`${LOCAL_SERVICE_BASE_URL}/runs/${selectedEncoded}/summary`),
+        fetchJson(`${LOCAL_SERVICE_BASE_URL}/runs/${targetEncoded}/summary`)
+      ]);
+
+      resultContent.innerHTML = `
+        <div class="comparison-grid">
+          ${renderSummaryColumn(selectedSummary, "Selected Run")}
+          ${renderSummaryColumn(targetSummary, "Comparison Target")}
+        </div>
+      `;
+    } catch (error) {
+      resultContent.innerHTML = `
+        <p>
+          The pairwise comparison could not be loaded:
+          ${escapeHtml(error.message)}
+        </p>
+      `;
+    } finally {
+      if (compareButton) {
+        compareButton.disabled = false;
+      }
+    }
+  }
+
+  async function loadComparisonFamily(runId) {
+    resetComparisonUi("Resolving declared comparison family…");
+
+    if (!runId) {
+      return;
+    }
+
+    try {
+      const family = await fetchJson(
+        `${LOCAL_SERVICE_BASE_URL}/runs/${encodeURIComponent(runId)}/comparison-family`
+      );
+
+      currentComparisonFamily = family;
+      renderComparisonCandidates(family);
+    } catch (error) {
+      resetComparisonUi(
+        `Comparison family unavailable: ${error.message}`
+      );
+    }
+  }
+
   async function loadSelectedRun(runId) {
     const detailPanel = document.getElementById("runDetailPanel");
     const title = document.getElementById("selectedRunTitle");
@@ -362,10 +628,14 @@
       return;
     }
 
+    currentSelectedRunId = runId;
+
     detailPanel.classList.remove("lab-hidden");
 
     title.textContent = `Loading ${runId}…`;
     summary.textContent = "Reading local trace package…";
+
+    resetComparisonUi("Resolving declared comparison family…");
 
     try {
       const encodedRunId = encodeURIComponent(runId);
@@ -402,6 +672,8 @@
       renderValidation(validation, integrity);
       renderTimeline(trace.events || []);
       renderArtifacts(artifactsPayload);
+
+      await loadComparisonFamily(runId);
     } catch (error) {
       title.textContent = `${runId} — unavailable`;
       summary.textContent =
@@ -414,6 +686,8 @@
       if (validationContainer) validationContainer.innerHTML = "";
       if (timelineContainer) timelineContainer.innerHTML = "";
       if (artifactsContainer) artifactsContainer.innerHTML = "";
+
+      resetComparisonUi("Comparison unavailable because the selected run could not be loaded.");
     }
   }
 
@@ -431,6 +705,8 @@
     if (refreshButton) {
       refreshButton.disabled = true;
     }
+
+    resetComparisonUi("Checking local Virelia service…");
 
     try {
       const [status, runIndex] = await Promise.all([
@@ -474,6 +750,8 @@
         detailPanel.classList.add("lab-hidden");
       }
     } catch (_) {
+      currentSelectedRunId = "";
+
       setRunnerCardStatus("Local runner not connected", false);
 
       setStatusIndicator(
@@ -492,6 +770,8 @@
       if (detailPanel) {
         detailPanel.classList.add("lab-hidden");
       }
+
+      resetComparisonUi("Comparison unavailable because the local Virelia service is offline.");
     } finally {
       if (refreshButton) {
         refreshButton.disabled = false;
@@ -502,6 +782,7 @@
   function bindRunWorkspaceEvents() {
     const select = document.getElementById("runSelect");
     const refreshButton = document.getElementById("refreshRunsButton");
+    const compareButton = document.getElementById("compareRunsButton");
 
     if (select) {
       select.addEventListener("change", () => {
@@ -511,6 +792,10 @@
 
     if (refreshButton) {
       refreshButton.addEventListener("click", refreshRunWorkspace);
+    }
+
+    if (compareButton) {
+      compareButton.addEventListener("click", compareSelectedRuns);
     }
   }
 
