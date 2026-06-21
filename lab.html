@@ -207,6 +207,51 @@
       cursor: not-allowed;
     }
 
+
+    .comparison-panel {
+      margin-top: 24px;
+      border: 1px solid rgba(98, 179, 255, 0.28);
+      background: rgba(98, 179, 255, 0.06);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .comparison-panel h3 {
+      margin: 0 0 8px;
+      font-size: 1.15rem;
+    }
+
+    .comparison-panel > p {
+      margin: 0 0 18px;
+      color: #b9cad8;
+      line-height: 1.55;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .comparison-column {
+      border: 1px solid rgba(156, 183, 205, 0.2);
+      background: rgba(18, 28, 42, 0.72);
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .comparison-column h4 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+    }
+
+    @media (max-width: 760px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .lab-hidden {
       display: none !important;
     }
@@ -299,10 +344,10 @@
         </div>
 
         <div class="lab-notice">
-          This page is currently an observability shell. It does not yet execute
-          PowerShell, access the local repository, or expose live operational data.
-          Those capabilities will be added only through a constrained local runner
-          service with explicit authorization and logging.
+          This page provides read-only visibility into locally available Virelia trace
+          packages through a constrained localhost service. It does not execute
+          PowerShell, start simulations, modify local files, or expose remote
+          operational control.
         </div>
 
         <div class="lab-grid">
@@ -409,6 +454,45 @@
               <h2 id="selectedRunTitle">Selected Run</h2>
 
                <p id="selectedRunSummary"></p>
+
+               <section id="comparisonPanel" class="comparison-panel">
+                 <h3>Compare This Run</h3>
+
+                 <p id="comparisonFamilySummary">
+                   Select a run to discover its declared comparison family.
+                 </p>
+
+                 <div class="lab-footer-actions" style="margin-top: 0;">
+                   <label
+                     for="comparisonTargetSelect"
+                     style="display: flex; flex-direction: column; gap: 6px; color: #bdd4e6; font-weight: 700;"
+                   >
+                     Compare against
+
+                     <select
+                       id="comparisonTargetSelect"
+                       disabled
+                       style="min-width: 300px; min-height: 42px; border-radius: 8px; padding: 0 10px;"
+                     >
+                       <option>No comparison target available</option>
+                     </select>
+                   </label>
+
+                   <button
+                     id="compareRunsButton"
+                     class="lab-button secondary"
+                     type="button"
+                     disabled
+                   >
+                     Compare Selected Runs
+                   </button>
+                 </div>
+
+                 <div id="comparisonResultPanel" class="lab-hidden" style="margin-top: 22px;">
+                   <h3>Pairwise Comparison</h3>
+                   <div id="comparisonResultContent"></div>
+                 </div>
+               </section>
 
                <div id="selectedRunValidation"></div>
 
