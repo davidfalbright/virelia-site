@@ -1,24 +1,15 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <title>Virelia Lab</title>
-  <meta
-    name="description"
-    content="Private Virelia development environment for governed simulation, observability, and MRI prototype work."
-  />
-
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="lab/lab-graph.css" />
-  
-  <style>
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1"/>
+		<title>Virelia Lab</title>
+		<meta name="description" content="Private Virelia development environment for governed simulation, observability, and MRI prototype work."/>
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+		<link rel="stylesheet" href="styles.css"/>
+		<link rel="stylesheet" href="lab/lab-graph.css"/>
+		<style>
     .lab-shell {
       padding: 42px 0 70px;
     }
@@ -271,282 +262,241 @@
       }
     }
   </style>
-</head>
-
-<body>
-  <header class="topbar">
-    <div class="container row">
-      <div class="brand">
-        <div class="logo">
-          <img
-            src="https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord.png"
-            alt="Virelia Logo"
-          />
-        </div>
-
-        <div class="brand-text">
-          <strong>V.I.R.E.L.I.A.</strong>
-          <span>Virtual Intelligence with Responsible Ethics, Logic, and Independent Alignment</span>
-        </div>
-      </div>
-
-      <nav class="nav">
-        <a href="landing_page.html">Main Page</a>
-        <a href="#lab-top">Top of Screen</a>
-      </nav>
-    </div>
-  </header>
-
-  <section class="banner">
-    <div class="container row">
-      <div class="banner-dot"></div>
-      <div class="banner-text">
-        <strong>Development environment:</strong>
+	</head>
+	<body>
+		<header class="topbar">
+			<div class="container row">
+				<div class="brand">
+					<div class="logo">
+						<img src="https://raw.githubusercontent.com/davidfalbright/virelia-site/main/images/Bronze_Accord.png" alt="Virelia Logo"/>
+					</div>
+					<div class="brand-text">
+						<strong>V.I.R.E.L.I.A.</strong>
+						<span>Virtual Intelligence with Responsible Ethics, Logic, and Independent Alignment</span>
+					</div>
+				</div>
+				<nav class="nav">
+					<a href="landing_page.html">Main Page</a>
+					<a href="#lab-top">Top of Screen</a>
+				</nav>
+			</div>
+		</header>
+		<section class="banner">
+			<div class="container row">
+				<div class="banner-dot"/>
+				<div class="banner-text">
+					<strong>Development environment:</strong>
         Internal observability, simulation, and governed-runner prototype work.
       </div>
-    </div>
-  </section>
-
-  <main id="lab-top" class="lab-shell">
-    <div class="container narrow">
-
-      <section id="labUnauthorized" class="lab-hidden">
-        <div class="lab-panel">
-          <h1>Virelia Lab</h1>
-          <p>
+			</div>
+		</section>
+		<main id="lab-top" class="lab-shell">
+			<div class="container narrow">
+				<section id="labUnauthorized" class="lab-hidden">
+					<div class="lab-panel">
+						<h1>Virelia Lab</h1>
+						<p>
             This area requires authorized Virelia access.
           </p>
-
-          <div class="lab-footer-actions">
-            <a class="lab-button" href="landing_page.html">Return to Main Page</a>
-          </div>
-        </div>
-      </section>
-
-      <section id="labAuthorized" class="lab-hidden">
-        <div class="lab-eyebrow">
-          <span class="lab-eyebrow-dot"></span>
+						<div class="lab-footer-actions">
+							<a class="lab-button" href="landing_page.html">Return to Main Page</a>
+						</div>
+					</div>
+				</section>
+				<section id="labAuthorized" class="lab-hidden">
+					<div class="lab-eyebrow">
+						<span class="lab-eyebrow-dot"/>
           Internal Development Environment
         </div>
-
-        <div class="lab-title-row">
-          <div>
-            <h1>Virelia Lab</h1>
-            <p class="lab-subtitle">
+					<div class="lab-title-row">
+						<div>
+							<h1>Virelia Lab</h1>
+							<p class="lab-subtitle">
               A private workspace for making governed reasoning, simulation traces,
               attachment relationships, and MRI-style observability visible without
               exposing unrestricted system control.
             </p>
-          </div>
-
-          <div id="labAccessBadge" class="lab-access-badge">
+						</div>
+						<div id="labAccessBadge" class="lab-access-badge">
             Access verification pending
           </div>
-        </div>
-
-        <div class="lab-notice">
+					</div>
+					<div class="lab-notice">
           This page provides read-only visibility into locally available Virelia trace
           packages through a constrained localhost service. It does not execute
           PowerShell, start simulations, modify local files, or expose remote
           operational control.
         </div>
-
-        <div class="lab-grid">
-          <section class="lab-card">
-            <h2>Wave Runner</h2>
-            <p>
+					<div class="lab-grid">
+						<section class="lab-card">
+							<h2>Wave Runner</h2>
+							<p>
               Controlled interface for approved simulation waves, scenario selection,
               validation status, elapsed time, output review, and later local-runner
               connection status.
             </p>
-
-            <div class="lab-status">
-              <span id="runnerStatusDot" class="status-dot offline"></span>
-              <span id="runnerStatus">Local runner not connected</span>
-            </div>
-          </section>
-
-          <section class="lab-card">
-            <h2>MRI Observatory</h2>
-            <p>
+							<div class="lab-status">
+								<span id="runnerStatusDot" class="status-dot offline"/>
+								<span id="runnerStatus">Local runner not connected</span>
+							</div>
+						</section>
+						<section class="lab-card">
+							<h2>MRI Observatory</h2>
+							<p>
               Visual exploration of belief activation, attachment influence,
               safeguard tension, decision difficulty, and post-action observations.
             </p>
-
-            <div class="lab-status">
-              <span class="status-dot prototype"></span>
-              <span>Prototype visualization planned</span>
-            </div>
-          </section>
-
-          <section class="lab-card">
-            <h2>Run Investigation Workspace</h2>
-
-            <p>
+							<div class="lab-status">
+								<span class="status-dot prototype"/>
+								<span>Prototype visualization planned</span>
+							</div>
+						</section>
+						<section class="lab-card">
+							<h2>Run Investigation Workspace</h2>
+							<p>
               A read-only local view of completed Virelia simulation runs.
             </p>
-
-            <p>
+							<p>
               When the local Virelia service is available, this workspace lists trace packages,
               shows validation and integrity status, and lets an authorized user inspect the
               ordered run timeline, safeguards activated, generated artifacts, trust/adoption
               outcomes, and reflection recommendations.
             </p>
-
-            <p>
+							<p>
               This workspace does not launch simulations, modify local files, or expose remote
               operational control. It reads only from the localhost Virelia trace service
               running on the same device.
             </p>
-
-            <div class="lab-status">
-              <span id="runWorkspaceStatusDot" class="status-dot offline"></span>
-              <span id="runWorkspaceStatus">Checking local Virelia service…</span>
-            </div>
-          </section>
-          
-          <section class="lab-card">
-            <h2>Reflection Queue</h2>
-            <p>
+							<div class="lab-status">
+								<span id="runWorkspaceStatusDot" class="status-dot offline"/>
+								<span id="runWorkspaceStatus">Checking local Virelia service…</span>
+							</div>
+						</section>
+						<section class="lab-card">
+							<h2>Reflection Queue</h2>
+							<p>
               Review space for candidate experiential insights, promotion requests,
               post-action reflections, and human approval or rejection decisions.
             </p>
-
-            <div class="lab-status">
-              <span class="status-dot prototype"></span>
-              <span>Review workflow not connected</span>
-            </div>
-          </section>
-        </div>
-
-        <section id="runWorkspacePanel" class="lab-panel">
-             <h2>Available Local Runs</h2>
-
-              <p id="runWorkspaceSummary">
+							<div class="lab-status">
+								<span class="status-dot prototype"/>
+								<span>Review workflow not connected</span>
+							</div>
+						</section>
+					</div>
+					<section id="runWorkspacePanel" class="lab-panel">
+						<h2>Available Local Runs</h2>
+						<p id="runWorkspaceSummary">
                 Checking the local Virelia trace service…
              </p>
-
-             <div class="lab-footer-actions">
-               <label
-                 for="runSelect"
-                 style="display: flex; flex-direction: column; gap: 6px; color: #bdd4e6; font-weight: 700;"
-               >
+						<div class="lab-footer-actions">
+							<label for="runSelect" style="display: flex; flex-direction: column; gap: 6px; color: #bdd4e6; font-weight: 700;">
                Select a run
 
-               <select
-                 id="runSelect"
-                 disabled
-                 style="min-width: 270px; min-height: 42px; border-radius: 8px; padding: 0 10px;"
-               >
-               <option>Local service unavailable</option>
-               </select>
-               </label>
-
-               <button
-                 id="refreshRunsButton"
-                 class="lab-button secondary"
-                 type="button"
-               >
+               <select id="runSelect" disabled style="min-width: 270px; min-height: 42px; border-radius: 8px; padding: 0 10px;">
+									<option>Local service unavailable</option>
+								</select>
+							</label>
+							<button id="refreshRunsButton" class="lab-button secondary" type="button">
                Refresh Local Runs
                </button>
-             </div>
-
-             <div id="runDetailPanel" class="lab-hidden" style="margin-top: 25px;">
-              <h2 id="selectedRunTitle">Selected Run</h2>
-
-               <p id="selectedRunSummary"></p>
-
-               <section id="comparisonPanel" class="comparison-panel">
-                 <h3>Compare This Run</h3>
-
-                 <p id="comparisonFamilySummary">
+						</div>
+						<div id="runDetailPanel" class="lab-hidden" style="margin-top: 25px;">
+							<h2 id="selectedRunTitle">Selected Run</h2>
+							<p id="selectedRunSummary"/>
+							<section id="comparisonPanel" class="comparison-panel">
+								<h3>Compare This Run</h3>
+								<p id="comparisonFamilySummary">
                    Select a run to discover its declared comparison family.
                  </p>
-
-                 <div class="lab-footer-actions" style="margin-top: 0;">
-                   <label
-                     for="comparisonTargetSelect"
-                     style="display: flex; flex-direction: column; gap: 6px; color: #bdd4e6; font-weight: 700;"
-                   >
+								<div class="lab-footer-actions" style="margin-top: 0;">
+									<label for="comparisonTargetSelect" style="display: flex; flex-direction: column; gap: 6px; color: #bdd4e6; font-weight: 700;">
                      Compare against
 
-                     <select
-                       id="comparisonTargetSelect"
-                       disabled
-                       style="min-width: 300px; min-height: 42px; border-radius: 8px; padding: 0 10px;"
-                     >
-                       <option>No comparison target available</option>
-                     </select>
-                   </label>
-
-                   <button
-                     id="compareRunsButton"
-                     class="lab-button secondary"
-                     type="button"
-                     disabled
-                   >
+                     <select id="comparisonTargetSelect" disabled style="min-width: 300px; min-height: 42px; border-radius: 8px; padding: 0 10px;">
+											<option>No comparison target available</option>
+										</select>
+									</label>
+									<button id="compareRunsButton" class="lab-button secondary" type="button" disabled>
                      Compare Selected Runs
                    </button>
-                 </div>
-
-                 <div id="comparisonResultPanel" class="lab-hidden" style="margin-top: 22px;">
-                   <h3>Pairwise Comparison</h3>
-                   <div id="comparisonResultContent"></div>
-                 </div>
-               </section>
-
-               <div id="selectedRunValidation"></div>
-
-               <h3 style="margin-top: 26px;">Trace Timeline</h3>
-               <div id="selectedRunTimeline"></div>
-
-               <h3 style="margin-top: 26px;">Artifacts</h3>
-               <div id="selectedRunArtifacts"></div>
-             </div>
-        </section>
-        
-        <section class="lab-panel">
-          <h2>Planned Development Sequence</h2>
-          <p>
+								</div>
+								<div id="comparisonResultPanel" class="lab-hidden" style="margin-top: 22px;">
+									<h3>Pairwise Comparison</h3>
+									<div id="comparisonResultContent"/>
+								</div>
+							</section>
+							<div id="selectedRunValidation"/>
+							<h3 style="margin-top: 26px;">Trace Timeline</h3>
+							<div id="selectedRunTimeline"/>
+							<h3 style="margin-top: 26px;">Artifacts</h3>
+							<div id="selectedRunArtifacts"/>
+						</div>
+					</section>
+					<section class="lab-panel lab-mri-panel">
+						<div class="lab-mri-heading">
+							<div>
+								<div class="lab-eyebrow">
+									<span class="lab-eyebrow-dot"/>
+        Governance MRI
+      </div>
+								<h2>Governance MRI Explorer</h2>
+								<p>
+        Explore the activated Regions, Clusters, Beliefs, Attachments,
+        and verdict participation recorded during a governed run.
+      </p>
+							</div>
+							<button id="replayRunButton" class="lab-button secondary" type="button" disabled>
+      Replay Run
+    </button>
+						</div>
+						<div class="lab-mri-layout">
+							<div id="governanceGraph" class="lab-graph" aria-label="Interactive governance MRI visualization"/> </div>
+							<aside id="graphDetailsPanel" class="lab-graph-details" aria-live="polite">
+								<div class="lab-graph-details-kicker">Object Inspector</div>
+								<h3 id="graphDetailTitle">Select an object</h3>
+								<div id="graphDetailContent">
+									<p>
+          Select a Region, Cluster, Belief, Attachment, or verdict
+          object to inspect its recorded state and ledger evidence.
+        </p>
+								</div>
+							</aside>
+						</div>
+					</section>
+					<section class="lab-panel">
+						<h2>Planned Development Sequence</h2>
+						<p>
             The first objective is visibility, not remote execution.
           </p>
-
-          <ol class="lab-list">
-            <li>Confirm authorized access to the Lab page.</li>
-            <li>Display a static example of a completed WaveRunner artifact.</li>
-            <li>Display a first MRI activation-and-influence snapshot.</li>
-            <li>Add local runner connection status.</li>
-            <li>Add tightly constrained, approved run requests.</li>
-            <li>Add governed Ollama-assisted review workflows.</li>
-          </ol>
-        </section>
-
-        <div class="lab-footer-actions">
-          <button class="lab-button" type="button" disabled>
-            View Latest Run — Not Connected
-          </button>
-
-          <button class="lab-button secondary" type="button" disabled>
-            Open MRI Snapshot — Not Connected
-          </button>
-
-          <a class="lab-button secondary" href="landing_page.html">
+						<ol class="lab-list">
+							<li>Confirm authorized access to the Lab page.</li>
+							<li>Display a static example of a completed WaveRunner artifact.</li>
+							<li>Display a first MRI activation-and-influence snapshot.</li>
+							<li>Add local runner connection status.</li>
+							<li>Add tightly constrained, approved run requests.</li>
+							<li>Add governed Ollama-assisted review workflows.</li>
+						</ol>
+					</section>
+					<div class="lab-footer-actions">
+						<button class="lab-button" type="button" disabled> View Latest Run — Not Connected
+					</button>
+					<button class="lab-button secondary" type="button" disabled> Open MRI Snapshot — Not Connected
+				</button>
+				<a class="lab-button secondary" href="landing_page.html">
             Return to Main Page
           </a>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <footer class="footer">
-    <div class="container">
-      <span>© <span id="year"></span> V.I.R.E.L.I.A.</span>
-    </div>
-  </footer>
-
-<script src="https://cdn.jsdelivr.net/npm/3d-force-graph"></script>
+			</div>
+		</section>
+	</div>
+</main>
+<footer class="footer">
+	<div class="container">
+		<span>© <span id="year"/> V.I.R.E.L.I.A.</span>
+	</div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.80.0"></script>
 <script src="lab/lab-graph.js"></script>
 <script src="lab.js"></script>
-  
 </body>
 </html>
