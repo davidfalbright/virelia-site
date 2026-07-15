@@ -9,8 +9,8 @@
     "lab/data/Virelia_Consulting_view_cache_3d_force_graph_TEST_DATA.json";
 
   /*
-   * Future Right Brain Domains are shown in the filter interface even
-   * before the current projection contains objects for all of them.
+   * These Right Brain Domains are displayed as future placeholders
+   * when they are not yet present in the current graph projection.
    */
 
   const RIGHT_BRAIN_PLACEHOLDER_DOMAINS = Object.freeze([
@@ -18,12 +18,11 @@
     "Personality and Temperament",
     "Social and Relational Context",
     "Interaction and Delivery",
-    "Experiential Response",
-    "Rhetoric and Manipulation"
+    "Experiential Response"
   ]);
 
   /*
-   * Left Brain colors
+   * Left Brain object colors.
    */
 
   const LEFT_COLORS = Object.freeze({
@@ -42,8 +41,8 @@
   });
 
   /*
-   * Right Brain colors use the same architectural object types,
-   * but a separate visual palette.
+   * Right Brain uses the same architectural object types,
+   * distinguished with a separate palette.
    */
 
   const RIGHT_COLORS = Object.freeze({
@@ -62,10 +61,7 @@
   });
 
   /*
-   * Current diagnostic Distortion Clusters.
-   *
-   * The requested order is darkest at the top of the legend and
-   * lightest at the bottom.
+   * Existing Right Brain distortion Cluster colors.
    */
 
   const DISTORTION_COLORS = Object.freeze({
@@ -81,19 +77,65 @@
       label: "Moral Distortion",
       color: DISTORTION_COLORS.moral
     },
+
     "D-ETH-CL-9003": {
       label: "Identity Defense Distortion",
       color: DISTORTION_COLORS.identity_defense
     },
+
     "D-ETH-CL-9002": {
       label: "Frame Distortion",
       color: DISTORTION_COLORS.frame
     },
+
     "D-ETH-CL-9001": {
       label: "Cognitive Distortion",
       color: DISTORTION_COLORS.cognitive
     }
   });
+
+  const ARCHITECTURAL_FILTERS = Object.freeze([
+    {
+      key: "root_conviction",
+      label: "Root Conviction",
+      column: "convictions"
+    },
+    {
+      key: "domain_conviction",
+      label: "Domain Conviction",
+      column: "convictions"
+    },
+    {
+      key: "principle",
+      label: "Principle",
+      column: "convictions"
+    },
+    {
+      key: "root_safeguard",
+      label: "Root Safeguard",
+      column: "safeguards"
+    },
+    {
+      key: "domain_safeguard",
+      label: "Domain Safeguard",
+      column: "safeguards"
+    },
+    {
+      key: "article",
+      label: "Article",
+      column: "safeguards"
+    },
+    {
+      key: "region",
+      label: "Region",
+      column: "structure"
+    },
+    {
+      key: "cluster",
+      label: "Cluster",
+      column: "structure"
+    }
+  ]);
 
   let graphInstance = null;
   let graphPayload = null;
@@ -101,11 +143,7 @@
   let resizeObserver = null;
   let initialized = false;
   let selectedNodeId = null;
-
-  /*
-   * Maps each individual diagnostic distortion to its parent
-   * Distortion Cluster.
-   */
+  let appliedFilterSignature = "";
 
   const distortionClusterByNodeId = new Map();
 
@@ -129,7 +167,9 @@
       .replace(/[_-]+/g, " ")
       .replace(/\s+/g, " ")
       .trim()
-      .replace(/\b\w/g, (character) => character.toUpperCase());
+      .replace(/\b\w/g, (character) =>
+        character.toUpperCase()
+      );
   }
 
   function displayValue(value) {
@@ -165,13 +205,13 @@
     return endpoint;
   }
 
-  function cloneCanonicalGraphData(payload) {
+  function cloneGraphData(data) {
     return {
-      nodes: payload.nodes.map((node) => ({
+      nodes: data.nodes.map((node) => ({
         ...node
       })),
 
-      links: payload.links.map((link) => ({
+      links: data.links.map((link) => ({
         ...link,
         source: linkEndpointId(link.source),
         target: linkEndpointId(link.target)
@@ -188,6 +228,9 @@
         node.origin?.origin_reservoir
       );
 
+    const authorityLevel =
+      normalizeValue(node.authority_level);
+
     const id =
       String(node.id || "")
         .toUpperCase();
@@ -195,6 +238,7 @@
     return (
       subdomain === "root" ||
       originReservoir === "root" ||
+      authorityLevel === "root" ||
       id.startsWith("R-")
     );
   }
@@ -249,10 +293,16 @@
       return "cluster";
     }
 
+    /*
+     * Individual diagnostic distortions currently remain visible
+     * through the Cluster filter because they are diagnostic members
+     * of the selected distortion Cluster.
+     */
+
     if (
       family === "diagnostic_distortion"
     ) {
-      return "diagnostic_distortion";
+      return "cluster";
     }
 
     return "default";
@@ -292,27 +342,31 @@
 
     const reservoir =
       normalizeValue(
+        node.reservoir_id ||
         node.origin?.origin_reservoir
       );
 
     if (
-      reservoir.includes("response") ||
       reservoir === "rrr" ||
-      reservoir === "drr"
+      reservoir === "drr" ||
+      reservoir.includes("response")
     ) {
       return "right";
     }
 
     if (
-      reservoir.includes("ethical") ||
       reservoir === "rer" ||
-      reservoir === "der"
+      reservoir === "der" ||
+      reservoir.includes("ethical")
     ) {
       return "left";
     }
 
     const domain =
-      normalizeValue(node.domain_name);
+      normalizeValue(
+        node.domain_name ||
+        node.domain_id
+      );
 
     if (
       domain.includes("emotion") ||
@@ -341,13 +395,13 @@
       return "Rhetoric and Manipulation";
     }
 
-    const explicitDomain =
+    const domain =
       node.domain_display_name ||
       node.domain_name ||
       node.domain_id;
 
-    if (explicitDomain) {
-      return titleCase(explicitDomain);
+    if (domain) {
+      return titleCase(domain);
     }
 
     return inferBrainSide(node) === "right"
@@ -393,14 +447,14 @@
       return distortionColor;
     }
 
-    const brainSide =
+    const side =
       inferBrainSide(node);
 
     const classification =
       classifyArchitecturalObject(node);
 
     const palette =
-      brainSide === "right"
+      side === "right"
         ? RIGHT_COLORS
         : LEFT_COLORS;
 
@@ -453,9 +507,7 @@
         linkEndpointId(link.target);
 
       const clusterId =
-        DISTORTION_CLUSTER_DETAILS[
-          targetId
-        ]
+        DISTORTION_CLUSTER_DETAILS[targetId]
           ? targetId
           : sourceId;
 
@@ -502,18 +554,14 @@
         linkEndpointId(link.target);
 
       if (
-        DISTORTION_CLUSTER_DETAILS[
-          targetId
-        ]
+        DISTORTION_CLUSTER_DETAILS[targetId]
       ) {
         distortionClusterByNodeId.set(
           sourceId,
           targetId
         );
       } else if (
-        DISTORTION_CLUSTER_DETAILS[
-          sourceId
-        ]
+        DISTORTION_CLUSTER_DETAILS[sourceId]
       ) {
         distortionClusterByNodeId.set(
           targetId,
@@ -554,293 +602,83 @@
 
     container.innerHTML = `
       <div class="lab-graph-message">
-        <strong>
-          ${escapeHtml(title)}
-        </strong>
-
-        <span>
-          ${escapeHtml(message)}
-        </span>
+        <strong>${escapeHtml(title)}</strong>
+        <span>${escapeHtml(message)}</span>
       </div>
     `;
   }
 
-  function legendRow(label, color, isPlaceholder) {
-    return `
-      <div class="lab-graph-legend-row${
-        isPlaceholder
-          ? " is-placeholder"
-          : ""
-      }">
-        <span
-          class="lab-graph-legend-swatch"
-          style="background: ${escapeHtml(color)};"
-        ></span>
-
-        <span>
-          ${escapeHtml(label)}
-        </span>
-      </div>
-    `;
-  }
-
-  function renderLegend() {
-    const mriPanel =
-      document.querySelector(
-        ".lab-mri-panel"
-      );
-
-    const graphLayout =
-      document.querySelector(
-        ".lab-mri-layout"
-      );
-
-    if (
-      !mriPanel ||
-      !graphLayout
-    ) {
-      return;
+  function availableDomainsForSide(side) {
+    if (!canonicalGraphData) {
+      return [];
     }
-
-    const existingLegend =
-      mriPanel.querySelector(
-        ".lab-graph-legend"
-      );
-
-    if (existingLegend) {
-      existingLegend.remove();
-    }
-
-    const legend =
-      document.createElement("section");
-
-    legend.className =
-      "lab-graph-legend";
-
-    legend.setAttribute(
-      "aria-label",
-      "Governance MRI architectural color legend"
-    );
-
-    legend.innerHTML = `
-      <div class="lab-graph-legend-title">
-        Graph Legend
-      </div>
-
-      <div class="lab-graph-legend-brains">
-        <section class="lab-graph-legend-brain">
-          <div class="lab-graph-legend-brain-title">
-            Left Brain
-          </div>
-
-          <div class="lab-graph-legend-columns">
-            <div class="lab-graph-legend-column">
-              <div class="lab-graph-legend-column-title">
-                Convictions
-              </div>
-
-              ${legendRow(
-                "Root Conviction",
-                LEFT_COLORS.root_conviction,
-                false
-              )}
-
-              ${legendRow(
-                "Domain Conviction",
-                LEFT_COLORS.domain_conviction,
-                false
-              )}
-
-              ${legendRow(
-                "Principle",
-                LEFT_COLORS.principle,
-                false
-              )}
-            </div>
-
-            <div class="lab-graph-legend-column">
-              <div class="lab-graph-legend-column-title">
-                Safeguards
-              </div>
-
-              ${legendRow(
-                "Root Safeguard",
-                LEFT_COLORS.root_safeguard,
-                false
-              )}
-
-              ${legendRow(
-                "Domain Safeguard",
-                LEFT_COLORS.domain_safeguard,
-                false
-              )}
-
-              ${legendRow(
-                "Article",
-                LEFT_COLORS.article,
-                false
-              )}
-            </div>
-
-            <div class="lab-graph-legend-column">
-              <div class="lab-graph-legend-column-title">
-                Reserved
-              </div>
-
-              <div class="lab-graph-legend-row is-placeholder">
-                Left Brain Domains use the same architectural objects.
-              </div>
-            </div>
-
-            <div class="lab-graph-legend-column">
-              <div class="lab-graph-legend-column-title">
-                Structure
-              </div>
-
-              ${legendRow(
-                "Region",
-                LEFT_COLORS.region,
-                false
-              )}
-
-              ${legendRow(
-                "Cluster",
-                LEFT_COLORS.cluster,
-                false
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section class="lab-graph-legend-brain">
-          <div class="lab-graph-legend-brain-title">
-            Right Brain
-          </div>
-
-          <div class="lab-graph-legend-columns">
-            <div class="lab-graph-legend-column">
-              <div class="lab-graph-legend-column-title">
-                Convictions
-              </div>
-
-              ${legendRow(
-                "Root Conviction",
-                RIGHT_COLORS.root_conviction,
-                true
-              )}
-
-              ${legendRow(
-                "Domain Conviction",
-                RIGHT_COLORS.domain_conviction,
-                true
-              )}
-
-              ${legendRow(
-                "Principle",
-                RIGHT_COLORS.principle,
-                true
-              )}
-            </div>
-
-            <div class="lab-graph-legend-column">
-              <div class="lab-graph-legend-column-title">
-                Safeguards
-              </div>
-
-              ${legendRow(
-                "Root Safeguard",
-                RIGHT_COLORS.root_safeguard,
-                true
-              )}
-
-              ${legendRow(
-                "Domain Safeguard",
-                RIGHT_COLORS.domain_safeguard,
-                true
-              )}
-
-              ${legendRow(
-                "Article",
-                RIGHT_COLORS.article,
-                true
-              )}
-            </div>
-
-            <div class="lab-graph-legend-column">
-              <div class="lab-graph-legend-column-title">
-                Distortion Clusters
-              </div>
-
-              ${legendRow(
-                "Moral Distortion",
-                DISTORTION_COLORS.moral,
-                false
-              )}
-
-              ${legendRow(
-                "Identity Defense Distortion",
-                DISTORTION_COLORS.identity_defense,
-                false
-              )}
-
-              ${legendRow(
-                "Frame Distortion",
-                DISTORTION_COLORS.frame,
-                false
-              )}
-
-              ${legendRow(
-                "Cognitive Distortion",
-                DISTORTION_COLORS.cognitive,
-                false
-              )}
-            </div>
-
-            <div class="lab-graph-legend-column">
-              <div class="lab-graph-legend-column-title">
-                Structure
-              </div>
-
-              ${legendRow(
-                "Region",
-                RIGHT_COLORS.region,
-                true
-              )}
-
-              ${legendRow(
-                "Cluster",
-                RIGHT_COLORS.cluster,
-                true
-              )}
-            </div>
-          </div>
-        </section>
-      </div>
-    `;
-
-    mriPanel.insertBefore(
-      legend,
-      graphLayout
-    );
-  }
-
-  function uniqueDomainsForSide(side) {
-    const domains =
-      canonicalGraphData.nodes
-        .filter(
-          (node) =>
-            inferBrainSide(node) === side
-        )
-        .map(inferFilterDomain);
 
     return Array.from(
-      new Set(domains)
+      new Set(
+        canonicalGraphData.nodes
+          .filter(
+            (node) =>
+              inferBrainSide(node) === side
+          )
+          .map(inferFilterDomain)
+      )
     ).sort((a, b) =>
       a.localeCompare(b)
     );
   }
 
-  function filterOptionMarkup(
+  function colorForFilter(side, filterKey) {
+    const palette =
+      side === "right"
+        ? RIGHT_COLORS
+        : LEFT_COLORS;
+
+    return (
+      palette[filterKey] ||
+      palette.default
+    );
+  }
+
+  function objectFilterMarkup(
+    side,
+    filter
+  ) {
+    const id =
+      `graph-${side}-type-${filter.key}`;
+
+    return `
+      <label
+        class="lab-graph-filter-option"
+        for="${escapeHtml(id)}"
+      >
+        <input
+          id="${escapeHtml(id)}"
+          type="checkbox"
+          data-graph-object-side="${escapeHtml(side)}"
+          data-graph-object-type="${escapeHtml(filter.key)}"
+          checked
+        >
+
+        <span class="lab-graph-filter-option-content">
+          <span
+            class="lab-graph-filter-dot"
+            style="background: ${escapeHtml(
+              colorForFilter(
+                side,
+                filter.key
+              )
+            )};"
+          ></span>
+
+          <span class="lab-graph-filter-label">
+            ${escapeHtml(filter.label)}
+          </span>
+        </span>
+      </label>
+    `;
+  }
+
+  function domainFilterMarkup(
     side,
     domain,
     available
@@ -851,8 +689,8 @@
         .replace(/^-|-$/g, "")
         .toLowerCase();
 
-    const inputId =
-      `graph-filter-${side}-${normalizedDomain}`;
+    const id =
+      `graph-${side}-domain-${normalizedDomain}`;
 
     return `
       <label
@@ -861,13 +699,13 @@
             ? ""
             : " is-unavailable"
         }"
-        for="${escapeHtml(inputId)}"
+        for="${escapeHtml(id)}"
       >
         <input
-          id="${escapeHtml(inputId)}"
+          id="${escapeHtml(id)}"
           type="checkbox"
-          data-graph-filter-side="${escapeHtml(side)}"
-          data-graph-filter-domain="${escapeHtml(domain)}"
+          data-graph-domain-side="${escapeHtml(side)}"
+          data-graph-domain-name="${escapeHtml(domain)}"
           ${
             available
               ? "checked"
@@ -875,19 +713,168 @@
           }
         >
 
-        <span>
+        <span class="lab-graph-filter-label">
           ${escapeHtml(domain)}
+
           ${
             available
               ? ""
-              : " — not in this dataset"
+              : `
+                <span class="lab-graph-domain-note">
+                  Not in this dataset
+                </span>
+              `
           }
         </span>
       </label>
     `;
   }
 
-  function renderFilterControls() {
+  function renderObjectColumns(side) {
+    const columns = [
+      {
+        key: "convictions",
+        title: "Convictions"
+      },
+      {
+        key: "safeguards",
+        title: "Safeguards"
+      },
+      {
+        key: "structure",
+        title: "Structure"
+      }
+    ];
+
+    return columns
+      .map((column) => {
+        const items =
+          ARCHITECTURAL_FILTERS.filter(
+            (filter) =>
+              filter.column === column.key
+          );
+
+        return `
+          <div class="lab-graph-object-column">
+            <div class="lab-graph-object-column-title">
+              ${escapeHtml(column.title)}
+            </div>
+
+            ${items
+              .map((filter) =>
+                objectFilterMarkup(
+                  side,
+                  filter
+                )
+              )
+              .join("")}
+          </div>
+        `;
+      })
+      .join("");
+  }
+
+  function renderBrainPanel(
+    side,
+    domains,
+    placeholderDomains
+  ) {
+    const displayName =
+      side === "left"
+        ? "Left Brain"
+        : "Right Brain";
+
+    const allDomains =
+      Array.from(
+        new Set([
+          ...domains,
+          ...placeholderDomains
+        ])
+      );
+
+    return `
+      <section
+        class="lab-graph-brain-panel"
+        data-brain-side="${escapeHtml(side)}"
+      >
+        <div class="lab-graph-brain-title-row">
+          <h3 class="lab-graph-brain-title">
+            ${escapeHtml(displayName)}
+          </h3>
+
+          <span class="lab-graph-brain-status">
+            ${domains.length}
+            available domain${
+              domains.length === 1
+                ? ""
+                : "s"
+            }
+          </span>
+        </div>
+
+        <section class="lab-graph-control-section">
+          <h4 class="lab-graph-control-section-title">
+            Object Types
+          </h4>
+
+          <div class="lab-graph-object-grid">
+            ${renderObjectColumns(side)}
+          </div>
+        </section>
+
+        <section class="lab-graph-control-section">
+          <h4 class="lab-graph-control-section-title">
+            Domains
+          </h4>
+
+          <div class="lab-graph-domain-list">
+            <label
+              class="lab-graph-filter-option is-master"
+              for="graph-${escapeHtml(side)}-all-domains"
+            >
+              <input
+                id="graph-${escapeHtml(side)}-all-domains"
+                type="checkbox"
+                data-graph-domain-master="${escapeHtml(side)}"
+                ${
+                  domains.length
+                    ? "checked"
+                    : ""
+                }
+              >
+
+              <span class="lab-graph-filter-label">
+                All Available ${escapeHtml(displayName)} Domains
+              </span>
+            </label>
+
+            ${allDomains
+              .map((domain) =>
+                domainFilterMarkup(
+                  side,
+                  domain,
+                  domains.includes(domain)
+                )
+              )
+              .join("")}
+          </div>
+        </section>
+      </section>
+    `;
+  }
+
+  function locateExistingReplayButton() {
+    return (
+      document.getElementById(
+        "replayRunButton"
+      ) ||
+      document.querySelector(
+        "[data-replay-run]"
+      )
+    );
+  }
+
+  function renderControlInterface() {
     const mriPanel =
       document.querySelector(
         ".lab-mri-panel"
@@ -906,28 +893,19 @@
       return;
     }
 
-    const existingControls =
-      mriPanel.querySelector(
-        ".lab-graph-controls"
+    mriPanel
+      .querySelectorAll(
+        ".lab-graph-controls, .lab-graph-action-bar, .lab-graph-legend"
+      )
+      .forEach((element) =>
+        element.remove()
       );
-
-    if (existingControls) {
-      existingControls.remove();
-    }
 
     const leftDomains =
-      uniqueDomainsForSide("left");
-
-    const availableRightDomains =
-      uniqueDomainsForSide("right");
+      availableDomainsForSide("left");
 
     const rightDomains =
-      Array.from(
-        new Set([
-          ...availableRightDomains,
-          ...RIGHT_BRAIN_PLACEHOLDER_DOMAINS
-        ])
-      );
+      availableDomainsForSide("right");
 
     const controls =
       document.createElement("section");
@@ -937,111 +915,43 @@
 
     controls.setAttribute(
       "aria-label",
-      "Governance MRI graph filters"
+      "Governance MRI graph controls"
     );
 
-    controls.innerHTML = `
-      <section class="lab-graph-filter-group">
-        <div class="lab-graph-filter-heading">
-          <h3>Left Brain</h3>
+    controls.innerHTML =
+      renderBrainPanel(
+        "left",
+        leftDomains,
+        []
+      ) +
+      renderBrainPanel(
+        "right",
+        rightDomains,
+        RIGHT_BRAIN_PLACEHOLDER_DOMAINS
+      );
 
-          <span class="lab-graph-filter-status">
-            ${leftDomains.length}
-            domain${
-              leftDomains.length === 1
-                ? ""
-                : "s"
-            }
-          </span>
-        </div>
+    const actionBar =
+      document.createElement("div");
 
-        <div class="lab-graph-filter-list">
-          <label
-            class="lab-graph-filter-option is-master"
-            for="graph-filter-left-all"
-          >
-            <input
-              id="graph-filter-left-all"
-              type="checkbox"
-              data-graph-filter-master="left"
-              checked
-            >
+    actionBar.className =
+      "lab-graph-action-bar";
 
-            <span>
-              All Left Brain Domains
-            </span>
-          </label>
-
-          ${leftDomains
-            .map((domain) =>
-              filterOptionMarkup(
-                "left",
-                domain,
-                true
-              )
-            )
-            .join("")}
-        </div>
-      </section>
-
-      <section class="lab-graph-filter-group">
-        <div class="lab-graph-filter-heading">
-          <h3>Right Brain</h3>
-
-          <span class="lab-graph-filter-status">
-            ${availableRightDomains.length}
-            available
-          </span>
-        </div>
-
-        <div class="lab-graph-filter-list">
-          <label
-            class="lab-graph-filter-option is-master"
-            for="graph-filter-right-all"
-          >
-            <input
-              id="graph-filter-right-all"
-              type="checkbox"
-              data-graph-filter-master="right"
-              ${
-                availableRightDomains.length
-                  ? "checked"
-                  : ""
-              }
-            >
-
-            <span>
-              All Available Right Brain Domains
-            </span>
-          </label>
-
-          ${rightDomains
-            .map((domain) =>
-              filterOptionMarkup(
-                "right",
-                domain,
-                availableRightDomains.includes(
-                  domain
-                )
-              )
-            )
-            .join("")}
-        </div>
-      </section>
-
+    actionBar.innerHTML = `
       <div
-        id="graphFilterSummary"
-        class="lab-graph-filter-summary"
+        id="graphActionMessage"
+        class="lab-graph-action-message"
       >
-        <span>
-          Choose any combination of Left Brain and Right Brain
-          Domains, then select <strong>Replay Run</strong>.
-        </span>
-
-        <span id="graphVisibleCount">
-          Full structural projection loaded.
-        </span>
+        Adjust the Left Brain and Right Brain filters,
+        then select <strong>Replay Run</strong>.
       </div>
+
+      <button
+        id="graphReplayRunButton"
+        class="lab-graph-replay-button"
+        type="button"
+      >
+        Replay Run
+      </button>
     `;
 
     mriPanel.insertBefore(
@@ -1049,49 +959,88 @@
       graphLayout
     );
 
+    mriPanel.insertBefore(
+      actionBar,
+      graphLayout
+    );
+
+    /*
+     * The original heading button is hidden rather than removed.
+     * This avoids requiring a lab.html change and prevents duplicate
+     * Replay Run controls.
+     */
+
+    const originalReplayButton =
+      locateExistingReplayButton();
+
+    if (
+      originalReplayButton &&
+      originalReplayButton.id !==
+        "graphReplayRunButton"
+    ) {
+      originalReplayButton.hidden = true;
+      originalReplayButton.setAttribute(
+        "aria-hidden",
+        "true"
+      );
+    }
+
     bindFilterEvents();
+
+    appliedFilterSignature =
+      currentFilterSignature();
+
+    updatePendingState();
   }
 
-  function availableCheckboxesForSide(side) {
+  function objectCheckboxesForSide(side) {
     return Array.from(
       document.querySelectorAll(
-        `input[data-graph-filter-side="${side}"]:not(:disabled)`
+        `input[data-graph-object-side="${side}"]`
       )
     );
   }
 
-  function updateMasterCheckbox(side) {
+  function domainCheckboxesForSide(side) {
+    return Array.from(
+      document.querySelectorAll(
+        `input[data-graph-domain-side="${side}"]:not(:disabled)`
+      )
+    );
+  }
+
+  function updateDomainMaster(side) {
     const master =
       document.querySelector(
-        `input[data-graph-filter-master="${side}"]`
+        `input[data-graph-domain-master="${side}"]`
       );
 
     if (!master) {
       return;
     }
 
-    const children =
-      availableCheckboxesForSide(side);
+    const domains =
+      domainCheckboxesForSide(side);
 
     const checkedCount =
-      children.filter(
+      domains.filter(
         (checkbox) =>
           checkbox.checked
       ).length;
 
     master.checked =
-      children.length > 0 &&
-      checkedCount === children.length;
+      domains.length > 0 &&
+      checkedCount === domains.length;
 
     master.indeterminate =
       checkedCount > 0 &&
-      checkedCount < children.length;
+      checkedCount < domains.length;
   }
 
   function bindFilterEvents() {
     document
       .querySelectorAll(
-        "input[data-graph-filter-master]"
+        "input[data-graph-domain-master]"
       )
       .forEach((master) => {
         master.addEventListener(
@@ -1099,9 +1048,9 @@
           () => {
             const side =
               master.dataset
-                .graphFilterMaster;
+                .graphDomainMaster;
 
-            availableCheckboxesForSide(
+            domainCheckboxesForSide(
               side
             ).forEach((checkbox) => {
               checkbox.checked =
@@ -1110,44 +1059,55 @@
 
             master.indeterminate =
               false;
+
+            updatePendingState();
           }
         );
       });
 
     document
       .querySelectorAll(
-        "input[data-graph-filter-side]"
+        "input[data-graph-domain-side]"
       )
       .forEach((checkbox) => {
         checkbox.addEventListener(
           "change",
           () => {
-            updateMasterCheckbox(
+            updateDomainMaster(
               checkbox.dataset
-                .graphFilterSide
+                .graphDomainSide
             );
+
+            updatePendingState();
           }
+        );
+      });
+
+    document
+      .querySelectorAll(
+        "input[data-graph-object-side]"
+      )
+      .forEach((checkbox) => {
+        checkbox.addEventListener(
+          "change",
+          updatePendingState
         );
       });
 
     const replayButton =
       document.getElementById(
-        "replayRunButton"
+        "graphReplayRunButton"
       );
 
-    if (replayButton) {
-      replayButton.disabled = false;
-
-      replayButton.addEventListener(
-        "click",
-        applySelectedFilters
-      );
-    }
+    replayButton?.addEventListener(
+      "click",
+      applySelectedFilters
+    );
   }
 
-  function selectedDomainsForSide(side) {
+  function selectedObjectTypesForSide(side) {
     return new Set(
-      availableCheckboxesForSide(side)
+      objectCheckboxesForSide(side)
         .filter(
           (checkbox) =>
             checkbox.checked
@@ -1155,9 +1115,97 @@
         .map(
           (checkbox) =>
             checkbox.dataset
-              .graphFilterDomain
+              .graphObjectType
         )
     );
+  }
+
+  function selectedDomainsForSide(side) {
+    return new Set(
+      domainCheckboxesForSide(side)
+        .filter(
+          (checkbox) =>
+            checkbox.checked
+        )
+        .map(
+          (checkbox) =>
+            checkbox.dataset
+              .graphDomainName
+        )
+    );
+  }
+
+  function currentFilterSignature() {
+    const data = {
+      left: {
+        objects: Array.from(
+          selectedObjectTypesForSide(
+            "left"
+          )
+        ).sort(),
+
+        domains: Array.from(
+          selectedDomainsForSide(
+            "left"
+          )
+        ).sort()
+      },
+
+      right: {
+        objects: Array.from(
+          selectedObjectTypesForSide(
+            "right"
+          )
+        ).sort(),
+
+        domains: Array.from(
+          selectedDomainsForSide(
+            "right"
+          )
+        ).sort()
+      }
+    };
+
+    return JSON.stringify(data);
+  }
+
+  function updatePendingState() {
+    const replayButton =
+      document.getElementById(
+        "graphReplayRunButton"
+      );
+
+    const actionMessage =
+      document.getElementById(
+        "graphActionMessage"
+      );
+
+    if (!replayButton) {
+      return;
+    }
+
+    const hasPendingChanges =
+      currentFilterSignature() !==
+      appliedFilterSignature;
+
+    replayButton.classList.toggle(
+      "is-pending",
+      hasPendingChanges
+    );
+
+    if (actionMessage) {
+      actionMessage.innerHTML =
+        hasPendingChanges
+          ? `
+            Filter selections have changed.
+            Select <strong>Replay Run</strong>
+            to update the graph.
+          `
+          : `
+            The graph reflects the currently selected
+            Left Brain and Right Brain filters.
+          `;
+    }
   }
 
   function resetInspector() {
@@ -1189,6 +1237,28 @@
     }
   }
 
+  function nodeMatchesFilters(
+    node,
+    selections
+  ) {
+    const side =
+      inferBrainSide(node);
+
+    const domain =
+      inferFilterDomain(node);
+
+    const objectType =
+      classifyArchitecturalObject(node);
+
+    const sideSelections =
+      selections[side];
+
+    return (
+      sideSelections.domains.has(domain) &&
+      sideSelections.objects.has(objectType)
+    );
+  }
+
   function applySelectedFilters() {
     if (
       !canonicalGraphData ||
@@ -1197,31 +1267,36 @@
       return;
     }
 
-    const selectedLeftDomains =
-      selectedDomainsForSide("left");
+    const selections = {
+      left: {
+        domains:
+          selectedDomainsForSide("left"),
 
-    const selectedRightDomains =
-      selectedDomainsForSide("right");
+        objects:
+          selectedObjectTypesForSide(
+            "left"
+          )
+      },
+
+      right: {
+        domains:
+          selectedDomainsForSide("right"),
+
+        objects:
+          selectedObjectTypesForSide(
+            "right"
+          )
+      }
+    };
 
     const visibleNodes =
       canonicalGraphData.nodes
-        .filter((node) => {
-          const side =
-            inferBrainSide(node);
-
-          const domain =
-            inferFilterDomain(node);
-
-          if (side === "right") {
-            return selectedRightDomains.has(
-              domain
-            );
-          }
-
-          return selectedLeftDomains.has(
-            domain
-          );
-        })
+        .filter((node) =>
+          nodeMatchesFilters(
+            node,
+            selections
+          )
+        )
         .map((node) => ({
           ...node
         }));
@@ -1237,32 +1312,22 @@
       canonicalGraphData.links
         .filter((link) => {
           const sourceId =
-            linkEndpointId(
-              link.source
-            );
+            linkEndpointId(link.source);
 
           const targetId =
-            linkEndpointId(
-              link.target
-            );
+            linkEndpointId(link.target);
 
           return (
-            visibleNodeIds.has(
-              sourceId
-            ) &&
-            visibleNodeIds.has(
-              targetId
-            )
+            visibleNodeIds.has(sourceId) &&
+            visibleNodeIds.has(targetId)
           );
         })
         .map((link) => ({
           ...link,
-          source: linkEndpointId(
-            link.source
-          ),
-          target: linkEndpointId(
-            link.target
-          )
+          source:
+            linkEndpointId(link.source),
+          target:
+            linkEndpointId(link.target)
         }));
 
     graphInstance.graphData({
@@ -1270,32 +1335,51 @@
       links: visibleLinks
     });
 
-    graphInstance
-      .d3ReheatSimulation();
+    graphInstance.d3ReheatSimulation();
 
     if (
       selectedNodeId &&
-      !visibleNodeIds.has(
-        selectedNodeId
-      )
+      !visibleNodeIds.has(selectedNodeId)
     ) {
       resetInspector();
     }
 
-    const countLabel =
+    appliedFilterSignature =
+      currentFilterSignature();
+
+    const actionMessage =
       document.getElementById(
-        "graphVisibleCount"
+        "graphActionMessage"
       );
 
-    if (countLabel) {
-      countLabel.textContent =
-        `${visibleNodes.length} nodes and ` +
-        `${visibleLinks.length} links visible.`;
+    if (actionMessage) {
+      actionMessage.innerHTML = `
+        <strong>${visibleNodes.length}</strong>
+        nodes and
+        <strong>${visibleLinks.length}</strong>
+        links are displayed.
+      `;
     }
+
+    const replayButton =
+      document.getElementById(
+        "graphReplayRunButton"
+      );
+
+    replayButton?.classList.remove(
+      "is-pending"
+    );
+
+    setGraphStatus(
+      `Filtered governance graph loaded: ` +
+        `${visibleNodes.length} nodes and ` +
+        `${visibleLinks.length} links.`,
+      "ready"
+    );
 
     window.setTimeout(() => {
       if (
-        visibleNodes.length &&
+        visibleNodes.length > 0 &&
         typeof graphInstance.zoomToFit ===
           "function"
       ) {
@@ -1349,9 +1433,7 @@
       inferBrainSide(node);
 
     const classification =
-      classifyArchitecturalObject(
-        node
-      );
+      classifyArchitecturalObject(node);
 
     const filterDomain =
       inferFilterDomain(node);
@@ -1389,9 +1471,7 @@
         <div>
           <dt>Filter Domain</dt>
           <dd>
-            ${escapeHtml(
-              filterDomain
-            )}
+            ${escapeHtml(filterDomain)}
           </dd>
         </div>
 
@@ -1421,10 +1501,7 @@
           parentDistortionClusterId
             ? `
               <div>
-                <dt>
-                  Distortion Cluster
-                </dt>
-
+                <dt>Distortion Cluster</dt>
                 <dd>
                   ${escapeHtml(
                     parentDistortionLabel ||
@@ -1481,10 +1558,7 @@
         </div>
 
         <div>
-          <dt>
-            Energizing threshold
-          </dt>
-
+          <dt>Energizing threshold</dt>
           <dd>
             ${escapeHtml(
               displayValue(
@@ -1495,10 +1569,7 @@
         </div>
 
         <div>
-          <dt>
-            Compiled attachments
-          </dt>
-
+          <dt>Compiled attachments</dt>
           <dd>
             ${escapeHtml(
               displayValue(
@@ -1531,10 +1602,7 @@
         </div>
 
         <div>
-          <dt>
-            Origin reservoir
-          </dt>
-
+          <dt>Origin reservoir</dt>
           <dd>
             ${escapeHtml(
               displayValue(
@@ -1548,13 +1616,8 @@
       ${
         node.governance_role
           ? `
-            <details
-              class="lab-graph-detail-raw"
-            >
-              <summary>
-                Governance role
-              </summary>
-
+            <details class="lab-graph-detail-raw">
+              <summary>Governance role</summary>
               <pre>${escapeHtml(
                 JSON.stringify(
                   node.governance_role,
@@ -1570,13 +1633,8 @@
       ${
         node.mri_behavior
           ? `
-            <details
-              class="lab-graph-detail-raw"
-            >
-              <summary>
-                MRI behavior
-              </summary>
-
+            <details class="lab-graph-detail-raw">
+              <summary>MRI behavior</summary>
               <pre>${escapeHtml(
                 JSON.stringify(
                   node.mri_behavior,
@@ -1614,10 +1672,7 @@
     const ratio =
       1 +
       90 /
-        Math.max(
-          distance,
-          1
-        );
+        Math.max(distance, 1);
 
     graphInstance.cameraPosition(
       {
@@ -1676,21 +1731,13 @@
       );
     }
 
-    if (
-      !Array.isArray(
-        payload.nodes
-      )
-    ) {
+    if (!Array.isArray(payload.nodes)) {
       throw new Error(
         "The graph projection does not contain a nodes array."
       );
     }
 
-    if (
-      !Array.isArray(
-        payload.links
-      )
-    ) {
+    if (!Array.isArray(payload.links)) {
       throw new Error(
         "The graph projection does not contain a links array."
       );
@@ -1713,30 +1760,23 @@
     }
 
     const invalidLink =
-      payload.links.find(
-        (link) => {
-          const sourceId =
-            linkEndpointId(
-              link.source
-            );
+      payload.links.find((link) => {
+        const sourceId =
+          linkEndpointId(link.source);
 
-          const targetId =
-            linkEndpointId(
-              link.target
-            );
+        const targetId =
+          linkEndpointId(link.target);
 
-          return (
-            !nodeIds.has(sourceId) ||
-            !nodeIds.has(targetId)
-          );
-        }
-      );
+        return (
+          !nodeIds.has(sourceId) ||
+          !nodeIds.has(targetId)
+        );
+      });
 
     if (invalidLink) {
       throw new Error(
         `Attachment ${
-          invalidLink.id ||
-          "unknown"
+          invalidLink.id || "unknown"
         } references a missing node.`
       );
     }
@@ -1768,23 +1808,20 @@
     );
 
     canonicalGraphData =
-      cloneCanonicalGraphData(
-        payload
-      );
+      cloneGraphData(payload);
 
     container.innerHTML = "";
-
-    const initialGraphData =
-      cloneCanonicalGraphData(
-        canonicalGraphData
-      );
 
     graphInstance =
       window
         .ForceGraph3D()(container)
         .backgroundColor("#07111d")
         .showNavInfo(false)
-        .graphData(initialGraphData)
+        .graphData(
+          cloneGraphData(
+            canonicalGraphData
+          )
+        )
         .nodeId("id")
         .nodeLabel((node) => {
           const name =
@@ -1792,25 +1829,21 @@
             node.label ||
             node.id;
 
-          const side =
-            inferBrainSide(node);
-
-          const classification =
-            classifyArchitecturalObject(
-              node
-            );
-
           return `
             ${escapeHtml(name)}
             <br>
             <small>
               ${escapeHtml(
-                titleCase(side)
+                titleCase(
+                  inferBrainSide(node)
+                )
               )}
               ·
               ${escapeHtml(
                 titleCase(
-                  classification
+                  classifyArchitecturalObject(
+                    node
+                  )
                 )
               )}
             </small>
@@ -1822,12 +1855,8 @@
         .linkColor(linkColor)
         .linkWidth(linkWidth)
         .linkOpacity(0.5)
-        .linkDirectionalArrowLength(
-          2.5
-        )
-        .linkDirectionalArrowRelPos(
-          1
-        )
+        .linkDirectionalArrowLength(2.5)
+        .linkDirectionalArrowRelPos(1)
         .onNodeClick((node) => {
           renderNodeDetails(node);
           focusNode(node);
@@ -1858,8 +1887,7 @@
       });
 
     updateGraphSize();
-    renderFilterControls();
-    renderLegend();
+    renderControlInterface();
 
     if (resizeObserver) {
       resizeObserver.disconnect();
@@ -1870,13 +1898,10 @@
         updateGraphSize
       );
 
-    resizeObserver.observe(
-      container
-    );
+    resizeObserver.observe(container);
 
     const metadata =
-      payload.projection_metadata ||
-      {};
+      payload.projection_metadata || {};
 
     const customer =
       metadata.customer_id ||
@@ -1926,13 +1951,8 @@
       graphPayload =
         await response.json();
 
-      validateProjection(
-        graphPayload
-      );
-
-      initializeGraph(
-        graphPayload
-      );
+      validateProjection(graphPayload);
+      initializeGraph(graphPayload);
     } catch (error) {
       initialized = false;
 
@@ -1966,8 +1986,8 @@
     }
 
     /*
-     * labAuthorized begins hidden. Wait until authorization reveals
-     * the panel and the browser can calculate a usable graph size.
+     * The authorized Lab panel begins hidden. Wait until the
+     * browser can calculate a usable graph size.
      */
 
     const attemptStart = () => {
@@ -1989,8 +2009,7 @@
   }
 
   if (
-    document.readyState ===
-    "loading"
+    document.readyState === "loading"
   ) {
     document.addEventListener(
       "DOMContentLoaded",
