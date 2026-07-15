@@ -8,11 +8,6 @@
   const GRAPH_DATA_URL =
     "lab/data/Virelia_Consulting_view_cache_3d_force_graph_TEST_DATA.json";
 
-  /*
-   * These Right Brain Domains are displayed as future placeholders
-   * when they are not yet present in the current graph projection.
-   */
-
   const RIGHT_BRAIN_PLACEHOLDER_DOMAINS = Object.freeze([
     "Emotional State",
     "Personality and Temperament",
@@ -20,10 +15,6 @@
     "Interaction and Delivery",
     "Experiential Response"
   ]);
-
-  /*
-   * Left Brain object colors.
-   */
 
   const LEFT_COLORS = Object.freeze({
     root_conviction: "#39ff14",
@@ -40,11 +31,6 @@
     default: "#a8b7c5"
   });
 
-  /*
-   * Right Brain uses the same architectural object types,
-   * distinguished with a separate palette.
-   */
-
   const RIGHT_COLORS = Object.freeze({
     root_conviction: "#00f5ff",
     domain_conviction: "#238fa8",
@@ -59,10 +45,6 @@
 
     default: "#a8b7c5"
   });
-
-  /*
-   * Existing Right Brain distortion Cluster colors.
-   */
 
   const DISTORTION_COLORS = Object.freeze({
     moral: "#444c57",
@@ -294,9 +276,9 @@
     }
 
     /*
-     * Individual diagnostic distortions currently remain visible
+     * Individual diagnostic distortions currently remain controlled
      * through the Cluster filter because they are diagnostic members
-     * of the selected distortion Cluster.
+     * of the selected Distortion Cluster.
      */
 
     if (
@@ -945,13 +927,32 @@
         then select <strong>Replay Run</strong>.
       </div>
 
-      <button
-        id="graphReplayRunButton"
-        class="lab-graph-replay-button"
-        type="button"
-      >
-        Replay Run
-      </button>
+      <div class="lab-graph-action-controls">
+        <label
+          id="graphReturnSelectionLabel"
+          class="lab-graph-return-selection is-disabled"
+          for="graphReturnToSelection"
+          title="Select a graph object to enable this option."
+        >
+          <input
+            id="graphReturnToSelection"
+            type="checkbox"
+            disabled
+          >
+
+          <span>
+            Return to selected object after replay
+          </span>
+        </label>
+
+        <button
+          id="graphReplayRunButton"
+          class="lab-graph-replay-button"
+          type="button"
+        >
+          Replay Run
+        </button>
+      </div>
     `;
 
     mriPanel.insertBefore(
@@ -964,12 +965,6 @@
       graphLayout
     );
 
-    /*
-     * The original heading button is hidden rather than removed.
-     * This avoids requiring a lab.html change and prevents duplicate
-     * Replay Run controls.
-     */
-
     const originalReplayButton =
       locateExistingReplayButton();
 
@@ -979,6 +974,7 @@
         "graphReplayRunButton"
     ) {
       originalReplayButton.hidden = true;
+
       originalReplayButton.setAttribute(
         "aria-hidden",
         "true"
@@ -990,6 +986,7 @@
     appliedFilterSignature =
       currentFilterSignature();
 
+    updateReturnSelectionControl();
     updatePendingState();
   }
 
@@ -1060,6 +1057,7 @@
             master.indeterminate =
               false;
 
+            updateReturnSelectionControl();
             updatePendingState();
           }
         );
@@ -1078,6 +1076,7 @@
                 .graphDomainSide
             );
 
+            updateReturnSelectionControl();
             updatePendingState();
           }
         );
@@ -1090,7 +1089,10 @@
       .forEach((checkbox) => {
         checkbox.addEventListener(
           "change",
-          updatePendingState
+          () => {
+            updateReturnSelectionControl();
+            updatePendingState();
+          }
         );
       });
 
@@ -1135,38 +1137,55 @@
     );
   }
 
-  function currentFilterSignature() {
-    const data = {
+  function currentSelections() {
+    return {
       left: {
-        objects: Array.from(
+        domains:
+          selectedDomainsForSide("left"),
+
+        objects:
           selectedObjectTypesForSide(
             "left"
           )
+      },
+
+      right: {
+        domains:
+          selectedDomainsForSide("right"),
+
+        objects:
+          selectedObjectTypesForSide(
+            "right"
+          )
+      }
+    };
+  }
+
+  function currentFilterSignature() {
+    const selections =
+      currentSelections();
+
+    return JSON.stringify({
+      left: {
+        objects: Array.from(
+          selections.left.objects
         ).sort(),
 
         domains: Array.from(
-          selectedDomainsForSide(
-            "left"
-          )
+          selections.left.domains
         ).sort()
       },
 
       right: {
         objects: Array.from(
-          selectedObjectTypesForSide(
-            "right"
-          )
+          selections.right.objects
         ).sort(),
 
         domains: Array.from(
-          selectedDomainsForSide(
-            "right"
-          )
+          selections.right.domains
         ).sort()
       }
-    };
-
-    return JSON.stringify(data);
+    });
   }
 
   function updatePendingState() {
@@ -1208,35 +1227,6 @@
     }
   }
 
-  function resetInspector() {
-    selectedNodeId = null;
-
-    const title =
-      document.getElementById(
-        "graphDetailTitle"
-      );
-
-    const content =
-      document.getElementById(
-        "graphDetailContent"
-      );
-
-    if (title) {
-      title.textContent =
-        "Select an object";
-    }
-
-    if (content) {
-      content.innerHTML = `
-        <p>
-          Select a Region, Cluster, Belief, Attachment,
-          or verdict object to inspect its recorded state
-          and ledger evidence.
-        </p>
-      `;
-    }
-  }
-
   function nodeMatchesFilters(
     node,
     selections
@@ -1259,6 +1249,97 @@
     );
   }
 
+  function findCanonicalNode(nodeId) {
+    if (
+      !canonicalGraphData ||
+      !nodeId
+    ) {
+      return null;
+    }
+
+    return (
+      canonicalGraphData.nodes.find(
+        (node) =>
+          node.id === nodeId
+      ) ||
+      null
+    );
+  }
+
+  function selectedNodeMatchesPendingFilters() {
+    const selectedNode =
+      findCanonicalNode(
+        selectedNodeId
+      );
+
+    if (!selectedNode) {
+      return false;
+    }
+
+    return nodeMatchesFilters(
+      selectedNode,
+      currentSelections()
+    );
+  }
+
+  function updateReturnSelectionControl() {
+    const checkbox =
+      document.getElementById(
+        "graphReturnToSelection"
+      );
+
+    const label =
+      document.getElementById(
+        "graphReturnSelectionLabel"
+      );
+
+    if (
+      !checkbox ||
+      !label
+    ) {
+      return;
+    }
+
+    if (!selectedNodeId) {
+      checkbox.checked = false;
+      checkbox.disabled = true;
+
+      label.classList.add(
+        "is-disabled"
+      );
+
+      label.title =
+        "Select a graph object to enable this option.";
+
+      return;
+    }
+
+    if (
+      !selectedNodeMatchesPendingFilters()
+    ) {
+      checkbox.checked = false;
+      checkbox.disabled = true;
+
+      label.classList.add(
+        "is-disabled"
+      );
+
+      label.title =
+        "The selected object is excluded by the pending filters.";
+
+      return;
+    }
+
+    checkbox.disabled = false;
+
+    label.classList.remove(
+      "is-disabled"
+    );
+
+    label.title =
+      "After replay, return the camera to the object currently shown in the Object Inspector.";
+  }
+
   function applySelectedFilters() {
     if (
       !canonicalGraphData ||
@@ -1267,27 +1348,26 @@
       return;
     }
 
-    const selections = {
-      left: {
-        domains:
-          selectedDomainsForSide("left"),
+    const selections =
+      currentSelections();
 
-        objects:
-          selectedObjectTypesForSide(
-            "left"
-          )
-      },
+    const returnCheckbox =
+      document.getElementById(
+        "graphReturnToSelection"
+      );
 
-      right: {
-        domains:
-          selectedDomainsForSide("right"),
+    const shouldReturnToSelection =
+      Boolean(
+        returnCheckbox &&
+        returnCheckbox.checked &&
+        !returnCheckbox.disabled &&
+        selectedNodeId
+      );
 
-        objects:
-          selectedObjectTypesForSide(
-            "right"
-          )
-      }
-    };
+    const selectedIdBeforeReplay =
+      shouldReturnToSelection
+        ? selectedNodeId
+        : null;
 
     const visibleNodes =
       canonicalGraphData.nodes
@@ -1324,8 +1404,10 @@
         })
         .map((link) => ({
           ...link,
+
           source:
             linkEndpointId(link.source),
+
           target:
             linkEndpointId(link.target)
         }));
@@ -1336,13 +1418,6 @@
     });
 
     graphInstance.d3ReheatSimulation();
-
-    if (
-      selectedNodeId &&
-      !visibleNodeIds.has(selectedNodeId)
-    ) {
-      resetInspector();
-    }
 
     appliedFilterSignature =
       currentFilterSignature();
@@ -1377,6 +1452,10 @@
       "ready"
     );
 
+    /*
+     * First establish the full filtered topology in view.
+     */
+
     window.setTimeout(() => {
       if (
         visibleNodes.length > 0 &&
@@ -1389,6 +1468,45 @@
         );
       }
     }, 450);
+
+    /*
+     * If requested, wait until the filtered graph has had time
+     * to settle, locate the newly rendered node with the same ID,
+     * and recreate the visual effect of clicking that node.
+     */
+
+    if (
+      shouldReturnToSelection &&
+      visibleNodeIds.has(
+        selectedIdBeforeReplay
+      )
+    ) {
+      window.setTimeout(() => {
+        const renderedGraph =
+          graphInstance.graphData();
+
+        const renderedNode =
+          renderedGraph.nodes.find(
+            (node) =>
+              node.id ===
+              selectedIdBeforeReplay
+          );
+
+        if (!renderedNode) {
+          return;
+        }
+
+        renderNodeDetails(
+          renderedNode
+        );
+
+        focusNode(
+          renderedNode
+        );
+      }, 1450);
+    }
+
+    updateReturnSelectionControl();
   }
 
   function renderNodeDetails(node) {
@@ -1409,6 +1527,7 @@
       !title ||
       !content
     ) {
+      updateReturnSelectionControl();
       return;
     }
 
@@ -1647,6 +1766,8 @@
           : ""
       }
     `;
+
+    updateReturnSelectionControl();
   }
 
   function focusNode(node) {
@@ -1984,11 +2105,6 @@
     if (!container) {
       return;
     }
-
-    /*
-     * The authorized Lab panel begins hidden. Wait until the
-     * browser can calculate a usable graph size.
-     */
 
     const attemptStart = () => {
       if (
