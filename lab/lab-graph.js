@@ -21,9 +21,11 @@
    *   Domain Conviction = medium green
    *   Principle         = light green
    *
-   * Distortion families use separate grey shades. Diagnostic distortion
-   * members inherit the grey used by their parent Distortion Cluster.
+   * Distortion families use separate grey shades.
+   * Diagnostic distortion members inherit the grey used by their
+   * parent Distortion Cluster.
    */
+
   const NODE_COLORS = Object.freeze({
     root_safeguard: "#ff1744",
     domain_safeguard: "#c93f4f",
@@ -46,18 +48,24 @@
   });
 
   const LEGEND_ITEMS = Object.freeze([
-    ["Root Safeguard", NODE_COLORS.root_safeguard],
-    ["Domain Safeguard", NODE_COLORS.domain_safeguard],
-    ["Article", NODE_COLORS.article],
     ["Root Conviction", NODE_COLORS.root_conviction],
     ["Domain Conviction", NODE_COLORS.domain_conviction],
     ["Principle", NODE_COLORS.principle],
-    ["Governance Cluster", NODE_COLORS.cluster],
-    ["Region", NODE_COLORS.region],
+
+    ["Root Safeguard", NODE_COLORS.root_safeguard],
+    ["Domain Safeguard", NODE_COLORS.domain_safeguard],
+    ["Article", NODE_COLORS.article],
+
     ["Cognitive Distortion", NODE_COLORS.distortion_cognitive],
     ["Frame Distortion", NODE_COLORS.distortion_frame],
-    ["Identity Defense Distortion", NODE_COLORS.distortion_identity_defense],
-    ["Moral Distortion", NODE_COLORS.distortion_moral]
+    [
+      "Identity Defense Distortion",
+      NODE_COLORS.distortion_identity_defense
+    ],
+    ["Moral Distortion", NODE_COLORS.distortion_moral],
+
+    ["Region", NODE_COLORS.region],
+    ["Governance Cluster", NODE_COLORS.cluster]
   ]);
 
   const DISTORTION_CLUSTER_COLORS = Object.freeze({
@@ -72,7 +80,11 @@
   let resizeObserver = null;
   let initialized = false;
 
-  // Maps each diagnostic distortion node ID to its parent Distortion Cluster ID.
+  /*
+   * Maps each diagnostic distortion node ID to its parent
+   * Distortion Cluster ID.
+   */
+
   const distortionClusterByNodeId = new Map();
 
   function escapeHtml(value) {
@@ -85,29 +97,49 @@
   }
 
   function normalizeValue(value) {
-    return String(value ?? "").trim().toLowerCase();
+    return String(value ?? "")
+      .trim()
+      .toLowerCase();
   }
 
   function displayValue(value) {
-    if (value === null || value === undefined || value === "") {
+    if (
+      value === null ||
+      value === undefined ||
+      value === ""
+    ) {
       return "Not recorded";
     }
 
     if (Array.isArray(value)) {
-      return value.length ? value.join(", ") : "None";
+      return value.length
+        ? value.join(", ")
+        : "None";
     }
 
     if (typeof value === "object") {
-      return JSON.stringify(value, null, 2);
+      return JSON.stringify(
+        value,
+        null,
+        2
+      );
     }
 
     return String(value);
   }
 
   function isRootObject(node) {
-    const subdomain = normalizeValue(node.subdomain_name);
-    const originReservoir = normalizeValue(node.origin?.origin_reservoir);
-    const id = String(node.id || "").toUpperCase();
+    const subdomain =
+      normalizeValue(node.subdomain_name);
+
+    const originReservoir =
+      normalizeValue(
+        node.origin?.origin_reservoir
+      );
+
+    const id =
+      String(node.id || "")
+        .toUpperCase();
 
     return (
       subdomain === "root" ||
@@ -117,26 +149,41 @@
   }
 
   function classifyNode(node) {
-    const family = normalizeValue(node.node_family);
-    const objectType = normalizeValue(node.object_type);
+    const family =
+      normalizeValue(node.node_family);
 
-    if (family === "safeguard" || objectType === "safeguard") {
+    const objectType =
+      normalizeValue(node.object_type);
+
+    if (
+      family === "safeguard" ||
+      objectType === "safeguard"
+    ) {
       return isRootObject(node)
         ? "root_safeguard"
         : "domain_safeguard";
     }
 
-    if (family === "article" || objectType === "article") {
+    if (
+      family === "article" ||
+      objectType === "article"
+    ) {
       return "article";
     }
 
-    if (family === "conviction" || objectType === "conviction") {
+    if (
+      family === "conviction" ||
+      objectType === "conviction"
+    ) {
       return isRootObject(node)
         ? "root_conviction"
         : "domain_conviction";
     }
 
-    if (family === "principle" || objectType === "principle") {
+    if (
+      family === "principle" ||
+      objectType === "principle"
+    ) {
       return "principle";
     }
 
@@ -160,7 +207,8 @@
   }
 
   function distortionColorForNode(node) {
-    const family = normalizeValue(node.node_family);
+    const family =
+      normalizeValue(node.node_family);
 
     if (family === "distortion_cluster") {
       return (
@@ -170,10 +218,15 @@
     }
 
     if (family === "diagnostic_distortion") {
-      const parentClusterId = distortionClusterByNodeId.get(node.id);
+      const parentClusterId =
+        distortionClusterByNodeId.get(
+          node.id
+        );
 
       return (
-        DISTORTION_CLUSTER_COLORS[parentClusterId] ||
+        DISTORTION_CLUSTER_COLORS[
+          parentClusterId
+        ] ||
         NODE_COLORS.distortion_unknown
       );
     }
@@ -182,21 +235,30 @@
   }
 
   function nodeColor(node) {
-    const distortionColor = distortionColorForNode(node);
+    const distortionColor =
+      distortionColorForNode(node);
 
     if (distortionColor) {
       return distortionColor;
     }
 
-    const classification = classifyNode(node);
+    const classification =
+      classifyNode(node);
 
-    return NODE_COLORS[classification] || NODE_COLORS.default;
+    return (
+      NODE_COLORS[classification] ||
+      NODE_COLORS.default
+    );
   }
 
   function nodeSize(node) {
-    const suggested = Number(node.size_hint);
+    const suggested =
+      Number(node.size_hint);
 
-    if (Number.isFinite(suggested) && suggested > 0) {
+    if (
+      Number.isFinite(suggested) &&
+      suggested > 0
+    ) {
       return suggested;
     }
 
@@ -204,50 +266,83 @@
   }
 
   function linkWidth(link) {
-    const influence = Number(link.max_influence_strength);
+    const influence =
+      Number(link.max_influence_strength);
 
-    if (Number.isFinite(influence) && influence > 0) {
+    if (
+      Number.isFinite(influence) &&
+      influence > 0
+    ) {
       /*
-       * Current distortion membership links use an influence value of 100.
-       * Clamp the visual width so they remain readable without overwhelming
-       * the rest of the topology.
+       * Current distortion membership links may use large
+       * influence values. Clamp their visual width so they
+       * remain readable without overwhelming the topology.
        */
-      return Math.min(4, 0.7 + influence * 0.03);
+
+      return Math.min(
+        4,
+        0.7 + influence * 0.03
+      );
     }
 
     return 0.7;
   }
 
   function linkColor(link) {
-    if (link.attachment_type === "distortion_cluster_membership") {
-      const clusterId =
-        DISTORTION_CLUSTER_COLORS[link.target]
-          ? link.target
+    if (
+      link.attachment_type ===
+      "distortion_cluster_membership"
+    ) {
+      const sourceId =
+        typeof link.source === "object"
+          ? link.source.id
           : link.source;
 
-      const clusterColor =
-        DISTORTION_CLUSTER_COLORS[clusterId] ||
-        NODE_COLORS.distortion_unknown;
+      const targetId =
+        typeof link.target === "object"
+          ? link.target.id
+          : link.target;
 
-      return clusterColor;
+      const clusterId =
+        DISTORTION_CLUSTER_COLORS[targetId]
+          ? targetId
+          : sourceId;
+
+      return (
+        DISTORTION_CLUSTER_COLORS[
+          clusterId
+        ] ||
+        NODE_COLORS.distortion_unknown
+      );
     }
 
-    if (link.attachment_type === "distortion_cluster_region_projection") {
+    if (
+      link.attachment_type ===
+      "distortion_cluster_region_projection"
+    ) {
       return "rgba(154, 163, 175, 0.48)";
     }
 
-    if (link.attachment_type === "region_membership") {
+    if (
+      link.attachment_type ===
+      "region_membership"
+    ) {
       return "rgba(242, 198, 91, 0.48)";
     }
 
     return "rgba(128, 183, 224, 0.38)";
   }
 
-  function buildDistortionMembershipIndex(payload) {
+  function buildDistortionMembershipIndex(
+    payload
+  ) {
     distortionClusterByNodeId.clear();
 
     payload.links.forEach((link) => {
-      if (link.attachment_type !== "distortion_cluster_membership") {
+      if (
+        link.attachment_type !==
+        "distortion_cluster_membership"
+      ) {
         return;
       }
 
@@ -261,73 +356,164 @@
           ? link.target.id
           : link.target;
 
-      if (DISTORTION_CLUSTER_COLORS[targetId]) {
-        distortionClusterByNodeId.set(sourceId, targetId);
-      } else if (DISTORTION_CLUSTER_COLORS[sourceId]) {
-        distortionClusterByNodeId.set(targetId, sourceId);
+      if (
+        DISTORTION_CLUSTER_COLORS[
+          targetId
+        ]
+      ) {
+        distortionClusterByNodeId.set(
+          sourceId,
+          targetId
+        );
+      } else if (
+        DISTORTION_CLUSTER_COLORS[
+          sourceId
+        ]
+      ) {
+        distortionClusterByNodeId.set(
+          targetId,
+          sourceId
+        );
       }
     });
   }
 
-  function setGraphStatus(message, state) {
-    const container = document.getElementById("governanceGraph");
+  function setGraphStatus(
+    message,
+    state
+  ) {
+    const container =
+      document.getElementById(
+        "governanceGraph"
+      );
 
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
-    container.dataset.graphState = state || "";
-    container.setAttribute("aria-label", message);
+    container.dataset.graphState =
+      state || "";
+
+    container.setAttribute(
+      "aria-label",
+      message
+    );
   }
 
-  function renderGraphMessage(title, message) {
-    const container = document.getElementById("governanceGraph");
+  function renderGraphMessage(
+    title,
+    message
+  ) {
+    const container =
+      document.getElementById(
+        "governanceGraph"
+      );
 
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     container.innerHTML = `
       <div class="lab-graph-message">
-        <strong>${escapeHtml(title)}</strong>
-        <span>${escapeHtml(message)}</span>
+        <strong>
+          ${escapeHtml(title)}
+        </strong>
+
+        <span>
+          ${escapeHtml(message)}
+        </span>
       </div>
     `;
   }
 
-  function renderLegend(container) {
+  function renderLegend() {
+    const mriPanel =
+      document.querySelector(
+        ".lab-mri-panel"
+      );
+
+    const graphLayout =
+      document.querySelector(
+        ".lab-mri-layout"
+      );
+
+    if (
+      !mriPanel ||
+      !graphLayout
+    ) {
+      return;
+    }
+
     const existingLegend =
-      container.querySelector(".lab-graph-legend");
+      mriPanel.querySelector(
+        ".lab-graph-legend"
+      );
 
     if (existingLegend) {
       existingLegend.remove();
     }
 
-    const legend = document.createElement("div");
-    legend.className = "lab-graph-legend";
-    legend.setAttribute("aria-label", "Governance MRI color legend");
+    const legend =
+      document.createElement("div");
+
+    legend.className =
+      "lab-graph-legend";
+
+    legend.setAttribute(
+      "aria-label",
+      "Governance MRI color legend"
+    );
 
     legend.innerHTML = `
-      <div class="lab-graph-legend-title">Graph Legend</div>
+      <div class="lab-graph-legend-title">
+        Graph Legend
+      </div>
+
       <div class="lab-graph-legend-items">
-        ${LEGEND_ITEMS.map(([label, color]) => {
-          return `
-            <div class="lab-graph-legend-row">
-              <span
-                class="lab-graph-legend-swatch"
-                style="background: ${escapeHtml(color)};"
-              ></span>
-              <span>${escapeHtml(label)}</span>
-            </div>
-          `;
-        }).join("")}
+        ${LEGEND_ITEMS.map(
+          ([label, color]) => {
+            return `
+              <div class="lab-graph-legend-row">
+                <span
+                  class="lab-graph-legend-swatch"
+                  style="background: ${escapeHtml(
+                    color
+                  )};"
+                ></span>
+
+                <span>
+                  ${escapeHtml(label)}
+                </span>
+              </div>
+            `;
+          }
+        ).join("")}
       </div>
     `;
 
-    container.appendChild(legend);
+    mriPanel.insertBefore(
+      legend,
+      graphLayout
+    );
   }
 
   function renderNodeDetails(node) {
-    const title = document.getElementById("graphDetailTitle");
-    const content = document.getElementById("graphDetailContent");
+    const title =
+      document.getElementById(
+        "graphDetailTitle"
+      );
 
-    if (!title || !content) return;
+    const content =
+      document.getElementById(
+        "graphDetailContent"
+      );
+
+    if (
+      !title ||
+      !content
+    ) {
+      return;
+    }
 
     title.textContent =
       node.name ||
@@ -335,88 +521,201 @@
       node.id ||
       "Selected object";
 
-    const traceLabels = Array.isArray(node.trace_labels)
-      ? node.trace_labels
-      : [];
+    const traceLabels =
+      Array.isArray(node.trace_labels)
+        ? node.trace_labels
+        : [];
 
     const origin =
-      node.origin && typeof node.origin === "object"
+      node.origin &&
+      typeof node.origin === "object"
         ? node.origin
         : {};
 
-    const classification = classifyNode(node);
+    const classification =
+      classifyNode(node);
+
     const parentDistortionClusterId =
-      distortionClusterByNodeId.get(node.id);
+      distortionClusterByNodeId.get(
+        node.id
+      );
 
     content.innerHTML = `
       <dl class="lab-graph-detail-list">
         <div>
           <dt>Object ID</dt>
-          <dd>${escapeHtml(displayValue(node.id))}</dd>
+          <dd>
+            ${escapeHtml(
+              displayValue(node.id)
+            )}
+          </dd>
         </div>
+
         <div>
           <dt>Family</dt>
-          <dd>${escapeHtml(displayValue(node.node_family))}</dd>
+          <dd>
+            ${escapeHtml(
+              displayValue(
+                node.node_family
+              )
+            )}
+          </dd>
         </div>
+
         <div>
           <dt>Visual class</dt>
-          <dd>${escapeHtml(displayValue(classification))}</dd>
+          <dd>
+            ${escapeHtml(
+              displayValue(
+                classification
+              )
+            )}
+          </dd>
         </div>
+
         ${
           parentDistortionClusterId
             ? `
               <div>
-                <dt>Distortion cluster</dt>
-                <dd>${escapeHtml(parentDistortionClusterId)}</dd>
+                <dt>
+                  Distortion cluster
+                </dt>
+
+                <dd>
+                  ${escapeHtml(
+                    parentDistortionClusterId
+                  )}
+                </dd>
               </div>
             `
             : ""
         }
+
         <div>
           <dt>Object type</dt>
-          <dd>${escapeHtml(displayValue(node.object_type))}</dd>
+          <dd>
+            ${escapeHtml(
+              displayValue(
+                node.object_type
+              )
+            )}
+          </dd>
         </div>
+
         <div>
           <dt>Status</dt>
-          <dd>${escapeHtml(displayValue(node.status))}</dd>
+          <dd>
+            ${escapeHtml(
+              displayValue(
+                node.status
+              )
+            )}
+          </dd>
         </div>
+
         <div>
           <dt>Domain</dt>
-          <dd>${escapeHtml(displayValue(node.domain_name))}</dd>
+          <dd>
+            ${escapeHtml(
+              displayValue(
+                node.domain_name
+              )
+            )}
+          </dd>
         </div>
+
         <div>
           <dt>Subdomain</dt>
-          <dd>${escapeHtml(displayValue(node.subdomain_name))}</dd>
+          <dd>
+            ${escapeHtml(
+              displayValue(
+                node.subdomain_name
+              )
+            )}
+          </dd>
         </div>
+
         <div>
-          <dt>Energizing threshold</dt>
-          <dd>${escapeHtml(displayValue(node.energizing_threshold))}</dd>
+          <dt>
+            Energizing threshold
+          </dt>
+
+          <dd>
+            ${escapeHtml(
+              displayValue(
+                node.energizing_threshold
+              )
+            )}
+          </dd>
         </div>
+
         <div>
-          <dt>Compiled attachments</dt>
-          <dd>${escapeHtml(displayValue(node.attachment_count))}</dd>
+          <dt>
+            Compiled attachments
+          </dt>
+
+          <dd>
+            ${escapeHtml(
+              displayValue(
+                node.attachment_count
+              )
+            )}
+          </dd>
         </div>
+
         <div>
           <dt>Trace labels</dt>
-          <dd>${escapeHtml(displayValue(traceLabels))}</dd>
+          <dd>
+            ${escapeHtml(
+              displayValue(
+                traceLabels
+              )
+            )}
+          </dd>
         </div>
+
         <div>
           <dt>Origin type</dt>
-          <dd>${escapeHtml(displayValue(origin.origin_type))}</dd>
+          <dd>
+            ${escapeHtml(
+              displayValue(
+                origin.origin_type
+              )
+            )}
+          </dd>
         </div>
+
         <div>
-          <dt>Origin reservoir</dt>
-          <dd>${escapeHtml(displayValue(origin.origin_reservoir))}</dd>
+          <dt>
+            Origin reservoir
+          </dt>
+
+          <dd>
+            ${escapeHtml(
+              displayValue(
+                origin.origin_reservoir
+              )
+            )}
+          </dd>
         </div>
       </dl>
 
       ${
         node.governance_role
           ? `
-            <details class="lab-graph-detail-raw">
-              <summary>Governance role</summary>
+            <details
+              class="lab-graph-detail-raw"
+            >
+              <summary>
+                Governance role
+              </summary>
+
               <pre>${escapeHtml(
-                JSON.stringify(node.governance_role, null, 2)
+                JSON.stringify(
+                  node.governance_role,
+                  null,
+                  2
+                )
               )}</pre>
             </details>
           `
@@ -426,10 +725,19 @@
       ${
         node.mri_behavior
           ? `
-            <details class="lab-graph-detail-raw">
-              <summary>MRI behavior</summary>
+            <details
+              class="lab-graph-detail-raw"
+            >
+              <summary>
+                MRI behavior
+              </summary>
+
               <pre>${escapeHtml(
-                JSON.stringify(node.mri_behavior, null, 2)
+                JSON.stringify(
+                  node.mri_behavior,
+                  null,
+                  2
+                )
               )}</pre>
             </details>
           `
@@ -439,13 +747,32 @@
   }
 
   function focusNode(node) {
-    if (!graphInstance || !node) return;
+    if (
+      !graphInstance ||
+      !node
+    ) {
+      return;
+    }
 
-    const x = Number(node.x) || 0;
-    const y = Number(node.y) || 0;
-    const z = Number(node.z) || 0;
-    const distance = Math.hypot(x, y, z);
-    const ratio = 1 + 90 / Math.max(distance, 1);
+    const x =
+      Number(node.x) || 0;
+
+    const y =
+      Number(node.y) || 0;
+
+    const z =
+      Number(node.z) || 0;
+
+    const distance =
+      Math.hypot(x, y, z);
+
+    const ratio =
+      1 +
+      90 /
+        Math.max(
+          distance,
+          1
+        );
 
     graphInstance.cameraPosition(
       {
@@ -453,84 +780,134 @@
         y: y * ratio,
         z: z * ratio
       },
-      { x, y, z },
+      {
+        x,
+        y,
+        z
+      },
       900
     );
   }
 
   function updateGraphSize() {
     const container =
-      document.getElementById("governanceGraph");
+      document.getElementById(
+        "governanceGraph"
+      );
 
-    if (!container || !graphInstance) return;
+    if (
+      !container ||
+      !graphInstance
+    ) {
+      return;
+    }
 
-    const width = Math.floor(container.clientWidth);
-    const height = Math.floor(container.clientHeight);
+    const width =
+      Math.floor(
+        container.clientWidth
+      );
 
-    if (width > 0 && height > 0) {
+    const height =
+      Math.floor(
+        container.clientHeight
+      );
+
+    if (
+      width > 0 &&
+      height > 0
+    ) {
       graphInstance.width(width);
       graphInstance.height(height);
     }
   }
 
-  function validateProjection(payload) {
-    if (!payload || typeof payload !== "object") {
+  function validateProjection(
+    payload
+  ) {
+    if (
+      !payload ||
+      typeof payload !== "object"
+    ) {
       throw new Error(
         "The graph projection is not a JSON object."
       );
     }
 
-    if (!Array.isArray(payload.nodes)) {
+    if (
+      !Array.isArray(
+        payload.nodes
+      )
+    ) {
       throw new Error(
         "The graph projection does not contain a nodes array."
       );
     }
 
-    if (!Array.isArray(payload.links)) {
+    if (
+      !Array.isArray(
+        payload.links
+      )
+    ) {
       throw new Error(
         "The graph projection does not contain a links array."
       );
     }
 
-    const nodeIds = new Set(
-      payload.nodes.map((node) => node.id)
-    );
+    const nodeIds =
+      new Set(
+        payload.nodes.map(
+          (node) => node.id
+        )
+      );
 
-    if (nodeIds.size !== payload.nodes.length) {
+    if (
+      nodeIds.size !==
+      payload.nodes.length
+    ) {
       throw new Error(
         "The graph projection contains duplicate node IDs."
       );
     }
 
-    const invalidLink = payload.links.find((link) => {
-      const sourceId =
-        typeof link.source === "object"
-          ? link.source.id
-          : link.source;
+    const invalidLink =
+      payload.links.find(
+        (link) => {
+          const sourceId =
+            typeof link.source ===
+            "object"
+              ? link.source.id
+              : link.source;
 
-      const targetId =
-        typeof link.target === "object"
-          ? link.target.id
-          : link.target;
+          const targetId =
+            typeof link.target ===
+            "object"
+              ? link.target.id
+              : link.target;
 
-      return (
-        !nodeIds.has(sourceId) ||
-        !nodeIds.has(targetId)
+          return (
+            !nodeIds.has(sourceId) ||
+            !nodeIds.has(targetId)
+          );
+        }
       );
-    });
 
     if (invalidLink) {
       throw new Error(
         `Attachment ${
-          invalidLink.id || "unknown"
+          invalidLink.id ||
+          "unknown"
         } references a missing node.`
       );
     }
   }
 
-  function initializeGraph(payload) {
+  function initializeGraph(
+    payload
+  ) {
     const container =
-      document.getElementById("governanceGraph");
+      document.getElementById(
+        "governanceGraph"
+      );
 
     if (!container) {
       throw new Error(
@@ -538,47 +915,67 @@
       );
     }
 
-    if (typeof window.ForceGraph3D !== "function") {
+    if (
+      typeof window.ForceGraph3D !==
+      "function"
+    ) {
       throw new Error(
         "The 3D Force Graph library did not load."
       );
     }
 
-    buildDistortionMembershipIndex(payload);
+    buildDistortionMembershipIndex(
+      payload
+    );
+
     container.innerHTML = "";
 
-    graphInstance = window
-      .ForceGraph3D()(container)
-      .backgroundColor("#07111d")
-      .showNavInfo(false)
-      .graphData(payload)
-      .nodeId("id")
-      .nodeLabel((node) => {
-        const name =
-          node.name ||
-          node.label ||
-          node.id;
+    graphInstance =
+      window
+        .ForceGraph3D()(container)
+        .backgroundColor("#07111d")
+        .showNavInfo(false)
+        .graphData(payload)
+        .nodeId("id")
+        .nodeLabel((node) => {
+          const name =
+            node.name ||
+            node.label ||
+            node.id;
 
-        const classification =
-          classifyNode(node)
-            .replaceAll("_", " ");
+          const classification =
+            classifyNode(node)
+              .replaceAll(
+                "_",
+                " "
+              );
 
-        return `${escapeHtml(name)}<br><small>${escapeHtml(
-          classification
-        )}</small>`;
-      })
-      .nodeColor(nodeColor)
-      .nodeVal(nodeSize)
-      .nodeOpacity(0.94)
-      .linkColor(linkColor)
-      .linkWidth(linkWidth)
-      .linkOpacity(0.5)
-      .linkDirectionalArrowLength(2.5)
-      .linkDirectionalArrowRelPos(1)
-      .onNodeClick((node) => {
-        renderNodeDetails(node);
-        focusNode(node);
-      });
+          return `
+            ${escapeHtml(name)}
+            <br>
+            <small>
+              ${escapeHtml(
+                classification
+              )}
+            </small>
+          `;
+        })
+        .nodeColor(nodeColor)
+        .nodeVal(nodeSize)
+        .nodeOpacity(0.94)
+        .linkColor(linkColor)
+        .linkWidth(linkWidth)
+        .linkOpacity(0.5)
+        .linkDirectionalArrowLength(
+          2.5
+        )
+        .linkDirectionalArrowRelPos(
+          1
+        )
+        .onNodeClick((node) => {
+          renderNodeDetails(node);
+          focusNode(node);
+        });
 
     graphInstance
       .d3Force("charge")
@@ -605,19 +1002,24 @@
       });
 
     updateGraphSize();
-    renderLegend(container);
+    renderLegend();
 
     if (resizeObserver) {
       resizeObserver.disconnect();
     }
 
     resizeObserver =
-      new ResizeObserver(updateGraphSize);
+      new ResizeObserver(
+        updateGraphSize
+      );
 
-    resizeObserver.observe(container);
+    resizeObserver.observe(
+      container
+    );
 
     const metadata =
-      payload.projection_metadata || {};
+      payload.projection_metadata ||
+      {};
 
     const customer =
       metadata.customer_id ||
@@ -632,7 +1034,9 @@
   }
 
   async function loadGraph() {
-    if (initialized) return;
+    if (initialized) {
+      return;
+    }
 
     initialized = true;
 
@@ -647,13 +1051,14 @@
     );
 
     try {
-      const response = await fetch(
-        GRAPH_DATA_URL,
-        {
-          method: "GET",
-          cache: "no-store"
-        }
-      );
+      const response =
+        await fetch(
+          GRAPH_DATA_URL,
+          {
+            method: "GET",
+            cache: "no-store"
+          }
+        );
 
       if (!response.ok) {
         throw new Error(
@@ -664,8 +1069,13 @@
       graphPayload =
         await response.json();
 
-      validateProjection(graphPayload);
-      initializeGraph(graphPayload);
+      validateProjection(
+        graphPayload
+      );
+
+      initializeGraph(
+        graphPayload
+      );
     } catch (error) {
       initialized = false;
 
@@ -690,14 +1100,20 @@
 
   function startWhenReady() {
     const container =
-      document.getElementById("governanceGraph");
+      document.getElementById(
+        "governanceGraph"
+      );
 
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     /*
-     * labAuthorized begins hidden. Wait until authorization reveals
-     * the panel and the browser can calculate a usable graph size.
+     * labAuthorized begins hidden.
+     * Wait until authorization reveals the panel and the browser
+     * can calculate a usable graph size.
      */
+
     const attemptStart = () => {
       if (
         container.clientWidth > 0 &&
@@ -716,7 +1132,10 @@
     attemptStart();
   }
 
-  if (document.readyState === "loading") {
+  if (
+    document.readyState ===
+    "loading"
+  ) {
     document.addEventListener(
       "DOMContentLoaded",
       startWhenReady
