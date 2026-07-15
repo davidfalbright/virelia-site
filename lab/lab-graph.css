@@ -227,6 +227,7 @@
 }
 
 .lab-graph-action-message {
+  flex: 1 1 auto;
   min-width: 0;
   color: #9fb5c7;
   font-size: 0.79rem;
@@ -235,6 +236,42 @@
 
 .lab-graph-action-message strong {
   color: #dceaf5;
+}
+
+.lab-graph-action-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.lab-graph-return-selection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c8d8e5;
+  font-size: 0.8rem;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.lab-graph-return-selection input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #55e6b4;
+  cursor: pointer;
+}
+
+.lab-graph-return-selection.is-disabled {
+  color: #66798a;
+  cursor: not-allowed;
+}
+
+.lab-graph-return-selection.is-disabled input {
+  cursor: not-allowed;
 }
 
 .lab-graph-replay-button {
@@ -432,6 +469,15 @@
   .lab-graph-object-grid {
     grid-template-columns: repeat(2, minmax(135px, 1fr));
   }
+
+  .lab-graph-action-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .lab-graph-action-controls {
+    width: 100%;
+  }
 }
 
 @media (max-width: 980px) {
@@ -462,9 +508,13 @@
     grid-template-columns: 1fr;
   }
 
-  .lab-graph-action-bar {
+  .lab-graph-action-controls {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .lab-graph-return-selection {
+    width: 100%;
   }
 
   .lab-graph-replay-button {
