@@ -713,7 +713,13 @@
   }
 
   function renderObjectColumns(side) {
-    const columns = [
+    const structureItems =
+      ARCHITECTURAL_FILTERS.filter(
+        (filter) =>
+          filter.column === "structure"
+      );
+
+    const beliefColumns = [
       {
         key: "convictions",
         title: "Convictions"
@@ -721,39 +727,52 @@
       {
         key: "safeguards",
         title: "Safeguards"
-      },
-      {
-        key: "structure",
-        title: "Structure"
       }
     ];
 
-    return columns
-      .map((column) => {
-        const items =
-          ARCHITECTURAL_FILTERS.filter(
-            (filter) =>
-              filter.column === column.key
-          );
+    return `
+      <div class="lab-graph-structure-row">
+        <div class="lab-graph-structure-label">
+          Structure
+        </div>
 
-        return `
-          <div class="lab-graph-object-column">
-            <div class="lab-graph-object-column-title">
-              ${escapeHtml(column.title)}
-            </div>
+        ${structureItems
+          .map((filter) =>
+            objectFilterMarkup(
+              side,
+              filter
+            )
+          )
+          .join("")}
+      </div>
 
-            ${items
-              .map((filter) =>
-                objectFilterMarkup(
-                  side,
-                  filter
+      ${beliefColumns
+        .map((column) => {
+          const items =
+            ARCHITECTURAL_FILTERS.filter(
+              (filter) =>
+                filter.column === column.key
+            );
+
+          return `
+            <div class="lab-graph-object-column">
+              <div class="lab-graph-object-column-title">
+                ${escapeHtml(column.title)}
+              </div>
+
+              ${items
+                .map((filter) =>
+                  objectFilterMarkup(
+                    side,
+                    filter
+                  )
                 )
-              )
-              .join("")}
-          </div>
-        `;
-      })
-      .join("");
+                .join("")}
+            </div>
+          `;
+        })
+        .join("")}
+    `;
   }
 
   function renderBrainPanel(
@@ -1509,6 +1528,660 @@
     updateReturnSelectionControl();
   }
 
+  function arrayValue(value) {
+    return Array.isArray(value)
+      ? value
+      : [];
+  }
+
+  function objectText(record) {
+    if (
+      !record ||
+      typeof record !== "object"
+    ) {
+      return "";
+    }
+
+    const candidates = [
+      record.human_readable_text,
+      record.belief_text,
+      record.intent_text,
+      record.description,
+      record.text,
+      record.statement,
+      record.definition,
+      record.purpose,
+      record.explanation,
+      record.summary,
+      record.long_description,
+      record.rationale
+    ];
+
+    const match =
+      candidates.find(
+        (value) =>
+          typeof value === "string" &&
+          value.trim()
+      );
+
+    return match
+      ? match.trim()
+      : "";
+  }
+
+  function intentKind(intent) {
+    const relationship =
+      normalizeValue(
+        intent.relationship_type
+      );
+
+    const id =
+      String(
+        intent.id ||
+        intent.object_id ||
+        ""
+      ).toUpperCase();
+
+    if (
+      relationship.includes("purpose") ||
+      id.includes("-IP-")
+    ) {
+      return "purpose";
+    }
+
+    if (
+      relationship.includes("explanatory") ||
+      relationship.includes("explain") ||
+      id.includes("-IE-")
+    ) {
+      return "explanatory";
+    }
+
+    return "other";
+  }
+
+  function renderInspectorSection(
+    title,
+    count,
+    body
+  ) {
+    return `
+      <section class="lab-graph-inspector-section">
+        <h4 class="lab-graph-inspector-section-title">
+          <span>${escapeHtml(title)}</span>
+          <span class="lab-graph-inspector-section-count">
+            ${escapeHtml(count)}
+          </span>
+        </h4>
+
+        ${body}
+      </section>
+    `;
+  }
+
+  function renderIntentCards(intents) {
+    if (!intents.length) {
+      return `
+        <p class="lab-graph-inspector-empty">
+          No related Intents were recorded.
+        </p>
+      `;
+    }
+
+    return `
+      <div class="lab-graph-intent-list">
+        ${intents
+          .map((intent) => {
+            const kind =
+              intentKind(intent);
+
+            const kindLabel =
+              kind === "purpose"
+                ? "Purpose"
+                : kind === "explanatory"
+                  ? "Explanatory"
+                  : "Intent";
+
+            const textValue =
+              objectText(intent);
+
+            return `
+              <article
+                class="lab-graph-intent-card"
+                data-intent-kind="${escapeHtml(kind)}"
+              >
+                <div class="lab-graph-intent-card-header">
+                  <h5 class="lab-graph-intent-card-title">
+                    ${escapeHtml(
+                      intent.name ||
+                      intent.title ||
+                      intent.id ||
+                      intent.object_id ||
+                      "Related Intent"
+                    )}
+                  </h5>
+
+                  <span class="lab-graph-intent-card-type">
+                    ${escapeHtml(kindLabel)}
+                  </span>
+                </div>
+
+                <div class="lab-graph-intent-card-id">
+                  ${escapeHtml(
+                    intent.id ||
+                    intent.object_id ||
+                    "ID not recorded"
+                  )}
+                </div>
+
+                ${
+                  textValue
+                    ? `
+                      <p class="lab-graph-intent-card-text">
+                        ${escapeHtml(textValue)}
+                      </p>
+                    `
+                    : `
+                      <p class="lab-graph-inspector-empty">
+                        Intent text was not recorded.
+                      </p>
+                    `
+                }
+
+                <div class="lab-graph-intent-card-meta">
+                  <span>
+                    <strong>Relationship:</strong>
+                    ${escapeHtml(
+                      displayValue(
+                        intent.relationship_type
+                      )
+                    )}
+                  </span>
+
+                  <span>
+                    <strong>Attachment:</strong>
+                    ${escapeHtml(
+                      displayValue(
+                        intent.attachment_id
+                      )
+                    )}
+                  </span>
+                </div>
+              </article>
+            `;
+          })
+          .join("")}
+      </div>
+    `;
+  }
+
+  function renderRelatedCards(
+    records,
+    family
+  ) {
+    if (!records.length) {
+      return `
+        <p class="lab-graph-inspector-empty">
+          None recorded.
+        </p>
+      `;
+    }
+
+    return `
+      <div class="lab-graph-related-list">
+        ${records
+          .map((record) => `
+            <article
+              class="lab-graph-related-card"
+              data-related-family="${escapeHtml(family)}"
+            >
+              <h5 class="lab-graph-related-card-title">
+                ${escapeHtml(
+                  record.name ||
+                  record.title ||
+                  record.id ||
+                  record.object_id ||
+                  "Related object"
+                )}
+              </h5>
+
+              <div class="lab-graph-related-card-id">
+                ${escapeHtml(
+                  record.id ||
+                  record.object_id ||
+                  "ID not recorded"
+                )}
+              </div>
+
+              <div class="lab-graph-related-card-meta">
+                <span>
+                  Relationship:
+                  ${escapeHtml(
+                    displayValue(
+                      record.relationship_type
+                    )
+                  )}
+                </span>
+
+                <span>
+                  Attachment:
+                  ${escapeHtml(
+                    displayValue(
+                      record.attachment_id
+                    )
+                  )}
+                </span>
+              </div>
+            </article>
+          `)
+          .join("")}
+      </div>
+    `;
+  }
+
+  function renderBreakdownRows(values) {
+    if (
+      !values ||
+      typeof values !== "object" ||
+      Array.isArray(values) ||
+      !Object.keys(values).length
+    ) {
+      return `
+        <p class="lab-graph-inspector-empty">
+          No breakdown recorded.
+        </p>
+      `;
+    }
+
+    return `
+      <div class="lab-graph-attachment-breakdown-list">
+        ${Object.entries(values)
+          .sort(([a], [b]) =>
+            a.localeCompare(b)
+          )
+          .map(([label, value]) => `
+            <div class="lab-graph-attachment-breakdown-row">
+              <span class="lab-graph-attachment-breakdown-label">
+                ${escapeHtml(titleCase(label))}
+              </span>
+
+              <span class="lab-graph-attachment-breakdown-value">
+                ${escapeHtml(displayValue(value))}
+              </span>
+            </div>
+          `)
+          .join("")}
+      </div>
+    `;
+  }
+
+  function visibleLinkCountForNode(nodeId) {
+    if (
+      !graphInstance ||
+      !nodeId
+    ) {
+      return 0;
+    }
+
+    const data =
+      graphInstance.graphData();
+
+    return data.links.filter((link) => {
+      const sourceId =
+        linkEndpointId(link.source);
+
+      const targetId =
+        linkEndpointId(link.target);
+
+      return (
+        sourceId === nodeId ||
+        targetId === nodeId
+      );
+    }).length;
+  }
+
+  function projectedLinkCountForNode(nodeId) {
+    if (
+      !canonicalGraphData ||
+      !nodeId
+    ) {
+      return 0;
+    }
+
+    return canonicalGraphData.links.filter(
+      (link) => {
+        const sourceId =
+          linkEndpointId(link.source);
+
+        const targetId =
+          linkEndpointId(link.target);
+
+        return (
+          sourceId === nodeId ||
+          targetId === nodeId
+        );
+      }
+    ).length;
+  }
+
+  function renderAttachmentDetails(node) {
+    const summary =
+      node.attachment_summary &&
+      typeof node.attachment_summary === "object"
+        ? node.attachment_summary
+        : {};
+
+    const details =
+      arrayValue(
+        node.attachment_details
+      );
+
+    const attachmentObjects =
+      summary.attachment_object_count ??
+      node.attachment_count ??
+      0;
+
+    const compiledDirections =
+      summary.compiled_direction_count ??
+      details.length;
+
+    const projectedLinks =
+      projectedLinkCountForNode(
+        node.id
+      );
+
+    const visibleLinks =
+      visibleLinkCountForNode(
+        node.id
+      );
+
+    const familyCounts =
+      summary.by_endpoint_family_attachment_object_count ||
+      summary.by_endpoint_family_direction_count ||
+      {};
+
+    const roleCounts =
+      summary.by_runtime_role_attachment_object_count ||
+      summary.by_runtime_role_direction_count ||
+      {};
+
+    const typeCounts =
+      summary.by_attachment_type_attachment_object_count ||
+      summary.by_attachment_type_direction_count ||
+      {};
+
+    return `
+      <div class="lab-graph-attachment-summary">
+        <div class="lab-graph-attachment-stat">
+          <span class="lab-graph-attachment-stat-label">
+            Attachment objects
+          </span>
+          <span class="lab-graph-attachment-stat-value">
+            ${escapeHtml(attachmentObjects)}
+          </span>
+        </div>
+
+        <div class="lab-graph-attachment-stat">
+          <span class="lab-graph-attachment-stat-label">
+            Compiled directions
+          </span>
+          <span class="lab-graph-attachment-stat-value">
+            ${escapeHtml(compiledDirections)}
+          </span>
+        </div>
+
+        <div class="lab-graph-attachment-stat">
+          <span class="lab-graph-attachment-stat-label">
+            Projected graph links
+          </span>
+          <span class="lab-graph-attachment-stat-value">
+            ${escapeHtml(projectedLinks)}
+          </span>
+        </div>
+
+        <div class="lab-graph-attachment-stat">
+          <span class="lab-graph-attachment-stat-label">
+            Visible graph links
+          </span>
+          <span class="lab-graph-attachment-stat-value">
+            ${escapeHtml(visibleLinks)}
+          </span>
+        </div>
+      </div>
+
+      <div class="lab-graph-attachment-group">
+        <h5 class="lab-graph-attachment-group-title">
+          Related endpoint families
+        </h5>
+        ${renderBreakdownRows(familyCounts)}
+      </div>
+
+      <div class="lab-graph-attachment-group">
+        <h5 class="lab-graph-attachment-group-title">
+          Runtime roles
+        </h5>
+        ${renderBreakdownRows(roleCounts)}
+      </div>
+
+      <div class="lab-graph-attachment-group">
+        <h5 class="lab-graph-attachment-group-title">
+          Attachment types
+        </h5>
+        ${renderBreakdownRows(typeCounts)}
+      </div>
+
+      ${
+        details.length
+          ? `
+            <div class="lab-graph-attachment-detail-list">
+              ${details
+                .map((detail) => `
+                  <article class="lab-graph-attachment-detail">
+                    <div class="lab-graph-attachment-detail-header">
+                      <span class="lab-graph-attachment-detail-id">
+                        ${escapeHtml(
+                          detail.attachment_id ||
+                          "Attachment ID not recorded"
+                        )}
+                      </span>
+
+                      <span class="lab-graph-attachment-detail-direction">
+                        ${escapeHtml(
+                          detail.direction ||
+                          "direction unknown"
+                        )}
+                      </span>
+                    </div>
+
+                    <div class="lab-graph-attachment-detail-body">
+                      <span>
+                        <strong>Related object:</strong>
+                        ${escapeHtml(
+                          displayValue(
+                            detail.related_object_id
+                          )
+                        )}
+                      </span>
+
+                      <span>
+                        <strong>Family:</strong>
+                        ${escapeHtml(
+                          displayValue(
+                            detail.related_object_family
+                          )
+                        )}
+                      </span>
+
+                      <span>
+                        <strong>Relationship:</strong>
+                        ${escapeHtml(
+                          displayValue(
+                            detail.relationship_type
+                          )
+                        )}
+                      </span>
+
+                      <span>
+                        <strong>Runtime role:</strong>
+                        ${escapeHtml(
+                          displayValue(
+                            detail.runtime_role
+                          )
+                        )}
+                      </span>
+                    </div>
+                  </article>
+                `)
+                .join("")}
+            </div>
+          `
+          : ""
+      }
+    `;
+  }
+
+  function renderMoreDetails(node) {
+    const intents =
+      arrayValue(
+        node.resolved_intents
+      );
+
+    const purposeIntents =
+      intents.filter(
+        (intent) =>
+          intentKind(intent) === "purpose"
+      );
+
+    const explanatoryIntents =
+      intents.filter(
+        (intent) =>
+          intentKind(intent) === "explanatory"
+      );
+
+    const otherIntents =
+      intents.filter(
+        (intent) =>
+          !["purpose", "explanatory"].includes(
+            intentKind(intent)
+          )
+      );
+
+    const clusters =
+      arrayValue(
+        node.resolved_clusters
+      );
+
+    const regions =
+      arrayValue(
+        node.resolved_regions
+      );
+
+    const beliefs =
+      arrayValue(
+        node.resolved_beliefs
+      );
+
+    const scopes =
+      arrayValue(
+        node.resolved_cluster_scopes
+      );
+
+    const distortions =
+      arrayValue(
+        node.resolved_diagnostic_distortions
+      );
+
+    return `
+      <details class="lab-graph-more-details">
+        <summary>More Details</summary>
+
+        <div class="lab-graph-more-details-content">
+          ${renderInspectorSection(
+            "Purpose Intents",
+            purposeIntents.length,
+            renderIntentCards(
+              purposeIntents
+            )
+          )}
+
+          ${renderInspectorSection(
+            "Explanatory Intents",
+            explanatoryIntents.length,
+            renderIntentCards(
+              explanatoryIntents
+            )
+          )}
+
+          ${
+            otherIntents.length
+              ? renderInspectorSection(
+                  "Other Intents",
+                  otherIntents.length,
+                  renderIntentCards(
+                    otherIntents
+                  )
+                )
+              : ""
+          }
+
+          ${renderInspectorSection(
+            "Clusters",
+            clusters.length,
+            renderRelatedCards(
+              clusters,
+              "cluster"
+            )
+          )}
+
+          ${renderInspectorSection(
+            "Regions",
+            regions.length,
+            renderRelatedCards(
+              regions,
+              "region"
+            )
+          )}
+
+          ${renderInspectorSection(
+            "Related Beliefs",
+            beliefs.length,
+            renderRelatedCards(
+              beliefs,
+              "belief"
+            )
+          )}
+
+          ${renderInspectorSection(
+            "Cluster Scopes",
+            scopes.length,
+            renderRelatedCards(
+              scopes,
+              "cluster_scope"
+            )
+          )}
+
+          ${renderInspectorSection(
+            "Diagnostic Distortions",
+            distortions.length,
+            renderRelatedCards(
+              distortions,
+              "diagnostic_distortion"
+            )
+          )}
+
+          ${renderInspectorSection(
+            "Attachment Breakdown",
+            node.attachment_summary
+              ?.attachment_object_count ??
+              node.attachment_count ??
+              0,
+            renderAttachmentDetails(node)
+          )}
+        </div>
+      </details>
+    `;
+  }
+
   function renderNodeDetails(node) {
     selectedNodeId =
       node.id || null;
@@ -1731,6 +2404,26 @@
           </dd>
         </div>
       </dl>
+
+      ${
+        objectText(node)
+          ? `
+            <section class="lab-graph-detail-text">
+              <h4 class="lab-graph-detail-text-title">
+                Object Text
+              </h4>
+
+              <p class="lab-graph-detail-text-body">
+                ${escapeHtml(
+                  objectText(node)
+                )}
+              </p>
+            </section>
+          `
+          : ""
+      }
+
+      ${renderMoreDetails(node)}
 
       ${
         node.governance_role
