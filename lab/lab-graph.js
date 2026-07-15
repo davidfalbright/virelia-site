@@ -8,21 +8,72 @@
   const GRAPH_DATA_URL =
     "lab/data/Virelia_Consulting_view_cache_3d_force_graph_TEST_DATA.json";
 
+  /*
+   * Governance colors
+   *
+   * Red family:
+   *   Root Safeguard   = bright cherry red
+   *   Domain Safeguard = medium red
+   *   Article          = light red
+   *
+   * Green family:
+   *   Root Conviction   = bright neon green
+   *   Domain Conviction = medium green
+   *   Principle         = light green
+   *
+   * Distortion families use separate grey shades. Diagnostic distortion
+   * members inherit the grey used by their parent Distortion Cluster.
+   */
   const NODE_COLORS = Object.freeze({
+    root_safeguard: "#ff1744",
+    domain_safeguard: "#c93f4f",
+    article: "#ff9aa8",
+
+    root_conviction: "#39ff14",
+    domain_conviction: "#2fa84f",
+    principle: "#a8f5b8",
+
     region: "#f2c65b",
-    cluster: "#62b3ff",
-    distortion_cluster: "#d58cff",
-    conviction: "#55e6b4",
-    safeguard: "#ff8f70",
-    principle: "#85d4ff",
-    diagnostic_distortion: "#b48cff",
+    cluster: "#4fb3e8",
+
+    distortion_cognitive: "#e1e5ea",
+    distortion_frame: "#aeb5be",
+    distortion_identity_defense: "#737d89",
+    distortion_moral: "#444c57",
+    distortion_unknown: "#8d96a1",
+
     default: "#a8b7c5"
+  });
+
+  const LEGEND_ITEMS = Object.freeze([
+    ["Root Safeguard", NODE_COLORS.root_safeguard],
+    ["Domain Safeguard", NODE_COLORS.domain_safeguard],
+    ["Article", NODE_COLORS.article],
+    ["Root Conviction", NODE_COLORS.root_conviction],
+    ["Domain Conviction", NODE_COLORS.domain_conviction],
+    ["Principle", NODE_COLORS.principle],
+    ["Governance Cluster", NODE_COLORS.cluster],
+    ["Region", NODE_COLORS.region],
+    ["Cognitive Distortion", NODE_COLORS.distortion_cognitive],
+    ["Frame Distortion", NODE_COLORS.distortion_frame],
+    ["Identity Defense Distortion", NODE_COLORS.distortion_identity_defense],
+    ["Moral Distortion", NODE_COLORS.distortion_moral]
+  ]);
+
+  const DISTORTION_CLUSTER_COLORS = Object.freeze({
+    "D-ETH-CL-9001": NODE_COLORS.distortion_cognitive,
+    "D-ETH-CL-9002": NODE_COLORS.distortion_frame,
+    "D-ETH-CL-9003": NODE_COLORS.distortion_identity_defense,
+    "D-ETH-CL-9004": NODE_COLORS.distortion_moral
   });
 
   let graphInstance = null;
   let graphPayload = null;
   let resizeObserver = null;
   let initialized = false;
+
+  // Maps each diagnostic distortion node ID to its parent Distortion Cluster ID.
+  const distortionClusterByNodeId = new Map();
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -31,6 +82,10 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  function normalizeValue(value) {
+    return String(value ?? "").trim().toLowerCase();
   }
 
   function displayValue(value) {
@@ -49,8 +104,93 @@
     return String(value);
   }
 
+  function isRootObject(node) {
+    const subdomain = normalizeValue(node.subdomain_name);
+    const originReservoir = normalizeValue(node.origin?.origin_reservoir);
+    const id = String(node.id || "").toUpperCase();
+
+    return (
+      subdomain === "root" ||
+      originReservoir === "root" ||
+      id.startsWith("R-")
+    );
+  }
+
+  function classifyNode(node) {
+    const family = normalizeValue(node.node_family);
+    const objectType = normalizeValue(node.object_type);
+
+    if (family === "safeguard" || objectType === "safeguard") {
+      return isRootObject(node)
+        ? "root_safeguard"
+        : "domain_safeguard";
+    }
+
+    if (family === "article" || objectType === "article") {
+      return "article";
+    }
+
+    if (family === "conviction" || objectType === "conviction") {
+      return isRootObject(node)
+        ? "root_conviction"
+        : "domain_conviction";
+    }
+
+    if (family === "principle" || objectType === "principle") {
+      return "principle";
+    }
+
+    if (family === "region") {
+      return "region";
+    }
+
+    if (family === "distortion_cluster") {
+      return "distortion_cluster";
+    }
+
+    if (family === "diagnostic_distortion") {
+      return "diagnostic_distortion";
+    }
+
+    if (family === "cluster") {
+      return "cluster";
+    }
+
+    return "default";
+  }
+
+  function distortionColorForNode(node) {
+    const family = normalizeValue(node.node_family);
+
+    if (family === "distortion_cluster") {
+      return (
+        DISTORTION_CLUSTER_COLORS[node.id] ||
+        NODE_COLORS.distortion_unknown
+      );
+    }
+
+    if (family === "diagnostic_distortion") {
+      const parentClusterId = distortionClusterByNodeId.get(node.id);
+
+      return (
+        DISTORTION_CLUSTER_COLORS[parentClusterId] ||
+        NODE_COLORS.distortion_unknown
+      );
+    }
+
+    return null;
+  }
+
   function nodeColor(node) {
-    return NODE_COLORS[node.node_family] || NODE_COLORS.default;
+    const distortionColor = distortionColorForNode(node);
+
+    if (distortionColor) {
+      return distortionColor;
+    }
+
+    const classification = classifyNode(node);
+
+    return NODE_COLORS[classification] || NODE_COLORS.default;
   }
 
   function nodeSize(node) {
@@ -67,7 +207,12 @@
     const influence = Number(link.max_influence_strength);
 
     if (Number.isFinite(influence) && influence > 0) {
-      return Math.min(4, 0.7 + influence * 1.8);
+      /*
+       * Current distortion membership links use an influence value of 100.
+       * Clamp the visual width so they remain readable without overwhelming
+       * the rest of the topology.
+       */
+      return Math.min(4, 0.7 + influence * 0.03);
     }
 
     return 0.7;
@@ -75,11 +220,20 @@
 
   function linkColor(link) {
     if (link.attachment_type === "distortion_cluster_membership") {
-      return "rgba(180, 140, 255, 0.34)";
+      const clusterId =
+        DISTORTION_CLUSTER_COLORS[link.target]
+          ? link.target
+          : link.source;
+
+      const clusterColor =
+        DISTORTION_CLUSTER_COLORS[clusterId] ||
+        NODE_COLORS.distortion_unknown;
+
+      return clusterColor;
     }
 
     if (link.attachment_type === "distortion_cluster_region_projection") {
-      return "rgba(213, 140, 255, 0.52)";
+      return "rgba(154, 163, 175, 0.48)";
     }
 
     if (link.attachment_type === "region_membership") {
@@ -87,6 +241,32 @@
     }
 
     return "rgba(128, 183, 224, 0.38)";
+  }
+
+  function buildDistortionMembershipIndex(payload) {
+    distortionClusterByNodeId.clear();
+
+    payload.links.forEach((link) => {
+      if (link.attachment_type !== "distortion_cluster_membership") {
+        return;
+      }
+
+      const sourceId =
+        typeof link.source === "object"
+          ? link.source.id
+          : link.source;
+
+      const targetId =
+        typeof link.target === "object"
+          ? link.target.id
+          : link.target;
+
+      if (DISTORTION_CLUSTER_COLORS[targetId]) {
+        distortionClusterByNodeId.set(sourceId, targetId);
+      } else if (DISTORTION_CLUSTER_COLORS[sourceId]) {
+        distortionClusterByNodeId.set(targetId, sourceId);
+      }
+    });
   }
 
   function setGraphStatus(message, state) {
@@ -111,13 +291,49 @@
     `;
   }
 
+  function renderLegend(container) {
+    const existingLegend =
+      container.querySelector(".lab-graph-legend");
+
+    if (existingLegend) {
+      existingLegend.remove();
+    }
+
+    const legend = document.createElement("div");
+    legend.className = "lab-graph-legend";
+    legend.setAttribute("aria-label", "Governance MRI color legend");
+
+    legend.innerHTML = `
+      <div class="lab-graph-legend-title">Graph Legend</div>
+      <div class="lab-graph-legend-items">
+        ${LEGEND_ITEMS.map(([label, color]) => {
+          return `
+            <div class="lab-graph-legend-row">
+              <span
+                class="lab-graph-legend-swatch"
+                style="background: ${escapeHtml(color)};"
+              ></span>
+              <span>${escapeHtml(label)}</span>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+
+    container.appendChild(legend);
+  }
+
   function renderNodeDetails(node) {
     const title = document.getElementById("graphDetailTitle");
     const content = document.getElementById("graphDetailContent");
 
     if (!title || !content) return;
 
-    title.textContent = node.name || node.label || node.id || "Selected object";
+    title.textContent =
+      node.name ||
+      node.label ||
+      node.id ||
+      "Selected object";
 
     const traceLabels = Array.isArray(node.trace_labels)
       ? node.trace_labels
@@ -127,6 +343,10 @@
       node.origin && typeof node.origin === "object"
         ? node.origin
         : {};
+
+    const classification = classifyNode(node);
+    const parentDistortionClusterId =
+      distortionClusterByNodeId.get(node.id);
 
     content.innerHTML = `
       <dl class="lab-graph-detail-list">
@@ -138,6 +358,20 @@
           <dt>Family</dt>
           <dd>${escapeHtml(displayValue(node.node_family))}</dd>
         </div>
+        <div>
+          <dt>Visual class</dt>
+          <dd>${escapeHtml(displayValue(classification))}</dd>
+        </div>
+        ${
+          parentDistortionClusterId
+            ? `
+              <div>
+                <dt>Distortion cluster</dt>
+                <dd>${escapeHtml(parentDistortionClusterId)}</dd>
+              </div>
+            `
+            : ""
+        }
         <div>
           <dt>Object type</dt>
           <dd>${escapeHtml(displayValue(node.object_type))}</dd>
@@ -225,7 +459,8 @@
   }
 
   function updateGraphSize() {
-    const container = document.getElementById("governanceGraph");
+    const container =
+      document.getElementById("governanceGraph");
 
     if (!container || !graphInstance) return;
 
@@ -240,7 +475,9 @@
 
   function validateProjection(payload) {
     if (!payload || typeof payload !== "object") {
-      throw new Error("The graph projection is not a JSON object.");
+      throw new Error(
+        "The graph projection is not a JSON object."
+      );
     }
 
     if (!Array.isArray(payload.nodes)) {
@@ -265,11 +502,22 @@
       );
     }
 
-    const invalidLink = payload.links.find(
-      (link) =>
-        !nodeIds.has(link.source) ||
-        !nodeIds.has(link.target)
-    );
+    const invalidLink = payload.links.find((link) => {
+      const sourceId =
+        typeof link.source === "object"
+          ? link.source.id
+          : link.source;
+
+      const targetId =
+        typeof link.target === "object"
+          ? link.target.id
+          : link.target;
+
+      return (
+        !nodeIds.has(sourceId) ||
+        !nodeIds.has(targetId)
+      );
+    });
 
     if (invalidLink) {
       throw new Error(
@@ -296,6 +544,7 @@
       );
     }
 
+    buildDistortionMembershipIndex(payload);
     container.innerHTML = "";
 
     graphInstance = window
@@ -310,18 +559,20 @@
           node.label ||
           node.id;
 
-        return `${name}<br><small>${
-          node.node_family ||
-          node.object_type ||
-          "object"
-        }</small>`;
+        const classification =
+          classifyNode(node)
+            .replaceAll("_", " ");
+
+        return `${escapeHtml(name)}<br><small>${escapeHtml(
+          classification
+        )}</small>`;
       })
       .nodeColor(nodeColor)
       .nodeVal(nodeSize)
-      .nodeOpacity(0.92)
+      .nodeOpacity(0.94)
       .linkColor(linkColor)
       .linkWidth(linkWidth)
-      .linkOpacity(0.48)
+      .linkOpacity(0.5)
       .linkDirectionalArrowLength(2.5)
       .linkDirectionalArrowRelPos(1)
       .onNodeClick((node) => {
@@ -354,6 +605,7 @@
       });
 
     updateGraphSize();
+    renderLegend(container);
 
     if (resizeObserver) {
       resizeObserver.disconnect();
@@ -442,9 +694,10 @@
 
     if (!container) return;
 
-    // labAuthorized begins hidden. Wait until authorization
-    // reveals the panel and the browser can calculate a usable
-    // graph size.
+    /*
+     * labAuthorized begins hidden. Wait until authorization reveals
+     * the panel and the browser can calculate a usable graph size.
+     */
     const attemptStart = () => {
       if (
         container.clientWidth > 0 &&
