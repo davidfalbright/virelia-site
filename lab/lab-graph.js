@@ -1779,6 +1779,139 @@
     `;
   }
 
+  function renderAppliedClusterScopeCards(scopes) {
+    if (!scopes.length) {
+      return `
+        <p class="lab-graph-inspector-empty">
+          No Cluster Scopes apply through the linked Clusters.
+        </p>
+      `;
+    }
+
+    return `
+      <div class="lab-graph-related-list">
+        ${scopes
+          .map((scope) => {
+            const textValue =
+              scope.scope_definition ||
+              objectText(scope);
+
+            return `
+              <article
+                class="lab-graph-related-card"
+                data-related-family="applied_cluster_scope"
+              >
+                <h5 class="lab-graph-related-card-title">
+                  ${escapeHtml(
+                    scope.name ||
+                    scope.title ||
+                    scope.id ||
+                    scope.object_id ||
+                    "Applied Cluster Scope"
+                  )}
+                </h5>
+
+                <div class="lab-graph-related-card-id">
+                  ${escapeHtml(
+                    scope.id ||
+                    scope.object_id ||
+                    "ID not recorded"
+                  )}
+                </div>
+
+                ${
+                  textValue
+                    ? `
+                      <p class="lab-graph-intent-card-text">
+                        ${escapeHtml(textValue)}
+                      </p>
+                    `
+                    : `
+                      <p class="lab-graph-inspector-empty">
+                        Cluster Scope text was not recorded.
+                      </p>
+                    `
+                }
+
+                <div class="lab-graph-related-card-meta">
+                  <span>
+                    <strong>Applied through Cluster:</strong>
+                    ${escapeHtml(
+                      displayValue(
+                        scope.applied_through_cluster_name
+                      )
+                    )}
+                  </span>
+
+                  <span>
+                    <strong>Cluster ID:</strong>
+                    ${escapeHtml(
+                      displayValue(
+                        scope.applied_through_cluster_id
+                      )
+                    )}
+                  </span>
+
+                  <span>
+                    <strong>Applies to:</strong>
+                    ${escapeHtml(
+                      displayValue(
+                        scope.applies_to_belief_family ||
+                        scope.scope_type
+                      )
+                    )}
+                  </span>
+
+                  <span>
+                    <strong>Scope attachment:</strong>
+                    ${escapeHtml(
+                      displayValue(
+                        scope.cluster_scope_attachment_id
+                      )
+                    )}
+                  </span>
+
+                  <span>
+                    <strong>Belief-to-Cluster attachment:</strong>
+                    ${escapeHtml(
+                      displayValue(
+                        scope.belief_cluster_attachment_id
+                      )
+                    )}
+                  </span>
+                </div>
+              </article>
+            `;
+          })
+          .join("")}
+      </div>
+    `;
+  }
+
+  function isClusterNode(node) {
+    return [
+      "cluster",
+      "distortion_cluster",
+      "emotional_cluster"
+    ].includes(
+      normalizeValue(node.node_family)
+    );
+  }
+
+  function isBeliefScopeConsumer(node) {
+    return [
+      "conviction",
+      "principle",
+      "safeguard",
+      "article"
+    ].includes(
+      normalizeValue(
+        node.object_type ||
+        node.node_family
+      ).replace(/s$/, "")
+    );
+  }
+
   function renderBreakdownRows(values) {
     if (
       !values ||
@@ -2086,6 +2219,11 @@
         node.resolved_cluster_scopes
       );
 
+    const appliedClusterScopes =
+      arrayValue(
+        node.applied_cluster_scopes
+      );
+
     const distortions =
       arrayValue(
         node.resolved_diagnostic_distortions
@@ -2151,14 +2289,30 @@
             )
           )}
 
-          ${renderInspectorSection(
-            "Cluster Scopes",
-            scopes.length,
-            renderRelatedCards(
-              scopes,
-              "cluster_scope"
-            )
-          )}
+          ${
+            isClusterNode(node)
+              ? renderInspectorSection(
+                  "Cluster Scopes",
+                  scopes.length,
+                  renderRelatedCards(
+                    scopes,
+                    "cluster_scope"
+                  )
+                )
+              : ""
+          }
+
+          ${
+            isBeliefScopeConsumer(node)
+              ? renderInspectorSection(
+                  "Cluster Scopes Applied",
+                  appliedClusterScopes.length,
+                  renderAppliedClusterScopeCards(
+                    appliedClusterScopes
+                  )
+                )
+              : ""
+          }
 
           ${renderInspectorSection(
             "Diagnostic Distortions",
